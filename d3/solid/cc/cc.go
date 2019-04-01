@@ -18,64 +18,64 @@ type ccMesh struct {
 	baryPoints []d3.Pt
 }
 
-func (b *ccMesh) populateEdges() {
-	b.edge2face = make(map[solid.IdxEdge][]uint32)
-	b.pt2edge = make(map[uint32]map[uint32]uint32)
-	b.pt2face = make(map[uint32][]uint32)
-	b.edge2Idx = make(map[solid.IdxEdge]uint32)
-	for i, f := range b.Polygons {
+func (cc *ccMesh) populateEdges() {
+	cc.edge2face = make(map[solid.IdxEdge][]uint32)
+	cc.pt2edge = make(map[uint32]map[uint32]uint32)
+	cc.pt2face = make(map[uint32][]uint32)
+	cc.edge2Idx = make(map[solid.IdxEdge]uint32)
+	for i, f := range cc.Polygons {
 		pIdx := f[len(f)-1]
 		for _, cIdx := range f {
-			b.addFaceEdge(pIdx, cIdx, solid.NewIdxEdge(pIdx, cIdx), uint32(i))
+			cc.addFaceEdge(pIdx, cIdx, solid.NewIdxEdge(pIdx, cIdx), uint32(i))
 			pIdx = cIdx
 		}
 	}
 }
 
-func (b *ccMesh) addFaceEdge(ptIdx1, ptIdx2 uint32, e solid.IdxEdge, fIdx uint32) {
-	m1 := b.pt2edge[ptIdx1]
+func (cc *ccMesh) addFaceEdge(ptIdx1, ptIdx2 uint32, e solid.IdxEdge, fIdx uint32) {
+	m1 := cc.pt2edge[ptIdx1]
 	if m1 == nil {
 		m1 = make(map[uint32]uint32)
-		b.pt2edge[ptIdx1] = m1
+		cc.pt2edge[ptIdx1] = m1
 	}
-	m2 := b.pt2edge[ptIdx2]
+	m2 := cc.pt2edge[ptIdx2]
 	if m2 == nil {
 		m2 = make(map[uint32]uint32)
-		b.pt2edge[ptIdx2] = m2
+		cc.pt2edge[ptIdx2] = m2
 	}
 	if _, indexed := m2[ptIdx1]; !indexed {
-		idx := b.edgeCtr
-		b.edgeCtr++
+		idx := cc.edgeCtr
+		cc.edgeCtr++
 		m2[ptIdx1] = idx
 		m1[ptIdx2] = idx
-		b.edge2Idx[e] = idx
+		cc.edge2Idx[e] = idx
 	}
-	b.edge2face[e] = append(b.edge2face[e], fIdx)
-	b.pt2face[ptIdx1] = append(b.pt2face[ptIdx1], fIdx)
+	cc.edge2face[e] = append(cc.edge2face[e], fIdx)
+	cc.pt2face[ptIdx1] = append(cc.pt2face[ptIdx1], fIdx)
 }
 
-func (b *ccMesh) setFacePoints() {
-	b.facePoints = make([]d3.Pt, len(b.Polygons))
-	for i, f := range b.Polygons {
+func (cc *ccMesh) setFacePoints() {
+	cc.facePoints = make([]d3.Pt, len(cc.Polygons))
+	for i, f := range cc.Polygons {
 		p := &affinePoint{}
 		for _, idx := range f {
-			p.add(b.Pts[idx])
+			p.add(cc.Pts[idx])
 		}
-		b.facePoints[i] = p.Get()
+		cc.facePoints[i] = p.Get()
 	}
 }
 
-func (b *ccMesh) setEdgePoints() {
-	b.edgePoints = make([]d3.Pt, len(b.edge2face))
-	for e, fs := range b.edge2face {
+func (cc *ccMesh) setEdgePoints() {
+	cc.edgePoints = make([]d3.Pt, len(cc.edge2face))
+	for e, fs := range cc.edge2face {
 		p := &affinePoint{}
-		p.add(b.Pts[e[0]])
-		p.add(b.Pts[e[1]])
+		p.add(cc.Pts[e[0]])
+		p.add(cc.Pts[e[1]])
 		for _, fIdx := range fs {
-			p.add(b.facePoints[fIdx])
+			p.add(cc.facePoints[fIdx])
 		}
-		eIdx := b.edge2Idx[e]
-		b.edgePoints[eIdx] = p.Get()
+		eIdx := cc.edge2Idx[e]
+		cc.edgePoints[eIdx] = p.Get()
 	}
 }
 
