@@ -9,9 +9,9 @@ import (
 type ccMesh struct {
 	mesh.Mesh
 	edgeCtr    uint32
-	edge2Idx   map[solid.Edge]uint32
+	edge2Idx   map[solid.IdxEdge]uint32
 	pt2edge    map[uint32]map[uint32]uint32 // maps ptIdx to other ptIndex it shares an edge with
-	edge2face  map[solid.Edge][]uint32      //maps edges to face indexes
+	edge2face  map[solid.IdxEdge][]uint32   //maps edges to face indexes
 	pt2face    map[uint32][]uint32
 	facePoints []d3.Pt
 	edgePoints []d3.Pt
@@ -19,22 +19,20 @@ type ccMesh struct {
 }
 
 func (b *ccMesh) populateEdges() {
-	b.edge2face = make(map[solid.Edge][]uint32)
+	b.edge2face = make(map[solid.IdxEdge][]uint32)
 	b.pt2edge = make(map[uint32]map[uint32]uint32)
 	b.pt2face = make(map[uint32][]uint32)
-	b.edge2Idx = make(map[solid.Edge]uint32)
+	b.edge2Idx = make(map[solid.IdxEdge]uint32)
 	for i, f := range b.Polygons {
 		pIdx := f[len(f)-1]
-		prev := b.Pts[pIdx]
 		for _, cIdx := range f {
-			cur := b.Pts[cIdx]
-			b.addFaceEdge(pIdx, cIdx, solid.NewEdge(prev, cur), uint32(i))
-			pIdx, prev = cIdx, cur
+			b.addFaceEdge(pIdx, cIdx, solid.NewIdxEdge(pIdx, cIdx), uint32(i))
+			pIdx = cIdx
 		}
 	}
 }
 
-func (b *ccMesh) addFaceEdge(ptIdx1, ptIdx2 uint32, e solid.Edge, fIdx uint32) {
+func (b *ccMesh) addFaceEdge(ptIdx1, ptIdx2 uint32, e solid.IdxEdge, fIdx uint32) {
 	m1 := b.pt2edge[ptIdx1]
 	if m1 == nil {
 		m1 = make(map[uint32]uint32)
@@ -71,8 +69,8 @@ func (b *ccMesh) setEdgePoints() {
 	b.edgePoints = make([]d3.Pt, len(b.edge2face))
 	for e, fs := range b.edge2face {
 		p := &affinePoint{}
-		p.add(e[0])
-		p.add(e[1])
+		p.add(b.Pts[e[0]])
+		p.add(b.Pts[e[1]])
 		for _, fIdx := range fs {
 			p.add(b.facePoints[fIdx])
 		}
@@ -131,11 +129,10 @@ func (cc *ccMesh) subdivideFace(i uint32, f []uint32, m *mesh.Mesh) {
 
 	ln := len(f)
 
-	prevEIdx := cc.edge2Idx[solid.NewEdge(cc.Pts[f[0]], cc.Pts[f[ln-1]])] + bpLn
+	prevEIdx := cc.edge2Idx[solid.NewIdxEdge(f[0], f[ln-1])] + bpLn
 	for i, cIdx := range f {
-		cp := cc.Pts[cIdx]
-		np := cc.Pts[f[(i+1)%ln]]
-		e := solid.NewEdge(cp, np)
+		nIdx := f[(i+1)%ln]
+		e := solid.NewIdxEdge(cIdx, nIdx)
 		curEIdx := cc.edge2Idx[e] + bpLn
 		m.Polygons = append(m.Polygons, []uint32{
 			fpIdx,
