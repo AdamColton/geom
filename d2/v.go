@@ -1,33 +1,20 @@
 package d2
 
 import (
-	"math"
 	"strconv"
 	"strings"
+
+	"github.com/adamcolton/geom/angle"
 )
 
-type Vector interface {
-	V() V
-}
+type V D2
 
-type V Pt
-
-// Angle returns the angle in radians
-func (v V) Angle() float64 {
-	return math.Atan2(v.Y, v.X)
-}
-
-func (v V) V() V { return v }
-
-// Mag2 Returns the sqaure of the magnitude of the vector.
-func (v V) Mag2() float64 {
-	return v.X*v.X + v.Y*v.Y
-}
-
-// Mag returns the magnitude (distance to origin) of the vector
-func (v V) Mag() float64 {
-	return math.Sqrt(v.Mag2())
-}
+func (v V) Pt() Pt           { return Pt(v) }
+func (v V) V() V             { return v }
+func (v V) Polar() Polar     { return D2(v).Polar() }
+func (v V) Angle() angle.Rad { return D2(v).Angle() }
+func (v V) Mag2() float64    { return D2(v).Mag2() }
+func (v V) Mag() float64     { return D2(v).Mag() }
 
 // Cross returns the cross product of the two vectors
 func (v V) Cross(v2 V) float64 {
@@ -43,6 +30,13 @@ func (v V) Multiply(scale float64) V {
 	return V{v.X * scale, v.Y * scale}
 }
 
+func (v V) Product(v2 V) V {
+	return V{
+		X: v.X * v2.X,
+		Y: v.Y * v2.Y,
+	}
+}
+
 // String fulfills Stringer, returns the vector as "(X, Y)"
 func (v V) String() string {
 	return strings.Join([]string{
@@ -54,7 +48,26 @@ func (v V) String() string {
 	}, "")
 }
 
-func Polar(radius, angle float64) V {
-	s, c := math.Sincos(angle)
-	return V{c * radius, s * radius}
+func (v V) Add(v2 V) V {
+	return V{
+		X: v.X + v2.X,
+		Y: v.Y + v2.Y,
+	}
+}
+
+func (v V) Subtract(v2 V) V {
+	return V{
+		X: v.X - v2.X,
+		Y: v.Y - v2.Y,
+	}
+}
+
+func (v V) Abs() V {
+	if v.X < 0 {
+		v.X = -v.X
+	}
+	if v.Y < 0 {
+		v.Y = -v.Y
+	}
+	return v
 }

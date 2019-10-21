@@ -1,9 +1,10 @@
 package d2
 
 import (
-	"math"
 	"strconv"
 	"strings"
+
+	"github.com/adamcolton/geom/angle"
 )
 
 /*
@@ -11,6 +12,9 @@ import (
 | a b c |   | x |
 | d e f | * | y | = | ax+by+c dx+ey+f gx+hy+i|
 | g h i |   | 1 |
+
+Because of the array syntax, (x,y) get flipped either in the layout or in the
+index. I've chosen the index. Therefor
 
 | (0,0) (1,0) (2,0) |   | [0][0] [0][1] [0][2] |
 | (0,1) (1,1) (2,1) | = | [1][0] [1][1] [1][2] |
@@ -39,6 +43,14 @@ func (t T) Pt(pt Pt) (Pt, float64) {
 	}, pt.X*t[2][0] + pt.Y*t[2][1] + t[2][2]
 }
 
+func (t T) Slice(pts []Pt) []Pt {
+	out := make([]Pt, len(pts))
+	for i, pt := range pts {
+		out[i], _ = t.Pt(pt)
+	}
+	return out
+}
+
 func (t T) V(v V) (V, float64) {
 	return V{
 		v.X*t[0][0] + v.Y*t[0][1] + t[0][2],
@@ -64,16 +76,42 @@ func (t T) T(t2 T) T {
 	}
 }
 
-func Scale(v V) T {
+type Scale V
+
+func (s Scale) T() T {
 	return T{
-		{v.X, 0, 0},
-		{0, v.Y, 0},
+		{s.X, 0, 0},
+		{0, s.Y, 0},
 		{0, 0, 1},
 	}
 }
 
-func Rotate(angle float64) T {
-	s, c := math.Sincos(angle)
+func (s Scale) TInv() T {
+	return T{
+		{1.0 / s.X, 0, 0},
+		{0, 1.0 / s.Y, 0},
+		{0, 0, 1},
+	}
+}
+
+func (s Scale) Pair() [2]T {
+	return [2]T{
+		{
+			{s.X, 0, 0},
+			{0, s.Y, 0},
+			{0, 0, 1},
+		}, {
+			{1.0 / s.X, 0, 0},
+			{0, 1.0 / s.Y, 0},
+			{0, 0, 1},
+		},
+	}
+}
+
+type Rotate angle.Rad
+
+func (r Rotate) T() T {
+	s, c := angle.Rad(r).Sincos()
 	return T{
 		{c, -s, 0},
 		{s, c, 0},
@@ -81,12 +119,115 @@ func Rotate(angle float64) T {
 	}
 }
 
-func Translate(v V) T {
+func (r Rotate) TInv() T {
+	s, c := angle.Rad(r).Sincos()
 	return T{
-		{1, 0, v.X},
-		{0, 1, v.Y},
+		{c, s, 0},
+		{-s, c, 0},
 		{0, 0, 1},
 	}
+}
+
+func (r Rotate) Pair() [2]T {
+	s, c := angle.Rad(r).Sincos()
+	return [2]T{
+		{
+			{c, -s, 0},
+			{s, c, 0},
+			{0, 0, 1},
+		}, {
+			{c, s, 0},
+			{-s, c, 0},
+			{0, 0, 1},
+		},
+	}
+}
+
+type Translate V
+
+func (t Translate) T() T {
+	return T{
+		{1, 0, t.X},
+		{0, 1, t.Y},
+		{0, 0, 1},
+	}
+}
+
+func (t Translate) TInv() T {
+	return T{
+		{1, 0, -t.X},
+		{0, 1, -t.Y},
+		{0, 0, 1},
+	}
+}
+
+func (t Translate) Pair() [2]T {
+	return [2]T{
+		{
+			{1, 0, t.X},
+			{0, 1, t.Y},
+			{0, 0, 1},
+		}, {
+			{1, 0, -t.X},
+			{0, 1, -t.Y},
+			{0, 0, 1},
+		},
+	}
+}
+
+type Chain []TGen
+
+func (c Chain) T() T {
+	if len(c) == 0 {
+		return IndentityTransform()
+	}
+	if len(c) == 1 {
+		return c[0].T()
+	}
+	t := c[0].T().T(c[1].T())
+	for _, nxt := range c[2:] {
+		t = t.T(nxt.T())
+	}
+	return t
+}
+
+func (c Chain) TInv() T {
+	ln := len(c)
+	if ln == 0 {
+		return IndentityTransform()
+	}
+	if ln == 1 {
+		return c[0].TInv()
+	}
+	t := c[ln-1].TInv().T(c[ln-2].TInv())
+	for i := ln - 3; i >= 0; i-- {
+		t = t.T(c[i].TInv())
+	}
+	return t
+}
+
+func (c Chain) Pair() [2]T {
+	ln := len(c)
+	if ln == 0 {
+		return [2]T{IndentityTransform(), IndentityTransform()}
+	}
+	if ln == 1 {
+		return c[0].Pair()
+	}
+	ps := make([][2]T, ln)
+	for i, t := range c {
+		ps[i] = t.Pair()
+	}
+	out := [2]T{
+		ps[0][0].T(ps[1][0]),
+		ps[ln-1][1].T(ps[ln-2][1]),
+	}
+	ln--
+	for i := 2; i <= ln; i++ {
+		out[0] = out[0].T(ps[i][0])
+		out[1] = out[1].T(ps[ln-i][1])
+	}
+	return out
 }
 
 func (t T) String() string {
