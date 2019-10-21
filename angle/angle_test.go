@@ -1,6 +1,7 @@
 package angle
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -21,5 +22,11 @@ func TestAngle(t *testing.T) {
 		s, c := rot.Sincos()
 		assert.Equal(t, s, rot.Sin())
 		assert.Equal(t, c, rot.Cos())
+
+		a := Atan(s, c)
+		if a < 0 {
+			a += math.Pi * 2
+		}
+		assert.InDelta(t, rot.Rad(), a.Rad(), 1e-10)
 	}
 }

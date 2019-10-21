@@ -17,6 +17,11 @@ func Rot(r float64) Rad {
 	return Rad(r * 2 * math.Pi)
 }
 
+// Atan returns the angle in radians formed by x and y.
+func Atan(y, x float64) Rad {
+	return Rad(math.Atan2(y, x))
+}
+
 // Rad returns the angle as float64 reprenting radians
 func (r Rad) Rad() float64 {
 	return float64(r)
