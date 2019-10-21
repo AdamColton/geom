@@ -2,8 +2,12 @@ package comb
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
+// Classic Binomial function, no optimizations. Use for benchmark and validating
+// memo values.
 func Classic(n, i int) int {
 	// https://math.stackexchange.com/questions/202554/how-do-i-compute-binomial-coefficients-efficiently
 	if n < 0 || i > n || i < 0 {
@@ -21,6 +25,8 @@ type key [2]int
 
 var mapMemo = make(map[key]int)
 
+// MapMemo is an earlier version that got moved into the tests as a benchmark
+// comparison.
 func MapMemo(n, i int) int {
 	if n < 0 || i > n || i < 0 {
 		return 0
@@ -43,16 +49,31 @@ func MapMemo(n, i int) int {
 }
 
 func TestAgainstClassic(t *testing.T) {
-	for n := 0; n < 20; n++ {
-		for i := 0; i <= n; i++ {
-			b := Binomial(n, i)
-			k := Classic(n, i)
-			if b != k {
-				t.Error(n, i)
+	old := memo
+	memo = make([]int, 128)
+	assert.Equal(t, Classic(35, 17), Binomial(35, 17))
+
+	// Two passes, once to refill the memo, once to test with the memo full
+	for passes := 0; passes < 2; passes++ {
+		for n := 0; n < 35; n++ {
+			for i := 0; i <= n; i++ {
+				b := Binomial(n, i)
+				k := Classic(n, i)
+				if b != k {
+					t.Error(n, i)
+				}
 			}
 		}
 	}
+	assert.Equal(t, old, memo[:256])
+
 }
+
+func TestOutOfBounds(t *testing.T) {
+	assert.Equal(t, 0, Binomial(-1, 1))
+}
+
+var maxN = 256
 
 func BenchmarkMemo(b *testing.B) {
 	n := 0
@@ -61,7 +82,7 @@ func BenchmarkMemo(b *testing.B) {
 		i++
 		if i > n {
 			n, i = n+1, 0
-			if n > 100 {
+			if n > maxN {
 				n, i = 0, 0
 			}
 		}
@@ -76,7 +97,7 @@ func BenchmarkMap(b *testing.B) {
 		i++
 		if i > n {
 			n, i = n+1, 0
-			if n > 100 {
+			if n > maxN {
 				n, i = 0, 0
 			}
 		}
@@ -91,7 +112,7 @@ func BenchmarkClassic(b *testing.B) {
 		i++
 		if i > n {
 			n, i = n+1, 0
-			if n > 100 {
+			if n > maxN {
 				n, i = 0, 0
 			}
 		}
