@@ -54,7 +54,8 @@ type Pt1V1 interface {
 type Limit byte
 
 const (
-	// LimitUndefined should not be used
+	// LimitUndefined indicates that the requested parametric method is not
+	// defined.
 	LimitUndefined Limit = iota
 	// LimitBounded indicates that the behavior of a parametric funnction
 	// outside the range [0,1] is not defined.
