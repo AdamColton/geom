@@ -12,14 +12,17 @@ type D2 struct {
 	X, Y float64
 }
 
+// Pt converts D2 to a Pt
 func (d D2) Pt() Pt {
 	return Pt(d)
 }
 
+// V converts D2 to a V
 func (d D2) V() V {
 	return V(d)
 }
 
+// Polar converts D2 to a Polar
 func (d D2) Polar() Polar {
 	return Polar{d.Mag(), d.Angle()}
 }

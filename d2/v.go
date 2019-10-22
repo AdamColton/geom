@@ -7,14 +7,27 @@ import (
 	"github.com/adamcolton/geom/angle"
 )
 
+// V represents a Vector, the difference between two points.
 type V D2
 
-func (v V) Pt() Pt           { return Pt(v) }
-func (v V) V() V             { return v }
-func (v V) Polar() Polar     { return D2(v).Polar() }
+// Pt converts a V to Pt
+func (v V) Pt() Pt { return Pt(v) }
+
+// V fulfills the Vector interface
+func (v V) V() V { return v }
+
+// Polar converts V to Polar
+func (v V) Polar() Polar { return D2(v).Polar() }
+
+// Angle of the vector
 func (v V) Angle() angle.Rad { return D2(v).Angle() }
-func (v V) Mag2() float64    { return D2(v).Mag2() }
-func (v V) Mag() float64     { return D2(v).Mag() }
+
+// Mag2 returns the square magnitude of the vector. This can be useful for comparisons
+// to avoid the additional cost of a Sqrt call.
+func (v V) Mag2() float64 { return D2(v).Mag2() }
+
+// Mag returns the magnitude of the vector
+func (v V) Mag() float64 { return D2(v).Mag() }
 
 // Cross returns the cross product of the two vectors
 func (v V) Cross(v2 V) float64 {
@@ -26,10 +39,12 @@ func (v V) Dot(v2 V) float64 {
 	return v.X*v2.X + v.Y*v2.Y
 }
 
+// Multiply returns the scalar product of a vector.
 func (v V) Multiply(scale float64) V {
 	return V{v.X * scale, v.Y * scale}
 }
 
+// Product of two vectors
 func (v V) Product(v2 V) V {
 	return V{
 		X: v.X * v2.X,
@@ -37,7 +52,7 @@ func (v V) Product(v2 V) V {
 	}
 }
 
-// String fulfills Stringer, returns the vector as "(X, Y)"
+// String fulfills Stringer, returns the vector as "V(X, Y)"
 func (v V) String() string {
 	return strings.Join([]string{
 		"V(",
@@ -48,6 +63,7 @@ func (v V) String() string {
 	}, "")
 }
 
+// Add two vectors
 func (v V) Add(v2 V) V {
 	return V{
 		X: v.X + v2.X,
@@ -55,6 +71,7 @@ func (v V) Add(v2 V) V {
 	}
 }
 
+// Subtract two vectors
 func (v V) Subtract(v2 V) V {
 	return V{
 		X: v.X - v2.X,
@@ -62,6 +79,7 @@ func (v V) Subtract(v2 V) V {
 	}
 }
 
+// Abs of vector for both X and Y
 func (v V) Abs() V {
 	if v.X < 0 {
 		v.X = -v.X
