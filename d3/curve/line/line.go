@@ -1,23 +1,29 @@
 package line
 
 import (
-	"github.com/adamcolton/geom/d3"
 	"strings"
+
+	"github.com/adamcolton/geom/d3"
 )
 
+// Line in 3D space, invoked parametrically
 type Line struct {
 	T0 d3.Pt
 	D  d3.V
 }
 
+// Pt1 returns a Pt on the line.
 func (l Line) Pt1(t float64) d3.Pt {
 	return l.T0.Add(l.D.Multiply(t))
 }
 
+// V1 always returns l.D, the slope of the line.
 func (l Line) V1(t float64) d3.V {
 	return l.D
 }
 
+// New line defined by a starting and ending point so that l.Pt1(0)==start and
+// l.Pt1(1)==end.
 func New(start, end d3.Pt) Line {
 	return Line{
 		T0: start,
@@ -25,6 +31,7 @@ func New(start, end d3.Pt) Line {
 	}
 }
 
+// String fulfils stringer.
 func (l Line) String() string {
 	return strings.Join([]string{
 		"Line[ ",
