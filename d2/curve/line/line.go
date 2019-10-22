@@ -6,15 +6,18 @@ import (
 	"github.com/adamcolton/geom/d2"
 )
 
+// Line in 2D space invoked parametrically
 type Line struct {
 	T0 d2.Pt
 	D  d2.V
 }
 
+// Pt1 returns a Pt on the line
 func (l Line) Pt1(t float64) d2.Pt {
 	return l.T0.Add(l.D.Multiply(t))
 }
 
+// V1 always returns l.D, the slope of the line
 func (l Line) V1(t float64) d2.V {
 	return l.D
 }
@@ -29,10 +32,12 @@ func (l Line) AtY(y float64) float64 {
 	return (y - l.T0.Y) / l.D.Y
 }
 
+// B from the form y = mx + b, this will panic if l.D.X is zero
 func (l Line) B() float64 {
 	return l.Pt1(l.AtX(0)).Y
 }
 
+// M from the form y = mx + b, this will panic if l.D.X is zero
 func (l Line) M() float64 {
 	return l.D.Y / l.D.X
 }
@@ -74,6 +79,7 @@ func (l Line) Closest(pt d2.Pt) d2.Pt {
 	return l.Pt1(t0[0])
 }
 
+// String fulfills Stringer
 func (l Line) String() string {
 	return strings.Join([]string{
 		"Line( ",
@@ -84,6 +90,7 @@ func (l Line) String() string {
 	}, "")
 }
 
+// New line from start to end so that l.Pt1(0)==start and l.Pt1(1)==end.
 func New(start, end d2.Pt) Line {
 	return Line{
 		T0: start,
@@ -111,6 +118,7 @@ func TangentLine(c d2.Pt1V1, t0 float64) Line {
 	}
 }
 
+// L fulfills d2.Limiter
 func (Line) L(t, c int) d2.Limit {
 	if t == 1 && c == 1 {
 		return d2.LimitUnbounded
@@ -118,6 +126,7 @@ func (Line) L(t, c int) d2.Limit {
 	return d2.LimitUndefined
 }
 
+// VL fulfills d2.VLimiter
 func (Line) VL(t, c int) d2.Limit {
 	if t == 1 && c == 1 {
 		return d2.LimitUnbounded
@@ -125,6 +134,7 @@ func (Line) VL(t, c int) d2.Limit {
 	return d2.LimitUndefined
 }
 
+// T applies a transform to the line returning a new line.
 func (l Line) T(t *d2.T) Line {
 	return Line{
 		T0: t.Pt(l.T0),
@@ -132,6 +142,7 @@ func (l Line) T(t *d2.T) Line {
 	}
 }
 
+// Centroid point on the line
 func (l Line) Centroid() d2.Pt {
 	return l.Pt1(0.5)
 }
