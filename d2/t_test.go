@@ -10,7 +10,7 @@ import (
 
 func TestTransform(t *testing.T) {
 	tt := []struct {
-		T
+		*T
 		expected Pt
 	}{
 		{
@@ -69,7 +69,7 @@ func TestTGen(t *testing.T) {
 	}
 }
 
-func tApproxEqual(t *testing.T, t1, t2 T) {
+func tApproxEqual(t *testing.T, t1, t2 *T) {
 	for x := 0; x < 3; x++ {
 		for y := 0; y < 3; y++ {
 			assert.InDelta(t, t1[x][y], t2[x][y], 1e-10)
