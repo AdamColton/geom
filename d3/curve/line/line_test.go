@@ -1,9 +1,11 @@
 package line
 
 import (
-	"github.com/adamcolton/geom/d3"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/adamcolton/geom/d3"
+	"github.com/adamcolton/geom/geomtest"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLine(t *testing.T) {
@@ -15,10 +17,12 @@ func TestLine(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc[0].String()+tc[1].String(), func(t *testing.T) {
 			l := New(tc[0], tc[1])
-			assert.Equal(t, tc[0], l.Pt(0))
-			assert.Equal(t, tc[1], l.Pt(1))
+			assert.Equal(t, tc[0], l.Pt1(0))
+			assert.Equal(t, tc[1], l.Pt1(1))
 		})
 	}
+
+	geomtest.Equal(t, d3.V{1, 1, 1}, New(d3.Pt{1, 2, 3}, d3.Pt{2, 3, 4}).V1(0))
 }
 
 func TestClosest(t *testing.T) {
@@ -65,4 +69,17 @@ func TestClosest(t *testing.T) {
 			assert.InDelta(t, tc.expected2, c2, 1e-6)
 		})
 	}
+}
+
+func TestClosestEarlyReturns(t *testing.T) {
+	l0 := New(d3.Pt{1, 1, 1}, d3.Pt{2, 2, 2})
+	l1 := New(d3.Pt{}, d3.Pt{})
+
+	t0, t1 := l0.Closest(l1)
+	assert.Equal(t, 0.0, t0)
+	assert.Equal(t, 0.0, t1)
+
+	t0, t1 = l1.Closest(l0)
+	assert.Equal(t, 0.0, t0)
+	assert.Equal(t, 0.0, t1)
 }

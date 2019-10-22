@@ -10,11 +10,11 @@ type Line struct {
 	D  d3.V
 }
 
-func (l Line) Pt(t float64) d3.Pt {
+func (l Line) Pt1(t float64) d3.Pt {
 	return l.T0.Add(l.D.Multiply(t))
 }
 
-func (l Line) V(t float64) d3.V {
+func (l Line) V1(t float64) d3.V {
 	return l.D
 }
 
