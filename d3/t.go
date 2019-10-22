@@ -3,16 +3,18 @@ package d3
 import (
 	"strconv"
 	"strings"
+
+	"github.com/adamcolton/geom/angle"
 )
 
 type T [4][4]float64
 
 /*
 
-| a b c d |   | x |
-| e f g h | * | y | = | ax+by+cz+d ex+fy+gz+h ix+jy+kz+l mx+ny+pz+q |
-| i j k l |   | z |
-| m n p q |   | 1 |
+| x |   | a b c d |
+| y | * | e f g h | = | ax+by+cz+d ex+fy+gz+h ix+jy+kz+l mx+ny+pz+q |
+| z |   | i j k l |
+| 1 |   | m n p q |
 
 | (0,0) (1,0) (2,0) |   | [0][0] [0][1] [0][2] |
 | (0,1) (1,1) (2,1) | = | [1][0] [1][1] [1][2] |
@@ -29,16 +31,31 @@ type T [4][4]float64
 | m1 n1 p1 q1 |   | m2 n2 p2 q2 |   |
 */
 
-func IndentityTransform() T {
-	return T{
-		{1, 0, 0, 0},
-		{0, 1, 0, 0},
-		{0, 0, 1, 0},
-		{0, 0, 0, 1},
+func (t *T) Pt(pt Pt) Pt {
+	return Pt{
+		pt.X*t[0][0] + pt.Y*t[0][1] + pt.Z*t[0][2] + t[0][3],
+		pt.X*t[1][0] + pt.Y*t[1][1] + pt.Z*t[1][2] + t[1][3],
+		pt.X*t[2][0] + pt.Y*t[2][1] + pt.Z*t[2][2] + t[2][3],
 	}
 }
 
-func (t T) Pt(pt Pt) (Pt, float64) {
+func (t *T) Pts(pts []Pt) []Pt {
+	out := make([]Pt, len(pts))
+	for i, pt := range pts {
+		out[i] = t.Pt(pt)
+	}
+	return out
+}
+
+func (t *T) V(v V) V {
+	return V{
+		v.X*t[0][0] + v.Y*t[0][1] + v.Z*t[0][2] + t[0][3],
+		v.X*t[1][0] + v.Y*t[1][1] + v.Z*t[1][2] + t[1][3],
+		v.X*t[2][0] + v.Y*t[2][1] + v.Z*t[2][2] + t[2][3],
+	}
+}
+
+func (t *T) PtF(pt Pt) (Pt, float64) {
 	return Pt{
 		pt.X*t[0][0] + pt.Y*t[0][1] + pt.Z*t[0][2] + t[0][3],
 		pt.X*t[1][0] + pt.Y*t[1][1] + pt.Z*t[1][2] + t[1][3],
@@ -46,7 +63,16 @@ func (t T) Pt(pt Pt) (Pt, float64) {
 	}, pt.X*t[3][0] + pt.Y*t[3][1] + pt.Z*t[3][2] + t[3][3]
 }
 
-func (t T) V(v V) (V, float64) {
+func (t *T) PtScl(pt Pt) Pt {
+	w := pt.X*t[3][0] + pt.Y*t[3][1] + pt.Z*t[3][2] + t[3][3]
+	return Pt{
+		(pt.X*t[0][0] + pt.Y*t[0][1] + pt.Z*t[0][2] + t[0][3]) / w,
+		(pt.X*t[1][0] + pt.Y*t[1][1] + pt.Z*t[1][2] + t[1][3]) / w,
+		(pt.X*t[2][0] + pt.Y*t[2][1] + pt.Z*t[2][2] + t[2][3]) / w,
+	}
+}
+
+func (t *T) VF(v V) (V, float64) {
 	return V{
 		v.X*t[0][0] + v.Y*t[0][1] + v.Z*t[0][2] + t[0][3],
 		v.X*t[1][0] + v.Y*t[1][1] + v.Z*t[1][2] + t[1][3],
@@ -54,8 +80,8 @@ func (t T) V(v V) (V, float64) {
 	}, v.X*t[3][0] + v.Y*t[3][1] + v.Z*t[3][2] + t[3][3]
 }
 
-func (t T) T(t2 T) T {
-	return T{
+func (t *T) T(t2 *T) *T {
+	return &T{
 		{
 			t[0][0]*t2[0][0] + t[1][0]*t2[0][1] + t[2][0]*t2[0][2] + t[3][0]*t2[0][3],
 			t[0][1]*t2[0][0] + t[1][1]*t2[0][1] + t[2][1]*t2[0][2] + t[3][1]*t2[0][3],
@@ -65,7 +91,7 @@ func (t T) T(t2 T) T {
 			t[0][0]*t2[1][0] + t[1][0]*t2[1][1] + t[2][0]*t2[1][2] + t[3][0]*t2[1][3],
 			t[0][1]*t2[1][0] + t[1][1]*t2[1][1] + t[2][1]*t2[1][2] + t[3][1]*t2[1][3],
 			t[0][2]*t2[1][0] + t[1][2]*t2[1][1] + t[2][2]*t2[1][2] + t[3][2]*t2[1][3],
-			t[0][3]*t2[1][0] + t[1][3]*t2[1][1] + t[2][2]*t2[1][2] + t[3][3]*t2[1][3],
+			t[0][3]*t2[1][0] + t[1][3]*t2[1][1] + t[2][3]*t2[1][2] + t[3][3]*t2[1][3],
 		}, {
 			t[0][0]*t2[2][0] + t[1][0]*t2[2][1] + t[2][0]*t2[2][2] + t[3][0]*t2[2][3],
 			t[0][1]*t2[2][0] + t[1][1]*t2[2][1] + t[2][1]*t2[2][2] + t[3][1]*t2[2][3],
@@ -80,21 +106,203 @@ func (t T) T(t2 T) T {
 	}
 }
 
-func Scale(v V) T {
-	return T{
-		{v.X, 0, 0, 0},
-		{0, v.Y, 0, 0},
-		{0, 0, v.Z, 0},
+func Identity() *T {
+	return &T{
+		{1, 0, 0, 0},
+		{0, 1, 0, 0},
+		{0, 0, 1, 0},
 		{0, 0, 0, 1},
 	}
 }
 
-func Translate(v V) T {
-	return T{
-		{1, 0, 0, v.X},
-		{0, 1, 0, v.Y},
-		{0, 0, 1, v.Z},
+type Scale V
+
+func (s Scale) T() *T {
+	return &T{
+		{s.X, 0, 0, 0},
+		{0, s.Y, 0, 0},
+		{0, 0, s.Z, 0},
 		{0, 0, 0, 1},
+	}
+}
+
+func (s Scale) TInv() *T {
+	return &T{
+		{1.0 / s.X, 0, 0, 0},
+		{0, 1.0 / s.Y, 0, 0},
+		{0, 0, 1.0 / s.Z, 0},
+		{0, 0, 0, 1},
+	}
+}
+
+// Scale returns the scale transform represented by V and it's inverse
+func (s Scale) Pair() [2]*T {
+	return [2]*T{
+		&T{
+			{s.X, 0, 0, 0},
+			{0, s.Y, 0, 0},
+			{0, 0, s.Z, 0},
+			{0, 0, 0, 1},
+		},
+		&T{
+			{1.0 / s.X, 0, 0, 0},
+			{0, 1.0 / s.Y, 0, 0},
+			{0, 0, 1.0 / s.Z, 0},
+			{0, 0, 0, 1},
+		},
+	}
+}
+
+func ScaleF(f float64) Scale {
+	return Scale(V{f, f, f})
+}
+
+type Translate V
+
+func (t Translate) T() *T {
+	return &T{
+		{1, 0, 0, t.X},
+		{0, 1, 0, t.Y},
+		{0, 0, 1, t.Z},
+		{0, 0, 0, 1},
+	}
+}
+
+func (t Translate) TInv() *T {
+	return &T{
+		{1, 0, 0, -t.X},
+		{0, 1, 0, -t.Y},
+		{0, 0, 1, -t.Z},
+		{0, 0, 0, 1},
+	}
+}
+
+// Translate returns the translate transform represented by V and it's inverse
+func (t Translate) Pair() [2]*T {
+	return [2]*T{
+		&T{
+			{1, 0, 0, t.X},
+			{0, 1, 0, t.Y},
+			{0, 0, 1, t.Z},
+			{0, 0, 0, 1},
+		}, &T{
+			{1, 0, 0, -t.X},
+			{0, 1, 0, -t.Y},
+			{0, 0, 1, -t.Z},
+			{0, 0, 0, 1},
+		},
+	}
+}
+
+type RotationPlane byte
+
+const (
+	XY RotationPlane = iota
+	XZ
+	YZ
+)
+
+type Rotation struct {
+	Angle angle.Rad
+	Plane RotationPlane
+}
+
+func (r Rotation) T() *T {
+	s, c := r.Angle.Sincos()
+	if r.Plane == XZ {
+		return &T{
+			{c, 0, -s, 0},
+			{0, 1, 0, 0},
+			{s, 0, c, 0},
+			{0, 0, 0, 1},
+		}
+	}
+	if r.Plane == YZ {
+		return &T{
+			{1, 0, 0, 0},
+			{0, c, -s, 0},
+			{0, s, c, 0},
+			{0, 0, 0, 1},
+		}
+	}
+	return &T{
+		{c, -s, 0, 0},
+		{s, c, 0, 0},
+		{0, 0, 1, 0},
+		{0, 0, 0, 1},
+	}
+}
+
+func (r Rotation) TInv() *T {
+	s, c := r.Angle.Sincos()
+	if r.Plane == XZ {
+		return &T{
+			{c, 0, s, 0},
+			{0, 1, 0, 0},
+			{-s, 0, c, 0},
+			{0, 0, 0, 1},
+		}
+	}
+	if r.Plane == YZ {
+		return &T{
+			{1, 0, 0, 0},
+			{0, c, s, 0},
+			{0, -s, c, 0},
+			{0, 0, 0, 1},
+		}
+	}
+	return &T{
+		{c, s, 0, 0},
+		{-s, c, 0, 0},
+		{0, 0, 1, 0},
+		{0, 0, 0, 1},
+	}
+}
+
+func (r Rotation) Pair() [2]*T {
+	s, c := r.Angle.Sincos()
+	if r.Plane == XZ {
+		return [2]*T{
+			&T{
+				{c, 0, -s, 0},
+				{0, 1, 0, 0},
+				{s, 0, c, 0},
+				{0, 0, 0, 1},
+			}, &T{
+				{c, 0, s, 0},
+				{0, 1, 0, 0},
+				{-s, 0, c, 0},
+				{0, 0, 0, 1},
+			},
+		}
+	}
+	if r.Plane == YZ {
+		return [2]*T{
+			&T{
+				{1, 0, 0, 0},
+				{0, c, -s, 0},
+				{0, s, c, 0},
+				{0, 0, 0, 1},
+			}, &T{
+				{1, 0, 0, 0},
+				{0, c, s, 0},
+				{0, -s, c, 0},
+				{0, 0, 0, 1},
+			},
+		}
+	}
+	return [2]*T{
+		&T{
+			{c, -s, 0, 0},
+			{s, c, 0, 0},
+			{0, 0, 1, 0},
+			{0, 0, 0, 1},
+		}, &T{
+			{c, s, 0, 0},
+			{-s, c, 0, 0},
+			{0, 0, 1, 0},
+			{0, 0, 0, 1},
+		},
 	}
 }
 
@@ -134,4 +342,186 @@ func (t T) String() string {
 		strconv.FormatFloat(t[3][3], 'f', Prec, 64),
 		") ]",
 	}, "")
+}
+
+func (t *T) Inversion() (*T, bool) {
+	//https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
+	out := &T{}
+
+	out[0][0] = 0 +
+		t[1][1]*t[2][2]*t[3][3] -
+		t[1][1]*t[2][3]*t[3][2] -
+		t[2][1]*t[1][2]*t[3][3] +
+		t[2][1]*t[1][3]*t[3][2] +
+		t[3][1]*t[1][2]*t[2][3] -
+		t[3][1]*t[1][3]*t[2][2]
+
+	out[1][0] = 0 -
+		t[1][0]*t[2][2]*t[3][3] +
+		t[1][0]*t[2][3]*t[3][2] +
+		t[2][0]*t[1][2]*t[3][3] -
+		t[2][0]*t[1][3]*t[3][2] -
+		t[3][0]*t[1][2]*t[2][3] +
+		t[3][0]*t[1][3]*t[2][2]
+
+	out[2][0] = 0 +
+		t[1][0]*t[2][1]*t[3][3] -
+		t[1][0]*t[2][3]*t[3][1] -
+		t[2][0]*t[1][1]*t[3][3] +
+		t[2][0]*t[1][3]*t[3][1] +
+		t[3][0]*t[1][1]*t[2][3] -
+		t[3][0]*t[1][3]*t[2][1]
+
+	out[3][0] = 0 -
+		t[1][0]*t[2][1]*t[3][2] +
+		t[1][0]*t[2][2]*t[3][1] +
+		t[2][0]*t[1][1]*t[3][2] -
+		t[2][0]*t[1][2]*t[3][1] -
+		t[3][0]*t[1][1]*t[2][2] +
+		t[3][0]*t[1][2]*t[2][1]
+
+	out[0][1] = 0 -
+		t[0][1]*t[2][2]*t[3][3] +
+		t[0][1]*t[2][3]*t[3][2] +
+		t[2][1]*t[0][2]*t[3][3] -
+		t[2][1]*t[0][3]*t[3][2] -
+		t[3][1]*t[0][2]*t[2][3] +
+		t[3][1]*t[0][3]*t[2][2]
+
+	out[1][1] = 0 +
+		t[0][0]*t[2][2]*t[3][3] -
+		t[0][0]*t[2][3]*t[3][2] -
+		t[2][0]*t[0][2]*t[3][3] +
+		t[2][0]*t[0][3]*t[3][2] +
+		t[3][0]*t[0][2]*t[2][3] -
+		t[3][0]*t[0][3]*t[2][2]
+
+	out[2][1] = 0 -
+		t[0][0]*t[2][1]*t[3][3] +
+		t[0][0]*t[2][3]*t[3][1] +
+		t[2][0]*t[0][1]*t[3][3] -
+		t[2][0]*t[0][3]*t[3][1] -
+		t[3][0]*t[0][1]*t[2][3] +
+		t[3][0]*t[0][3]*t[2][1]
+
+	out[3][1] = 0 +
+		t[0][0]*t[2][1]*t[3][2] -
+		t[0][0]*t[2][2]*t[3][1] -
+		t[2][0]*t[0][1]*t[3][2] +
+		t[2][0]*t[0][2]*t[3][1] +
+		t[3][0]*t[0][1]*t[2][2] -
+		t[3][0]*t[0][2]*t[2][1]
+
+	out[0][2] = 0 +
+		t[0][1]*t[1][2]*t[3][3] -
+		t[0][1]*t[1][3]*t[3][2] -
+		t[1][1]*t[0][2]*t[3][3] +
+		t[1][1]*t[0][3]*t[3][2] +
+		t[3][1]*t[0][2]*t[1][3] -
+		t[3][1]*t[0][3]*t[1][2]
+
+	out[1][2] = 0 -
+		t[0][0]*t[1][2]*t[3][3] +
+		t[0][0]*t[1][3]*t[3][2] +
+		t[1][0]*t[0][2]*t[3][3] -
+		t[1][0]*t[0][3]*t[3][2] -
+		t[3][0]*t[0][2]*t[1][3] +
+		t[3][0]*t[0][3]*t[1][2]
+
+	out[2][2] = 0 +
+		t[0][0]*t[1][1]*t[3][3] -
+		t[0][0]*t[1][3]*t[3][1] -
+		t[1][0]*t[0][1]*t[3][3] +
+		t[1][0]*t[0][3]*t[3][1] +
+		t[3][0]*t[0][1]*t[1][3] -
+		t[3][0]*t[0][3]*t[1][1]
+
+	out[3][2] = 0 -
+		t[0][0]*t[1][1]*t[3][2] +
+		t[0][0]*t[1][2]*t[3][1] +
+		t[1][0]*t[0][1]*t[3][2] -
+		t[1][0]*t[0][2]*t[3][1] -
+		t[3][0]*t[0][1]*t[1][2] +
+		t[3][0]*t[0][2]*t[1][1]
+
+	out[0][3] = 0 -
+		t[0][1]*t[1][2]*t[2][3] +
+		t[0][1]*t[1][3]*t[2][2] +
+		t[1][1]*t[0][2]*t[2][3] -
+		t[1][1]*t[0][3]*t[2][2] -
+		t[2][1]*t[0][2]*t[1][3] +
+		t[2][1]*t[0][3]*t[1][2]
+
+	out[1][3] = 0 +
+		t[0][0]*t[1][2]*t[2][3] -
+		t[0][0]*t[1][3]*t[2][2] -
+		t[1][0]*t[0][2]*t[2][3] +
+		t[1][0]*t[0][3]*t[2][2] +
+		t[2][0]*t[0][2]*t[1][3] -
+		t[2][0]*t[0][3]*t[1][2]
+
+	out[2][3] = 0 -
+		t[0][0]*t[1][1]*t[2][3] +
+		t[0][0]*t[1][3]*t[2][1] +
+		t[1][0]*t[0][1]*t[2][3] -
+		t[1][0]*t[0][3]*t[2][1] -
+		t[2][0]*t[0][1]*t[1][3] +
+		t[2][0]*t[0][3]*t[1][1]
+
+	out[3][3] = 0 +
+		t[0][0]*t[1][1]*t[2][2] -
+		t[0][0]*t[1][2]*t[2][1] -
+		t[1][0]*t[0][1]*t[2][2] +
+		t[1][0]*t[0][2]*t[2][1] +
+		t[2][0]*t[0][1]*t[1][2] -
+		t[2][0]*t[0][2]*t[1][1]
+
+	det := t[0][0]*out[0][0] + t[0][1]*out[1][0] + t[0][2]*out[2][0] + t[0][3]*out[3][0]
+
+	if det == 0 {
+		return out, false
+	}
+
+	det = 1.0 / det
+
+	for y := 0; y < 4; y++ {
+		for x := 0; x < 4; x++ {
+			out[y][x] *= det
+		}
+	}
+
+	return out, true
+}
+
+type TransformSet struct {
+	Head, Middle, Tail []*T
+}
+
+func NewTSet() *TransformSet {
+	return &TransformSet{}
+}
+
+func (ts *TransformSet) AddBoth(t [2]*T) *TransformSet {
+	ts.Head = append(ts.Head, t[0])
+	ts.Tail = append(ts.Tail, t[1])
+	return ts
+}
+
+func (ts *TransformSet) Add(t *T) *TransformSet {
+	ts.Middle = append(ts.Middle, t)
+	return ts
+}
+
+func (ts *TransformSet) Get() *T {
+	t := Identity()
+	for _, th := range ts.Head {
+		t = t.T(th)
+	}
+	for _, tm := range ts.Middle {
+		t = t.T(tm)
+	}
+	for i := len(ts.Tail) - 1; i >= 0; i-- {
+		t = t.T(ts.Tail[i])
+	}
+	return t
 }

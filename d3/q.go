@@ -35,8 +35,8 @@ func (q Q) Product(q2 Q) Q {
 	}
 }
 
-func (q Q) T() T {
-	return T{
+func (q Q) T() *T {
+	return &T{
 		{
 			1 - 2*q.C*q.C - 2*q.D*q.D,
 			2*q.B*q.C + 2*q.A*q.D,

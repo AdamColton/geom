@@ -1,49 +1,31 @@
 package d3
 
-type Curve func(t float64) Pt
-
-type Curver interface {
-	Pt(t float64) Pt
+type Point interface {
+	Pt() Pt
 }
 
-type DerivativeCurver interface {
-	Curver
-	V(t float64) V
+type Vector interface {
+	V() V
 }
 
-// Surface functions describe 2D area parametrically. They should have the
-// following properties
-// * All points on the perimeter should have either t0==0 or t1==0
-// * The surface should have no creases
-// * Pt(ta0,ta1)==Pt(tb0,tb1) --> ta0==tb0 && ta1==tb1
-type Surface func(t0, t1 float64) Pt
-
-type ParametricShape interface {
-	Pt(t0, t1 float64) Pt
+type Pt1 interface {
+	Pt1(t0 float64) Pt
 }
 
-type ParametricShapeCurve interface {
-	ParametricShape
-	Curve(t0 float64) Curve
+type V1 interface {
+	V1(t0 float64) V
 }
 
-type AreaShape interface {
-	Area() float64
-	SignedArea() float64
+type Pt2 interface {
+	Pt2(t0, t1 float64) Pt
 }
 
-type ContainerShape interface {
-	Contains(Pt) bool
+type Pt2c1 interface {
+	Pt2(t0 float64) Pt1
 }
 
-type CentroidShape interface {
-	Centroid() Pt
-}
-
-type PerimeterShape interface {
-	Perimeter() float64
-}
-
-type BoundingBoxShape interface {
-	BoundingBox() (min Pt, max Pt)
+type TGen interface {
+	T() *T
+	TInv() *T
+	Pair() [2]*T
 }

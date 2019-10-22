@@ -1,17 +1,15 @@
 package d3
 
 import (
+	"math"
 	"strconv"
 	"strings"
 )
 
-type Point interface {
-	Pt() Pt
-}
+type Pt D3
 
-type Pt struct {
-	X, Y, Z float64
-}
+func (pt Pt) Mag() float64  { return D3(pt).Mag() }
+func (pt Pt) Mag2() float64 { return D3(pt).Mag2() }
 
 func (pt Pt) Subtract(pt2 Pt) V {
 	return V{
@@ -43,6 +41,14 @@ func (pt Pt) Multiply(scale float64) Pt {
 		pt.X * scale,
 		pt.Y * scale,
 		pt.Z * scale,
+	}
+}
+
+func (pt Pt) Round() Pt {
+	return Pt{
+		X: math.Round(pt.X),
+		Y: math.Round(pt.Y),
+		Z: math.Round(pt.Z),
 	}
 }
 

@@ -6,11 +6,7 @@ import (
 	"strings"
 )
 
-type Vector interface {
-	V() V
-}
-
-type V Pt
+type V D3
 
 // Mag2 Returns the sqaure of the magnitude of the vector.
 func (v V) Mag2() float64 {
@@ -22,6 +18,22 @@ func (v V) V() V { return v }
 // Mag returns the magnitude (distance to origin) of the vector
 func (v V) Mag() float64 {
 	return math.Sqrt(v.Mag2())
+}
+
+func (v V) Add(v2 V) V {
+	return V{
+		X: v.X + v2.X,
+		Y: v.Y + v2.Y,
+		Z: v.Z + v2.Z,
+	}
+}
+
+func (v V) Subtract(v2 V) V {
+	return V{
+		X: v.X - v2.X,
+		Y: v.Y - v2.Y,
+		Z: v.Z - v2.Z,
+	}
 }
 
 // Cross returns the cross product of the two vectors
@@ -38,6 +50,11 @@ func (v V) Dot(v2 V) float64 {
 	return v.X*v2.X + v.Y*v2.Y + v.Z*v2.Z
 }
 
+// Returns the projection of v2 onto v.
+func (v V) Project(v2 V) V {
+	return v.Multiply(v.Dot(v2))
+}
+
 func (v V) Multiply(scale float64) V {
 	return V{
 		v.X * scale,
@@ -46,22 +63,25 @@ func (v V) Multiply(scale float64) V {
 	}
 }
 
-type ErrZeroVector struct{}
-
-func (ErrZeroVector) Error() string {
-	return "Vector has zero value"
-}
-
-func (v V) Normal() (V, error) {
+func (v V) Normal() V {
 	m := v.Mag()
 	if m == 0 {
-		return v, ErrZeroVector{}
+		return v
 	}
-	return V{
-		X: v.X / m,
-		Y: v.Y / m,
-		Z: v.Z / m,
-	}, nil
+	return v.Multiply(1 / m)
+}
+
+func (v V) Abs() V {
+	if v.X < 0 {
+		v.X = -v.X
+	}
+	if v.Y < 0 {
+		v.Y = -v.Y
+	}
+	if v.Z < 0 {
+		v.Z = -v.Z
+	}
+	return v
 }
 
 // String fulfills Stringer, returns the vector as "(X, Y)"
