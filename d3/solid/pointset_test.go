@@ -15,12 +15,13 @@ func TestPointSet(t *testing.T) {
 
 	idx := ps.Add(p)
 	idx2, found := ps.Has(p)
-	assert.False(t, found)
+	assert.True(t, found)
 	assert.Equal(t, idx, idx2)
+	assert.Equal(t, idx, ps.Add(p))
 
 	p.X = 123
 	idx = ps.Add(p)
 	idx2, found = ps.Has(p)
-	assert.False(t, found)
+	assert.True(t, found)
 	assert.Equal(t, idx, idx2)
 }

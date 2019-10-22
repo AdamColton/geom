@@ -23,8 +23,8 @@ func NewEdge(a, b d3.Point) Edge {
 	return Edge{pa, pb}
 }
 
-func (e Edge) Pt(t float64) d3.Pt {
-	return line.New(e[0], e[1]).Pt(t)
+func (e Edge) Pt1(t0 float64) d3.Pt {
+	return line.New(e[0], e[1]).Pt1(t0)
 }
 
 type EdgeMesh struct {
@@ -69,13 +69,15 @@ func (em *EdgeMesh) Add(pts ...d3.Point) error {
 		return ErrTwoPoints{}
 	}
 	if len(pts) == 2 {
-		em.add(NewEdge(pts[0], pts[1]))
-		return nil
+		return em.add(NewEdge(pts[0], pts[1]))
 	}
 	ln := len(pts)
 	for i, a := range pts {
 		b := pts[(i+1)%ln]
-		em.add(NewEdge(a, b))
+		err := em.add(NewEdge(a, b))
+		if err !=nil{
+			return err
+		}
 	}
 	return nil
 }
