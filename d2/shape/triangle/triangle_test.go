@@ -14,27 +14,27 @@ import (
 
 func TestTransform(t *testing.T) {
 	tt := []struct {
-		T1, T2 Triangle
+		T1, T2 *Triangle
 	}{
 		{
-			T1: Triangle{
+			T1: &Triangle{
 				{1, 1},
 				{2, 1},
 				{2, 2},
 			},
-			T2: Triangle{
+			T2: &Triangle{
 				{2, 1},
 				{3, 1},
 				{3, 2},
 			},
 		},
 		{
-			T1: Triangle{
+			T1: &Triangle{
 				{0, 0},
 				{1, 0},
 				{0, 1},
 			},
-			T2: Triangle{
+			T2: &Triangle{
 				{0, 1},
 				{0, 0},
 				{1, 0},
@@ -55,7 +55,7 @@ func TestTransform(t *testing.T) {
 }
 
 func TestPt2(t *testing.T) {
-	tri := Triangle{{0, 0}, {1, 0}, {0, 1}}
+	tri := &Triangle{{0, 0}, {1, 0}, {0, 1}}
 	assert.Equal(t, tri[0], tri.Pt2(0, 0))
 
 	i := grid.Pt{1, 1}.To(grid.Pt{10, 10})
@@ -70,7 +70,7 @@ func TestPt2(t *testing.T) {
 }
 
 func TestPt1(t *testing.T) {
-	tri := Triangle{{0, 0}, {1, 0}, {0, 1}}
+	tri := &Triangle{{0, 0}, {1, 0}, {0, 1}}
 	assert.Equal(t, tri[0], tri.Pt1(0))
 	assert.Equal(t, tri[1], tri.Pt1(1.0/3.0))
 	assert.Equal(t, tri[2], tri.Pt1(2.0/3.0))
@@ -96,7 +96,7 @@ func TestCircumCenter(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tr := Triangle{
+		tr := &Triangle{
 			tc.center.Add(d2.Polar{tc.m, tc.angles[0]}.V()),
 			tc.center.Add(d2.Polar{tc.m, tc.angles[1]}.V()),
 			tc.center.Add(d2.Polar{tc.m, tc.angles[2]}.V()),
@@ -115,11 +115,11 @@ func TestCircumCenter(t *testing.T) {
 
 func TestContains(t *testing.T) {
 	tt := map[string]struct {
-		Triangle
+		*Triangle
 		inside, outside []d2.Pt
 	}{
 		"Basic": {
-			Triangle: Triangle{{0, 0}, {1, 0}, {0, 1}},
+			Triangle: &Triangle{{0, 0}, {1, 0}, {0, 1}},
 			inside:   []d2.Pt{{.1, .1}, {.4, .4}, {.8, .1}, {.1, .8}},
 			outside:  []d2.Pt{{-1, -1}, {.6, .6}},
 		},
@@ -138,36 +138,36 @@ func TestContains(t *testing.T) {
 }
 
 func TestArea(t *testing.T) {
-	tri := Triangle{{0, 0}, {0, 1}, {1, 0}}
+	tri := &Triangle{{0, 0}, {0, 1}, {1, 0}}
 	assert.Equal(t, 0.5, tri.Area())
 	assert.Equal(t, -0.5, tri.SignedArea())
 }
 
 func TestPerimeter(t *testing.T) {
-	tri := Triangle{{0, 0}, {0, 1}, {1, 0}}
+	tri := &Triangle{{0, 0}, {0, 1}, {1, 0}}
 	assert.Equal(t, 2.0+math.Sqrt2, tri.Perimeter())
 }
 
 func TestCentroid(t *testing.T) {
-	tri := Triangle{{0, 0}, {0, 1}, {1, 0}}
+	tri := &Triangle{{0, 0}, {0, 1}, {1, 0}}
 	assert.Equal(t, d2.Pt{1.0 / 3.0, 1.0 / 3.0}, tri.Centroid())
 }
 
 func TestLimit(t *testing.T) {
-	var tri Triangle
+	tri := &Triangle{}
 	assert.Equal(t, d2.LimitBounded, tri.L(1, 0))
 	assert.Equal(t, d2.LimitUndefined, tri.L(2, 0))
 }
 
 func TestIntersections(t *testing.T) {
-	tri := Triangle{{0, 0}, {0, 1}, {1, 0}}
+	tri := &Triangle{{0, 0}, {0, 1}, {1, 0}}
 	l := line.New(d2.Pt{0, .1}, d2.Pt{1, .1})
 	expected := []float64{0, .9}
 	assert.Equal(t, expected, tri.Intersections(l))
 }
 
 func TestBoundingBox(t *testing.T) {
-	tri := Triangle{{0, 0}, {0, 1}, {1, 0}}
+	tri := &Triangle{{0, 0}, {0, 1}, {1, 0}}
 	m, M := tri.BoundingBox()
 	assert.Equal(t, d2.Pt{0, 0}, m)
 	assert.Equal(t, d2.Pt{1, 1}, M)

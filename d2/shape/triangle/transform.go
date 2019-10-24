@@ -76,7 +76,7 @@ func (c CouldNotResolveErr) Error() string {
 
 // Transform takes 2 triangles and returns a Transformation that when
 // applied to the vertexes of A produces the vertex of B.
-func Transform(a, b Triangle) (d2.T, error) {
+func Transform(a, b *Triangle) (d2.T, error) {
 	tfrm := d2.T{}
 
 	// find k, l, m
