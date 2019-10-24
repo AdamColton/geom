@@ -72,7 +72,7 @@ type Limiter interface {
 
 // VLimiter can describe the behavior of it's parametric methods that return a V
 type VLimiter interface {
-	VL(t ...int) Limit
+	VL(t, c int) Limit
 }
 
 const (
