@@ -136,3 +136,16 @@ func TestScanner(t *testing.T) {
 		})
 	}
 }
+
+func TestIterCopies(t *testing.T) {
+	i := Pt{4, 4}.Iter()
+	for j := 0; j < 5; j++ {
+		i.Next()
+	}
+
+	before := i.Pt()
+	i2 := i.Iter()
+	i2.Reset()
+	assert.Equal(t, Pt{0, 0}, i2.Pt())
+	assert.Equal(t, before, i.Pt())
+}

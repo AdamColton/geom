@@ -10,7 +10,7 @@ func TestDenseFloatGrid(t *testing.T) {
 	fn := func(pt Pt) float64 {
 		return float64(pt.X * pt.Y)
 	}
-	dfg := NewDenseFloatGrid(Origin().To(Pt{5, 5}), fn)
+	dfg := NewDenseFloatGrid(Pt{5, 5}, fn)
 
 	c := 0
 	for i, done := dfg.Start(); !done; done = dfg.Next() {
@@ -41,7 +41,7 @@ func TestSetTypes(t *testing.T) {
 		"float64": float64(10),
 	}
 
-	dfg := NewDenseFloatGrid(Origin().To(Pt{1, 1}), nil)
+	dfg := NewDenseFloatGrid(Pt{1, 1}, nil)
 	pt := Pt{0, 0}
 
 	for n, tc := range tt {
@@ -62,7 +62,7 @@ func TestSetTypes(t *testing.T) {
 }
 
 func TestDenseFloatGridRangeCheck(t *testing.T) {
-	dfg := NewDenseFloatGrid(Origin().To(Pt{1, 1}), nil)
+	dfg := NewDenseFloatGrid(Pt{1, 1}, nil)
 	pt := Pt{1, 1}
 
 	assert.Error(t, dfg.Set(pt, 1))
@@ -72,7 +72,7 @@ func TestDenseFloatGridRangeCheck(t *testing.T) {
 
 func TestNormalize(t *testing.T) {
 	dfg := &DenseFloatGrid{
-		Iterator: Origin().To(Pt{2, 2}),
+		Iterator: Pt{2, 2}.Iter(),
 		Data: []float64{
 			2, 1,
 			4, 5,
@@ -82,6 +82,20 @@ func TestNormalize(t *testing.T) {
 	expected := []float64{
 		0.25, 0,
 		0.75, 1,
+	}
+	assert.Equal(t, expected, dfg.Data)
+
+	dfg = &DenseFloatGrid{
+		Iterator: Pt{2, 2}.Iter(),
+		Data: []float64{
+			2, 2,
+			2, 2,
+		},
+	}
+	dfg.Normalize()
+	expected = []float64{
+		0, 0,
+		0, 0,
 	}
 	assert.Equal(t, expected, dfg.Data)
 }

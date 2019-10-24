@@ -1,10 +1,15 @@
 package grid
 
+// IteratorFactory is anything that can produce an iterator. An InteratorFactory
+// should return a new iterator, not one that may already be in use.
 type IteratorFactory interface {
 	Iter() Iterator
 }
 
+// BaseIterator contains the methods needed for BaseIteratorWrapper to create
+// an Iterator
 type BaseIterator interface {
+	IteratorFactory
 	Next() (done bool)
 	Pt() Pt
 	Idx() int
@@ -13,11 +18,12 @@ type BaseIterator interface {
 	PtIdx(Pt) int
 	Size() Pt
 	Contains(Pt) bool
+	Scale() Scale
 }
 
+// Iterator is used to iterate over the cells in a grid.
 type Iterator interface {
 	BaseIterator
-	IteratorFactory
 	Start() (iter Iterator, done bool)
 	Slice() []Pt
 	Chan() <-chan Pt
@@ -25,11 +31,12 @@ type Iterator interface {
 	Until(fn func(int, Pt) bool) bool
 }
 
+// BaseIteratorWrapper takes a BaseIterator and extends it's functionality.
 type BaseIteratorWrapper struct {
 	BaseIterator
 }
 
-// Start is helper tha can be as the first portion of a classic for loop
+// Start is helper that can be as the first portion of a classic for loop
 func (base BaseIteratorWrapper) Start() (Iterator, bool) {
 	return base, base.Reset()
 }
@@ -74,8 +81,4 @@ func (base BaseIteratorWrapper) Chan() <-chan Pt {
 		close(c)
 	}()
 	return c
-}
-
-func (base BaseIteratorWrapper) Iter() Iterator {
-	return base
 }
