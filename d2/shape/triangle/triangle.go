@@ -8,9 +8,10 @@ import (
 	"github.com/adamcolton/geom/d2/curve/line"
 )
 
-// Triangle
+// Triangle is a 2D triangle
 type Triangle [3]d2.Pt
 
+// Contains checks if a point is inside the triangle.
 func (t *Triangle) Contains(pt d2.Pt) bool {
 	// If a point is inside the triangle, the sign of the cross product from the
 	// point to each vertex will be the same. But a cross product of exactly 0
@@ -57,6 +58,7 @@ func (t *Triangle) Centroid() d2.Pt {
 	}
 }
 
+// String fulfills Stringer
 func (t *Triangle) String() string {
 	return strings.Join([]string{
 		"Triangle[ ",
@@ -66,14 +68,17 @@ func (t *Triangle) String() string {
 	}, "")
 }
 
+// Pt1c0 converts the triangle to line.Segments
 func (t *Triangle) Pt1c0() d2.Pt1 {
 	return line.Segments(append(t[:], t[0]))
 }
 
+// Pt1 returns a point along the perimeter is t0 is between 0 and 1.
 func (t *Triangle) Pt1(t0 float64) d2.Pt {
 	return t.Pt1c0().Pt1(t0)
 }
 
+// Pt2c1 finds the fill line for t0.
 func (t *Triangle) Pt2c1(t0 float64) d2.Pt1 {
 	m := line.New(t[0], t[1]).Pt1(0.5)
 	p0 := line.New(t[0], m).Pt1(t0)
@@ -81,10 +86,13 @@ func (t *Triangle) Pt2c1(t0 float64) d2.Pt1 {
 	return line.New(p0, p1)
 }
 
+// Pt2 finds a point inside the triange if t0 and t1 are both between 0 and 1
+// inclusive. Conforms to shape filling rules.
 func (t *Triangle) Pt2(t0, t1 float64) d2.Pt {
 	return t.Pt2c1(t0).Pt1(t1)
 }
 
+// L fulfills Limiter and describes the parametric methods on the triangle.
 func (t *Triangle) L(ts, c int) d2.Limit {
 	if (ts == 1 && c == 1) ||
 		(ts == 2 && c == 2) ||
@@ -95,6 +103,8 @@ func (t *Triangle) L(ts, c int) d2.Limit {
 	return d2.LimitUndefined
 }
 
+// Intersections find the intersections of the given line with the triangle
+// relative to the line
 func (t *Triangle) Intersections(l line.Line) []float64 {
 	var out []float64
 	prev := t[2]
@@ -110,10 +120,12 @@ func (t *Triangle) Intersections(l line.Line) []float64 {
 	return out
 }
 
+// BoundingBox returns a bounding box that contains the triangle
 func (t *Triangle) BoundingBox() (d2.Pt, d2.Pt) {
 	return d2.MinMax(t[:]...)
 }
 
+// CircumCenter find the point where the bisectors of the sides intersect.
 func (t *Triangle) CircumCenter() d2.Pt {
 	l01 := line.Bisect(t[0], t[1])
 	l02 := line.Bisect(t[0], t[2])
