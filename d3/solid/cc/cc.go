@@ -2,6 +2,7 @@ package cc
 
 import (
 	"github.com/adamcolton/geom/d3"
+	"github.com/adamcolton/geom/d3/affine"
 	"github.com/adamcolton/geom/d3/solid"
 	"github.com/adamcolton/geom/d3/solid/mesh"
 )
@@ -57,9 +58,9 @@ func (cc *ccMesh) addFaceEdge(ptIdx1, ptIdx2 uint32, e solid.IdxEdge, fIdx uint3
 func (cc *ccMesh) setFacePoints() {
 	cc.facePoints = make([]d3.Pt, len(cc.Polygons))
 	for i, f := range cc.Polygons {
-		p := &affinePoint{}
+		p := &affine.Weighted{}
 		for _, idx := range f {
-			p.add(cc.Pts[idx])
+			p.Add(cc.Pts[idx])
 		}
 		cc.facePoints[i] = p.Get()
 	}
@@ -68,11 +69,10 @@ func (cc *ccMesh) setFacePoints() {
 func (cc *ccMesh) setEdgePoints() {
 	cc.edgePoints = make([]d3.Pt, len(cc.edge2face))
 	for e, fs := range cc.edge2face {
-		p := &affinePoint{}
-		p.add(cc.Pts[e[0]])
-		p.add(cc.Pts[e[1]])
+		p := &affine.Weighted{}
+		p.Add(cc.Pts[e[0]], cc.Pts[e[1]])
 		for _, fIdx := range fs {
-			p.add(cc.facePoints[fIdx])
+			p.Add(cc.facePoints[fIdx])
 		}
 		eIdx := cc.edge2Idx[e]
 		cc.edgePoints[eIdx] = p.Get()
@@ -87,23 +87,23 @@ func (cc *ccMesh) setBaryPoints() {
 }
 
 func (cc *ccMesh) setBaryPoint(i uint32, p d3.Pt) {
-	r := &affinePoint{}
+	r := &affine.Weighted{}
 	edges := cc.pt2edge[i]
-	r.weight(p, float64(len(edges)))
+	r.Weight(p, float64(len(edges)))
 	for p2Idx := range edges {
-		r.add(cc.Pts[p2Idx])
+		r.Add(cc.Pts[p2Idx])
 	}
 
-	f := &affinePoint{}
+	f := &affine.Weighted{}
 	for _, fIdx := range cc.pt2face[i] {
 		fPt := cc.facePoints[int(fIdx)]
-		f.add(fPt)
+		f.Add(fPt)
 	}
 
-	b := &affinePoint{}
-	b.weight(f.Get(), 1/f.sum)
-	b.weight(r.Get(), 2/f.sum)
-	b.weight(p, (f.sum-3)/f.sum)
+	b := &affine.Weighted{}
+	b.Weight(f.Get(), 1/f.Sum)
+	b.Weight(r.Get(), 2/f.Sum)
+	b.Weight(p, (f.Sum-3)/f.Sum)
 	cc.baryPoints[i] = b.Get()
 }
 

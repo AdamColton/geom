@@ -7,18 +7,6 @@ import (
 	"github.com/adamcolton/geom/d3/solid/mesh"
 )
 
-type pointSet map[d3.Point]bool
-
-func (ps pointSet) add(pts ...d3.Point) pointSet {
-	if ps == nil {
-		ps = make(pointSet)
-	}
-	for _, pt := range pts {
-		ps[pt] = true
-	}
-	return ps
-}
-
 type Facet []Vertex
 
 type Vertex struct {
@@ -27,124 +15,61 @@ type Vertex struct {
 }
 
 type Builder struct {
-	facets    []Facet
-	edges     *solid.EdgeMesh
-	edge2face map[solid.Edge][]int
+	facets        []Facet
+	edges         *solid.IdxEdgeMesh
+	points        *solid.PointSet
+	innerFacetPts []d3.Pt
+	innerFacetIdx []int
+
+	edgePts []d3.Pt
+	edgeMap map[solid.IdxEdge]solid.IdxEdge
+
+	handlesMap map[solid.IdxEdge][2][2]uint32
 }
 
 func NewBuilder() *Builder {
 	return &Builder{
-		edges:     solid.NewEdgeMesh(),
-		edge2face: make(map[solid.Edge][]int),
+		edges:  solid.NewIdxEdgeMesh(),
+		points: solid.NewPointSet(),
 	}
 }
 
 func (b *Builder) Add(f Facet) error {
-	ln := len(f)
-	pts := make([]d3.Point, ln)
-	ln--
+	// TODO: check len(f) >2
+	idxs := make([]uint32, len(f))
 	for i, v := range f {
-		pts[i] = v.Pt
+		idxs[i] = b.points.Add(v.Pt)
 	}
-	err := b.edges.Add(pts...)
-	if err != nil {
-		return err
-	}
-	fIdx := len(b.facets)
+	b.edges.Add(idxs...)
 	b.facets = append(b.facets, f)
-
-	prev := f[len(f)-1].Pt
-	for _, v := range f {
-		cur := v.Pt
-		e := solid.NewEdge(prev, cur)
-		b.edge2face[e] = append(b.edge2face[e], fIdx)
-	}
 	return nil
 }
 
 func (b *Builder) Solid() bool { return b.edges.Solid() }
 
-type facetMesh struct {
-	pts    []d3.Pt
-	facets [][]int
+func (b *Builder) setInnerFacets() {
+	b.innerFacetIdx = make([]int, len(b.facets))
+	b.handlesMap = make(map[solid.IdxEdge][2][2]uint32)
+	for i, f := range b.facets {
+		b.innerFace(i, f)
+	}
 }
 
-func (f Facet) polygons() facetMesh {
-	ln := len(f)
-	fm := facetMesh{
-		pts:    make([]d3.Pt, 0, ln*4),
-		facets: make([][]int, ln*2+1),
-	}
-	internalLines := make([]line.Line, ln)
-	// populate perimeter points
-	for i, v := range f {
-		next := f[(i+1)%ln]
-		side := line.New(v.Pt, next.Pt)
-		h1, h2 := side.Pt(v.Next), side.Pt(1-next.Prev)
-		fm.pts = append(fm.pts, v.Pt, h1, h2)
-	}
-	intStart := ln * 3
-	for i := range f {
-		p1 := fm.pts[i*3+2]
-		p2 := fm.pts[(i*3+7)%intStart]
-		internalLines[(i+1)%ln] = line.New(p1, p2)
-	}
-	for i := range f {
-		l0, l1 := internalLines[i], internalLines[(i-1+ln)%ln]
-		t0, t1 := l0.Closest(l1)
-		pt := line.New(l0.Pt(t0), l1.Pt(t1)).Pt(0.5)
-		fm.pts = append(fm.pts, pt)
-	}
-	for i := range f {
-		x := i*3 - 1
-		if x < 0 {
-			x += intStart
-		}
-		fm.facets[i*2] = []int{
-			i * 3,
-			i*3 + 1,
-			intStart + i,
-			x,
-		}
-		fm.facets[i*2+1] = []int{
-			i*3 + 1,
-			i*3 + 2,
-			intStart + ((i + 1) % ln),
-			intStart + i,
-		}
-	}
-	centerFace := make([]int, ln)
-	for i := range centerFace {
-		centerFace[i] = intStart + i
-	}
-	fm.facets[ln*2] = centerFace
-	return fm
-}
-
-func (b *Builder) Render(iterations int) *mesh.Mesh {
-
-	return nil
-}
-
-// func (b *Builder) toCCMesh() *ccMesh {
-// 	pmb := newCCMesh()
-// 	for _, f := range b.facets {
-// 		fm := f.polygons()
-// 		pmb.add(fm)
-// 	}
-// 	return pmb
-// }
-
-func (f Facet) innerFace() []d3.Pt {
+func (b *Builder) innerFace(idx int, f Facet) {
 	ln := len(f)
 	hdls := make([]d3.Pt, 2*ln)
+	es := make([]solid.IdxEdge, ln)
 
 	prev := f[ln-1]
+	pIdx, _ := b.points.Has(prev.Pt)
 	for i, v := range f {
 		l := line.New(prev.Pt, v.Pt)
-		hdls[i*2] = l.Pt(prev.Next)
-		hdls[i*2+1] = l.Pt(1 - v.Prev)
+		idx, _ := b.points.Has(v.Pt)
+		es[i] = solid.NewIdxEdge(pIdx, idx)
+		hdls[i*2] = l.Pt1(prev.Next)
+		hdls[i*2+1] = l.Pt1(1 - v.Prev)
 		prev = v
+		pIdx = idx
 	}
 
 	lines := make([]line.Line, ln)
@@ -154,38 +79,100 @@ func (f Facet) innerFace() []d3.Pt {
 		lines[i] = line.New(a, b)
 	}
 
+	// map[solid.IdxEdge][2][2]uint32 -> [edge]
 	prevLn := lines[ln-1]
-	innerFace := make([]d3.Pt, ln)
+	b.innerFacetIdx[idx] = len(b.innerFacetPts)
 	for i, cur := range lines {
 		t0, t1 := prevLn.Closest(cur)
-		innerFace[i] = line.New(prevLn.Pt(t0), cur.Pt(t1)).Pt(0.5)
+		innerFacetPtIdx := uint32(len(b.innerFacetPts))
+		b.innerFacetPts = append(b.innerFacetPts, line.New(prevLn.Pt1(t0), cur.Pt1(t1)).Pt1(0.5))
+
+		for _, e := range []solid.IdxEdge{es[i], es[(i+1)%ln]} {
+			hMp := b.handlesMap[e]
+			var pts *[2]uint32
+			if b.points.Pts[e[0]] == f[i].Pt {
+				pts = &hMp[0]
+			} else {
+				pts = &hMp[1]
+			}
+			if pts[0] == 0 {
+				pts[0] = innerFacetPtIdx
+			} else {
+				pts[1] = innerFacetPtIdx
+			}
+			b.handlesMap[e] = hMp
+		}
+
 		prevLn = cur
 	}
-	return innerFace
 }
 
-// func (b *ccMesh) add(fm facetMesh) {
-// 	mp := make([]uint32, len(fm.pts))
-// 	for i, p := range fm.pts {
-// 		mp[i] = b.addPt(p)
-// 	}
-// 	for _, f := range fm.facets {
-// 		cp := make([]uint32, len(f))
-// 		for i, idx := range f {
-// 			cp[i] = mp[idx]
-// 		}
-// 		b.Polygons = append(b.Polygons, cp)
-// 	}
-// }
+func (b *Builder) setEdgePts() {
+	b.edgeMap = make(map[solid.IdxEdge]solid.IdxEdge)
+	for e, mp := range b.handlesMap {
+		el := line.New(b.points.Pts[e[0]], b.points.Pts[e[1]])
+		l1 := line.New(b.innerFacetPts[mp[0][0]], b.innerFacetPts[mp[0][1]])
+		l2 := line.New(b.innerFacetPts[mp[1][0]], b.innerFacetPts[mp[1][1]])
 
-// func (b *ccMesh) addPt(pt d3.Pt) uint32 {
-// 	if i := b.pts[pt]; i > 0 {
-// 		return i - 1
-// 	}
+		t1, _ := el.Closest(l1)
+		t2, _ := el.Closest(l2)
 
-// 	i := b.ctr
-// 	b.ctr++
-// 	b.pts[pt] = b.ctr
-// 	b.Pts = append(b.Pts, pt)
-// 	return i
-// }
+		idx := uint32(len(b.edgePts))
+		p0, p1 := el.Pt1(t1), el.Pt1(t2)
+		b.edgePts = append(b.edgePts, p0, p1)
+		b.edgeMap[e] = solid.NewIdxEdge(idx, idx+1)
+	}
+}
+
+func (b *Builder) mesh() mesh.Mesh {
+	var m mesh.Mesh
+	m.Pts = append(m.Pts, b.points.Pts...)
+	m.Pts = append(m.Pts, b.innerFacetPts...)
+	m.Pts = append(m.Pts, b.edgePts...)
+
+	lnOp := uint32(len(b.points.Pts))
+	eStart := lnOp + uint32(len(b.innerFacetPts))
+
+	var edgePts []uint32
+
+	for i, f := range b.facets {
+		ln := len(f)
+		edgePts = edgePts[:0]
+
+		start := uint32(b.innerFacetIdx[i]) + lnOp
+		inFc := make([]uint32, len(f))
+		for j, v := range f {
+			idx, _ := b.points.Has(v.Pt)
+			next := f[(j+1)%ln]
+			nIdx, _ := b.points.Has(next.Pt)
+			e := solid.NewIdxEdge(idx, nIdx)
+			ie := b.edgeMap[e]
+			closer := 0
+			if e[0] != idx {
+				closer = 1
+			}
+			edgePts = append(edgePts, ie[closer]+eStart, ie[1-closer]+eStart)
+			inFc[j] = uint32(j) + start
+		}
+		m.Polygons = append(m.Polygons, inFc)
+
+		for j, v := range f {
+			idx, _ := b.points.Has(v.Pt)
+			a, b := edgePts[j*2], uint32(j)+start
+			m.Polygons = append(m.Polygons, []uint32{
+				idx,
+				a,
+				b,
+				edgePts[(j*2-1+2*ln)%(2*ln)],
+			}, []uint32{
+				a,
+				edgePts[j*2+1],
+				uint32((j+1)%ln) + start,
+				b,
+			})
+		}
+
+	}
+
+	return m
+}
