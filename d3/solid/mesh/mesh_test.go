@@ -160,16 +160,6 @@ func TestTriangleMeshTransform(t *testing.T) {
 	geomtest.Equal(t, expected[1][:], got[1][:])
 }
 
-func TestRoundXY(t *testing.T) {
-	tm := TriangleMesh{
-		Pts: []d3.Pt{
-			{1.1, 2.2, 3.9},
-		},
-	}
-	tm.RoundXY()
-	geomtest.Equal(t, d3.Pt{1, 2, 3.9}, tm.Pts[0])
-}
-
 func TestReadObj(t *testing.T) {
 	buf := bytes.NewBufferString(`v 0 0 0
 v 0 1 0

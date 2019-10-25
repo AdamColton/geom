@@ -2,7 +2,6 @@ package mesh
 
 import (
 	"bytes"
-	"math"
 
 	"github.com/adamcolton/geom/d3"
 	"github.com/adamcolton/geom/d3/shape/polygon"
@@ -146,13 +145,4 @@ func (m TriangleMesh) Face(idx int) [][3]d3.Pt {
 		f[i][2] = m.Pts[idx[2]]
 	}
 	return f
-}
-
-// RoundXY rounds the X and Y values, useful to help with aliasing when
-// rendering.
-func (m TriangleMesh) RoundXY() {
-	for i, p := range m.Pts {
-		m.Pts[i].X = math.Round(p.X)
-		m.Pts[i].Y = math.Round(p.Y)
-	}
 }
