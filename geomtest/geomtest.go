@@ -49,6 +49,25 @@ func Equal(t *testing.T, expected, actual interface{}) bool {
 			}
 		}
 		return equal
+	case []d3.Pt:
+		b, ok := actual.([]d3.Pt)
+		if !ok {
+			t.Error("Types do not match")
+			return false
+		}
+		if len(a) != len(b) {
+			t.Error("Lengths do not match")
+			return false
+		}
+		equal := true
+		for i, a := range a {
+			v := a.Subtract(b[i]).Abs()
+			if v.X > small || v.Y > small || v.Z > small {
+				t.Errorf("At %d expected %s got %s", i, a, b[i])
+				equal = false
+			}
+		}
+		return equal
 	case d2.V:
 		b, ok := actual.(d2.V)
 		if !ok {
