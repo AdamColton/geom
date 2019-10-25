@@ -4,6 +4,7 @@ package geomtest
 import (
 	"testing"
 
+	"github.com/adamcolton/geom/barycentric"
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d3"
 )
@@ -103,6 +104,18 @@ func Equal(t *testing.T, expected, actual interface{}) bool {
 		}
 		v := a.Subtract(b).Abs()
 		if v.X > small || v.Y > small || v.Z > small {
+			t.Errorf("Expected %s got %s", a, b)
+			return false
+		}
+		return true
+	case barycentric.B:
+		b, ok := actual.(barycentric.B)
+		if !ok {
+			t.Error("Types do not match")
+			return false
+		}
+		du, dv := a.U-b.U, a.V-b.V
+		if dv > small || dv < -small || du > small || du < -small {
 			t.Errorf("Expected %s got %s", a, b)
 			return false
 		}
