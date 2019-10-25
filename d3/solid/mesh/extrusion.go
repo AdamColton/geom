@@ -7,12 +7,14 @@ import (
 	"github.com/adamcolton/geom/d3/solid"
 )
 
+// Extrusion creates a mesh by extruding the perimeter by transormations
 type Extrusion struct {
 	cur    []uint32
 	points *solid.PointSet
 	faces  [][]uint32
 }
 
+// NewExtrusion takes a face as the start of an extrusion.
 func NewExtrusion(face []d3.Pt) *Extrusion {
 	ln := len(face)
 	e := &Extrusion{
@@ -38,6 +40,7 @@ func (e *Extrusion) applyTRelativeToCenter(t *d3.T) *d3.T {
 		Get()
 }
 
+// Extrude the current perimeter via a set of transformations
 func (e *Extrusion) Extrude(ts ...*d3.T) *Extrusion {
 	ln := len(e.cur)
 	for _, t := range ts {
@@ -63,6 +66,9 @@ func (e *Extrusion) Extrude(ts ...*d3.T) *Extrusion {
 	return e
 }
 
+// EdgeExtrude performs an extrusion then subdivides each edge in to 3 segments.
+// The points from the starting permeter are lined to the subdivision points.
+// This allows the extrusion to increase the number of facets.
 func (e *Extrusion) EdgeExtrude(t *d3.T) *Extrusion {
 	lnCur := len(e.cur)
 	lnNxt := 3 * lnCur
@@ -99,6 +105,7 @@ func (e *Extrusion) EdgeExtrude(t *d3.T) *Extrusion {
 	return e
 }
 
+// EdgeMerge is the opposite of EdgeExtrude, merging 3 points into one.
 func (e *Extrusion) EdgeMerge(t *d3.T) *Extrusion {
 	lnCur := len(e.cur)
 	if lnCur%3 != 0 {
@@ -129,6 +136,7 @@ func (e *Extrusion) EdgeMerge(t *d3.T) *Extrusion {
 	return e
 }
 
+// Close the mesh turning the current perimeter into a face.
 func (e *Extrusion) Close() Mesh {
 	e.faces = append(e.faces, e.cur)
 	return Mesh{

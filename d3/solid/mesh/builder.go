@@ -5,6 +5,8 @@ import (
 	"github.com/adamcolton/geom/d3/solid"
 )
 
+// Builder is inteded to help build meshes. Extrusions are more useful and this
+// will probably be deprecated.
 type Builder struct {
 	ctr   uint32
 	pts   map[d3.Pt]uint32
@@ -12,6 +14,7 @@ type Builder struct {
 	Mesh
 }
 
+// NewBuilder creats a builder
 func NewBuilder() *Builder {
 	return &Builder{
 		pts:   make(map[d3.Pt]uint32),
@@ -19,6 +22,7 @@ func NewBuilder() *Builder {
 	}
 }
 
+// Add a facet
 func (b *Builder) Add(p []d3.Pt) error {
 	idxs := make([]uint32, len(p))
 	for i, pt := range p {
@@ -44,10 +48,12 @@ func (b *Builder) addPt(pt d3.Pt) uint32 {
 	return i
 }
 
+// Solid is true if the mesh is solid
 func (b *Builder) Solid() bool {
 	return b.edges.Solid()
 }
 
+// Extrude creates a mesh by extruding a face.
 func Extrude(face []d3.Pt, v d3.V) Mesh {
 	ln := len(face)
 	m := Mesh{

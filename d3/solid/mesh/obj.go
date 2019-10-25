@@ -2,20 +2,24 @@ package mesh
 
 import (
 	"bufio"
-	"github.com/adamcolton/geom/d3"
 	"io"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/adamcolton/geom/d3"
 )
 
 // https://en.wikipedia.org/wiki/Wavefront_.obj_file
 
-var hdr_v = []byte("v ")
-var hdr_f = []byte("f")
-var spc = []byte(" ")
-var nl = []byte("\n")
+var (
+	hdr_v = []byte("v ")
+	hdr_f = []byte("f")
+	spc   = []byte(" ")
+	nl    = []byte("\n")
+)
 
+// Prec sets the precision when writing .obj data.
 var Prec = 10
 
 type ww struct {
@@ -37,6 +41,7 @@ func (w ww) writeStr(str string) {
 	_, w.err = w.w.Write([]byte(str))
 }
 
+// WriteObj writes the mesh in .obj format to the writer
 func (m *Mesh) WriteObj(writer io.Writer) error {
 	w := ww{w: writer}
 	for _, pt := range m.Pts {
@@ -64,6 +69,7 @@ func (m *Mesh) WriteObj(writer io.Writer) error {
 var vRe = regexp.MustCompile(`v (\d+(?:\.\d+)? ?) (\d+(?:\.\d+)?) (\d+(?:\.\d+)?)`)
 var fRe = regexp.MustCompile(`f (\d+ ?)+`)
 
+// ReadObj tries to read the .obj format into a mesh.
 func ReadObj(reader io.Reader) (*Mesh, error) {
 	mesh := &Mesh{}
 	r := bufio.NewReader(reader)
