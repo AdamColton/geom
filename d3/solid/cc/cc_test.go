@@ -1,13 +1,14 @@
 package cc
 
 import (
+	"testing"
+
 	"github.com/adamcolton/geom/d3"
 	"github.com/adamcolton/geom/d3/solid/mesh"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
-func TestStuff(t *testing.T) {
+func TestMethods(t *testing.T) {
 	m := mesh.Extrude([]d3.Pt{
 		{0, 0, 0},
 		{1, 0, 0},
@@ -33,4 +34,16 @@ func TestStuff(t *testing.T) {
 
 	m2 := cc.subdivide()
 	assert.True(t, len(m2.Pts) > 0)
+}
+
+func TestSubdivide(t *testing.T) {
+	m := mesh.Extrude([]d3.Pt{
+		{0, 0, 0},
+		{1, 0, 0},
+		{1, 1, 0},
+		{0, 1, 0},
+	}, d3.V{0, 0, 1})
+
+	out := Subdivide(m, 2)
+	assert.Len(t, out.Polygons, 96)
 }

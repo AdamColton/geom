@@ -145,6 +145,7 @@ func (cc *ccMesh) subdivideFace(i uint32, f []uint32, m *mesh.Mesh) {
 
 }
 
+// Subdivide a mesh n times using the Catmull-Clark algorithm
 func Subdivide(m mesh.Mesh, n int) mesh.Mesh {
 	if n <= 0 {
 		return m
