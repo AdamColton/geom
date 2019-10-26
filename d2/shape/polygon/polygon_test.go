@@ -58,11 +58,14 @@ func TestContains(t *testing.T) {
 
 	for n, tc := range tt {
 		t.Run(n, func(t *testing.T) {
+			ll := NewLL(tc.Polygon)
 			for _, p := range tc.does {
 				assert.True(t, tc.Contains(p))
+				assert.True(t, ll.Contains(p))
 			}
 			for _, p := range tc.doesnt {
 				assert.False(t, tc.Contains(p))
+				assert.False(t, ll.Contains(p))
 			}
 		})
 	}
@@ -219,32 +222,45 @@ func TestFindTriangles(t *testing.T) {
 			Polygon: Polygon{{0, 0}, {2, 1}, {0, 2}, {1, 1}},
 			expected: [][3]uint32{
 				{1, 2, 3},
-				{0, 1, 3},
+				{3, 0, 1},
 			},
 		},
 		"heart": {
 			Polygon: Polygon{
-				{0.0000, 0.0000},
-				{1.4142, 0.0000},
-				{2.1213, 0.7071},
-				{2.1213, 2.1213},
-				{2.1213, 2.1213},
-				{2.1213, 2.1213},
-				{0.7071, 2.1213},
-				{0.0000, 1.4142},
+				{0, 0},
+				{1, 1},
+				{2, 1},
+				{3, 0},
+				{0, -3},
+				{-3, 0},
+				{-2, 1},
+				{-1, 1},
 			},
-			expected: [][3]uint32{{0, 1, 2}, {0, 2, 3}, {5, 6, 7}, {4, 5, 7}, {3, 4, 7}, {0, 3, 7}},
+			expected: [][3]uint32{
+				{1, 2, 3},
+				{4, 5, 6},
+				{6, 7, 0},
+				{0, 1, 3},
+				{4, 6, 0},
+				{0, 3, 4},
+			},
 		},
 		"arrow": {
 			Polygon: Polygon{
 				{0, 2},
-				{1.5, 1.5},
-				{1.5, -1.5},
-				{-1, 0},
-				{0, -2},
-				{-1, 0},
-				{0, 2},
-				{-1, 0},
+				{1.5, 3.5},
+				{3, 2},
+				{2, 2},
+				{2, 0},
+				{1, 0},
+				{1, 2},
+			},
+			expected: [][3]uint32{
+				{1, 2, 3},
+				{3, 4, 5},
+				{6, 0, 1},
+				{1, 3, 5},
+				{5, 6, 1},
 			},
 		},
 	}
@@ -278,5 +294,88 @@ func TestPolygonPt1(t *testing.T) {
 	geomtest.Equal(t, p.Pt1(0.25), p.Pt1(-0.75))
 	geomtest.Equal(t, p.Pt1(0.25), p.Pt1(-1.75))
 	geomtest.Equal(t, p.Pt1(0.25), p.Pt1(10.25))
+}
 
+func TestIntersections(t *testing.T) {
+	tt := map[string]struct {
+		Polygon
+		line.Line
+		expected []float64
+	}{
+		"basic": {
+			Polygon:  Polygon{{0, 0}, {1, 0}, {1, 1}, {0, 1}},
+			Line:     line.New(d2.Pt{-1, 0.5}, d2.Pt{3, 0.5}),
+			expected: []float64{0.25, 0.5},
+		},
+		"no-intersects": {
+			Polygon:  Polygon{{0, 0}, {1, 0}, {1, 1}, {0, 1}},
+			Line:     line.New(d2.Pt{-1, 1.5}, d2.Pt{3, 1.5}),
+			expected: nil,
+		},
+		"corners": {
+			Polygon:  Polygon{{0, 0}, {1, 0}, {1, 1}, {0, 1}},
+			Line:     line.New(d2.Pt{-1, -1}, d2.Pt{3, 3}),
+			expected: []float64{0.25, 0.5},
+		},
+	}
+
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			is := tc.Polygon.Intersections(tc.Line)
+			assert.Equal(t, tc.expected, is)
+			if len(is) > 0 {
+				assert.True(t, NewLL(tc.Polygon).DoesIntersect(tc.Line))
+			} else {
+				assert.False(t, NewLL(tc.Polygon).DoesIntersect(tc.Line))
+			}
+		})
+	}
+}
+
+func TestCollision(t *testing.T) {
+	tt := map[string]struct {
+		Polygon
+		line.Line
+		explineT float64
+		expIdx   int
+		expSideT float64
+	}{
+		"basic": {
+			Polygon:  Polygon{{0, 0}, {1, 0}, {1, 1}, {0, 1}},
+			Line:     line.New(d2.Pt{-1, 0.5}, d2.Pt{3, 0.5}),
+			explineT: 0.25,
+			expIdx:   3,
+			expSideT: 0.5,
+		},
+		"basic-line-reverse": {
+			Polygon:  Polygon{{0, 0}, {1, 0}, {1, 1}, {0, 1}},
+			Line:     line.New(d2.Pt{3, 0.5}, d2.Pt{-1, 0.5}),
+			explineT: 0.5,
+			expIdx:   1,
+			expSideT: 0.5,
+		},
+		"no-intersects": {
+			Polygon:  Polygon{{0, 0}, {1, 0}, {1, 1}, {0, 1}},
+			Line:     line.New(d2.Pt{-1, 1.5}, d2.Pt{3, 1.5}),
+			explineT: 0.0,
+			expIdx:   -1,
+			expSideT: 0.0,
+		},
+		"corners": {
+			Polygon:  Polygon{{0, 0}, {1, 0}, {1, 1}, {0, 1}},
+			Line:     line.New(d2.Pt{-1, -1}, d2.Pt{3, 3}),
+			explineT: 0.25,
+			expIdx:   0,
+			expSideT: 0,
+		},
+	}
+
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			lt, idx, side := tc.Polygon.Collision(tc.Line)
+			assert.Equal(t, tc.explineT, lt)
+			assert.Equal(t, tc.expIdx, idx)
+			assert.Equal(t, tc.expSideT, side)
+		})
+	}
 }

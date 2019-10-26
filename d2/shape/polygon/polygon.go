@@ -147,54 +147,55 @@ func (p Polygon) Convex() bool {
 	return ccw == 0 || cw == 0
 }
 
+const small = 1e-5
+
 // FindTriangles returns the index sets of the polygon broken up into triangles.
 // Given a unit square it would return [[0,1,2], [0,2,3]] which means that
 // the square can be broken up in to 2 triangles formed by the points at those
 // indexes.
 func (p Polygon) FindTriangles() [][3]uint32 {
-	// This is essentially ear clipping, there are better algorithms
+	// This is the ear clipping, there are better algorithms
 	out := make([][3]uint32, 0, len(p)-2)
 
-	idxMp := make([]uint32, len(p))
-	for i := range p {
-		idxMp[i] = uint32(i)
-	}
+	ll := NewLL(p)
+	left := len(p)
 
-	for {
-		if len(idxMp) == 3 {
-			out = append(out, [3]uint32{idxMp[0], idxMp[1], idxMp[2]})
+	n0 := &(ll.Nodes[0])
+	n1 := &(ll.Nodes[1])
+	n2 := &(ll.Nodes[2])
+
+	cur := make(Polygon, len(p))
+	copy(cur, p)
+
+	ctr := 0
+	for ctr < len(p) {
+		ctr++
+		n0, n1, n2 = n1, n2, &(ll.Nodes[n2.NextIdx])
+		ll.Start = n0.NextIdx
+		if left == 3 {
+			out = append(out, [3]uint32{n0.PIdx, n1.PIdx, n2.PIdx})
 			break
 		}
 
-		cur := make(Polygon, len(idxMp))
-		for i, idx := range idxMp {
-			cur[i] = p[idx]
+		ln := line.New(ll.Pts[n0.PIdx], ll.Pts[n2.PIdx])
+		if !ll.Contains(ln.Pt1(0.5)) || ll.DoesIntersect(ln) {
+			continue
 		}
-
-		for i0 := 0; true; i0++ {
-			i1 := (i0 + 1) % len(idxMp)
-			i2 := (i0 + 2) % len(idxMp)
-			ln := line.New(cur[i0], cur[i2])
-			if !cur.Contains(ln.Pt1(0.5)) {
-				continue
-			}
-			if lt, idx, _ := p.Intersects(ln); idx != -1 && lt > 1e-3 && lt < 1-1e-3 {
-				continue
-			}
-			out = append(out, [3]uint32{idxMp[i0], idxMp[i1], idxMp[i2]})
-			idxMp = append(idxMp[0:i1], idxMp[i1+1:]...)
-			break
-		}
+		ctr = 0
+		left--
+		out = append(out, [3]uint32{n0.PIdx, n1.PIdx, n2.PIdx})
+		n0.NextIdx = n1.NextIdx
+		n1, n2 = n2, &(ll.Nodes[n2.NextIdx])
 	}
 	return out
 }
 
-// Intersects returns the first side that is intersected by the given
+// Collision returns the first side that is intersected by the given
 // lineSegment, returning the parametic t for the lineSegment, the index of the
 // side and the parametric t of the side
-func (p Polygon) Intersects(lineSegment line.Line) (lineT float64, idx int, sideT float64) {
+func (p Polygon) Collision(lineSegment line.Line) (lineT float64, idx int, sideT float64) {
 	idx = -1
-	ln := len(p) - 1
+	ln := len(p)
 	for i, f := range p {
 		side := line.New(f, p[(i+1)%ln])
 		t0, ok := side.LineIntersection(lineSegment)
@@ -210,6 +211,22 @@ func (p Polygon) Intersects(lineSegment line.Line) (lineT float64, idx int, side
 		}
 	}
 	return
+}
+
+// Intersections fulfills line.Intersections
+func (p Polygon) Intersections(ln line.Line) []float64 {
+	var out []float64
+	prev := p[len(p)-1]
+	for _, cur := range p {
+		side := line.New(prev, cur)
+		t, ok := ln.LineIntersection(side)
+		if ok && t >= 0 && t < 1 {
+			t, _ = side.LineIntersection(ln)
+			out = append(out, t)
+		}
+		prev = cur
+	}
+	return out
 }
 
 // Sides converts the perimeter of the polygon to a slice of lines.
