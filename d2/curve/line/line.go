@@ -146,3 +146,8 @@ func (l Line) T(t *d2.T) Line {
 func (l Line) Centroid() d2.Pt {
 	return l.Pt1(0.5)
 }
+
+// Cross product of the vector of the line with the vector from T0 to pt
+func (l Line) Cross(pt d2.Pt) float64 {
+	return l.D.Cross(pt.Subtract(l.T0))
+}

@@ -39,19 +39,33 @@ func TestPolygonCentroid(t *testing.T) {
 	assert.Equal(t, d2.Pt{0.5, 0.5}, square.Centroid())
 }
 
-func TestPolygonContains(t *testing.T) {
-	p := Polygon{
-		d2.Pt{0, 0},
-		d2.Pt{2, 2},
-		d2.Pt{1, 0},
-		d2.Pt{2, -2},
+func TestContains(t *testing.T) {
+	tt := map[string]struct {
+		Polygon
+		does, doesnt []d2.Pt
+	}{
+		"arrowhead": {
+			Polygon: Polygon{
+				d2.Pt{0, 0},
+				d2.Pt{2, 2},
+				d2.Pt{1, 0},
+				d2.Pt{2, -2},
+			},
+			does:   []d2.Pt{{0.5, 0}, {1, 1}},
+			doesnt: []d2.Pt{{0.5, 1}, {2, 0}, {1.5, 0}},
+		},
 	}
 
-	assert.True(t, p.Contains(d2.Pt{0.5, 0}))
-	assert.False(t, p.Contains(d2.Pt{0.5, 1}))
-	assert.True(t, p.Contains(d2.Pt{1, 1}))
-	assert.False(t, p.Contains(d2.Pt{2, 0}))
-	assert.False(t, p.Contains(d2.Pt{1.5, 0}))
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			for _, p := range tc.does {
+				assert.True(t, tc.Contains(p))
+			}
+			for _, p := range tc.doesnt {
+				assert.False(t, tc.Contains(p))
+			}
+		})
+	}
 }
 
 func TestPolygonSurface(t *testing.T) {
@@ -197,25 +211,49 @@ func TestReverse(t *testing.T) {
 }
 
 func TestFindTriangles(t *testing.T) {
-	p := Polygon{{0, 0}, {2, 1}, {0, 2}, {1, 1}}
-	expected := [][3]uint32{
-		{1, 2, 3},
-		{0, 1, 3},
+	tt := map[string]struct {
+		Polygon
+		expected [][3]uint32
+	}{
+		"simple": {
+			Polygon: Polygon{{0, 0}, {2, 1}, {0, 2}, {1, 1}},
+			expected: [][3]uint32{
+				{1, 2, 3},
+				{0, 1, 3},
+			},
+		},
+		"heart": {
+			Polygon: Polygon{
+				{0.0000, 0.0000},
+				{1.4142, 0.0000},
+				{2.1213, 0.7071},
+				{2.1213, 2.1213},
+				{2.1213, 2.1213},
+				{2.1213, 2.1213},
+				{0.7071, 2.1213},
+				{0.0000, 1.4142},
+			},
+			expected: [][3]uint32{{0, 1, 2}, {0, 2, 3}, {5, 6, 7}, {4, 5, 7}, {3, 4, 7}, {0, 3, 7}},
+		},
+		"arrow": {
+			Polygon: Polygon{
+				{0, 2},
+				{1.5, 1.5},
+				{1.5, -1.5},
+				{-1, 0},
+				{0, -2},
+				{-1, 0},
+				{0, 2},
+				{-1, 0},
+			},
+		},
 	}
-	assert.Equal(t, expected, p.FindTriangles())
 
-	p = Polygon{
-		{0.0000, 0.0000},
-		{1.4142, 0.0000},
-		{2.1213, 0.7071},
-		{2.1213, 2.1213},
-		{2.1213, 2.1213},
-		{2.1213, 2.1213},
-		{0.7071, 2.1213},
-		{0.0000, 1.4142},
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			assert.Equal(t, tc.expected, tc.FindTriangles())
+		})
 	}
-	expected = [][3]uint32{{0, 1, 2}, {0, 2, 3}, {5, 6, 7}, {4, 5, 7}, {3, 4, 7}, {0, 3, 7}}
-	assert.Equal(t, expected, p.FindTriangles())
 }
 
 func TestPolygonPt1(t *testing.T) {

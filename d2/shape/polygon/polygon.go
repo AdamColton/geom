@@ -81,22 +81,21 @@ func (p Polygon) Centroid() d2.Pt {
 
 // Contains returns true of the point f is inside of the polygon
 func (p Polygon) Contains(pt d2.Pt) bool {
-	// https://en.wikipedia.org/wiki/Point_in_polygon#Ray_casting_algorithm
-	ray := line.Line{pt, d2.V{1, 0}}
-	contains := false
+	// http://geomalgorithms.com/a03-_inclusion.html
+	wn := 0
 	prev := p[len(p)-1]
 	for _, cur := range p {
-		side := line.New(prev, cur)
-		prev = cur
-		ri, ok := side.LineIntersection(ray)
-		if ok && ri > 0 {
-			si, _ := ray.LineIntersection(side)
-			if si >= 0 && si < 1 {
-				contains = !contains
+		c := line.New(prev, cur).Cross(pt)
+		if prev.Y <= pt.Y {
+			if c > 0 && cur.Y > pt.Y {
+				wn++
 			}
+		} else if c < 0 && cur.Y <= pt.Y {
+			wn--
 		}
+		prev = cur
 	}
-	return contains
+	return wn != 0
 }
 
 // Perimeter returngs the total length of the perimeter
@@ -154,7 +153,7 @@ func (p Polygon) Convex() bool {
 // indexes.
 func (p Polygon) FindTriangles() [][3]uint32 {
 	// This is essentially ear clipping, there are better algorithms
-	var out [][3]uint32
+	out := make([][3]uint32, 0, len(p)-2)
 
 	idxMp := make([]uint32, len(p))
 	for i := range p {
@@ -187,7 +186,6 @@ func (p Polygon) FindTriangles() [][3]uint32 {
 			break
 		}
 	}
-
 	return out
 }
 
