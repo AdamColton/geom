@@ -64,3 +64,7 @@ func (t *Triangle) Validate() error {
 	}
 	return nil
 }
+
+func (t *Triangle) Normal() d3.V {
+	return t[1].Subtract(t[0]).Cross(t[2].Subtract(t[0]))
+}
