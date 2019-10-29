@@ -43,6 +43,14 @@ func (p Plane) Convert(pt d2.Pt) d3.Pt {
 	return p.Origin.Add(p.X.Multiply(pt.X)).Add(p.Y.Multiply(pt.Y))
 }
 
+func (p Plane) ConvertMany(pts []d2.Pt) []d3.Pt {
+	out := make([]d3.Pt, len(pts))
+	for i, pt := range pts {
+		out[i] = p.Origin.Add(p.X.Multiply(pt.X)).Add(p.Y.Multiply(pt.Y))
+	}
+	return out
+}
+
 // String fulfills Stringer on Plane
 func (p Plane) String() string {
 	return strings.Join([]string{
