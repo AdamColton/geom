@@ -148,3 +148,23 @@ func TestTransform(t *testing.T) {
 func TestCentroid(t *testing.T) {
 	geomtest.Equal(t, d2.Pt{1, 1}, New(d2.Pt{0, 0}, d2.Pt{2, 2}).Centroid())
 }
+
+func TestCross(t *testing.T) {
+	tt := map[string]struct {
+		Line
+		d2.Pt
+		expected float64
+	}{
+		"basic": {
+			Line:     New(d2.Pt{0, 0}, d2.Pt{1, 0}),
+			Pt:       d2.Pt{1, 1},
+			expected: 1,
+		},
+	}
+
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			assert.Equal(t, tc.expected, tc.Line.Cross(tc.Pt))
+		})
+	}
+}
