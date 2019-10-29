@@ -12,6 +12,7 @@ import (
 	"github.com/adamcolton/geom/d3"
 	"github.com/adamcolton/geom/d3/render"
 	"github.com/adamcolton/geom/d3/render/ffmpeg"
+	triangle3 "github.com/adamcolton/geom/d3/shape/triangle"
 	"github.com/adamcolton/geom/d3/solid/mesh"
 	"github.com/adamcolton/geom/examples/ggctx"
 )
@@ -20,30 +21,7 @@ func main() {
 	scale := 512.0
 	c := setupCamera(scale)
 	m := getMesh()
-	es, _ := m.Edges()
-
-	colors := []*[3]float64{
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-		{1, 1, 0},
-	}
+	//es, _ := m.Edges()
 
 	size := int(scale * 2)
 	stars := defineStarField()
@@ -69,17 +47,17 @@ func main() {
 			if s.Z+0.2 > c.Z {
 				continue
 			}
-			t := d3.Rotation{
+			space := d3.Rotation{
 				s.Rad + s.speed*angle.Rad(frame),
 				d3.XZ,
 			}.
 				T().
-				T(d3.Translate(s.V).
-					T()).
-				T(ct)
-			mt := m.T(t)
-			buf.Add(mt, colors)
-			buf.Edge(es, mt, &([3]float64{0, 0, 0}))
+				T(
+					d3.Translate(s.V).T(),
+				)
+			rm := render.NewRenderMesh(&m, space, ct, starShader)
+			buf.Add(rm)
+			//buf.Edge(es, mt, &([3]float64{0, 0, 0}))
 		}
 		ctx := ggctx.New(size, size)
 		buf.Draw(ctx)
@@ -150,4 +128,21 @@ func defineStarField() []star {
 		}
 	}
 	return out
+}
+
+func starShader(ctx *render.Context) *[3]float64 {
+	if ctx.B.U < 0.03 || ctx.B.V < 0.03 || ctx.B.U+ctx.B.V > 0.97 {
+		return &([3]float64{0, 0, 0})
+	}
+	tIdxs := ctx.Original.Polygons[ctx.PolygonIdx][ctx.TriangleIdx]
+	n := (&triangle3.Triangle{
+		ctx.Space[tIdxs[0]],
+		ctx.Space[tIdxs[1]],
+		ctx.Space[tIdxs[2]],
+	}).Normal().Normal()
+	r := n.X*0.25 + 0.75
+	g := n.Y*0.25 + 0.75
+
+	return &([3]float64{r, g, 0})
+
 }

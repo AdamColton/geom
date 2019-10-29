@@ -123,16 +123,10 @@ func (m TriangleMesh) Edges() (original []solid.IdxEdge, subFacet []solid.IdxEdg
 
 // T applies a transformation to all the points in the mesh.
 func (m TriangleMesh) T(t *d3.T) TriangleMesh {
-	m2 := TriangleMesh{
-		Pts:      make([]d3.Pt, len(m.Pts)),
+	return TriangleMesh{
+		Pts:      t.PtsScl(m.Pts),
 		Polygons: m.Polygons,
 	}
-
-	for i, p := range m.Pts {
-		m2.Pts[i] = t.PtScl(p)
-	}
-
-	return m2
 }
 
 // Face converts a face from index values to Pt values
