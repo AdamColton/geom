@@ -21,8 +21,6 @@ func TestCameraBasic(t *testing.T) {
 		Near:  1,
 		Far:   10,
 		Angle: math.Pi / 2.0,
-		Pre:   d3.Identity(),
-		Post:  d3.Identity(),
 	}
 
 	ca, cb := c.ab()
@@ -75,8 +73,6 @@ func TestCameraMesh(t *testing.T) {
 		Near:  2,
 		Far:   10,
 		Angle: math.Pi / 2.0,
-		Pre:   d3.Identity(),
-		Post:  d3.Q{1, 0, 0, 0}.Normalize().T(),
 	}
 
 	expected := make([]d3.Pt, 0, 8)
@@ -118,8 +114,6 @@ func TestCamera(t *testing.T) {
 		Near:  0.1,
 		Far:   10,
 		Angle: 3.1415 / 2.0,
-		Pre:   d3.Identity(),
-		Post:  d3.Scale(d3.V{180, 180, 1}).T().T(d3.Translate(d3.V{250, 250, 0}).T()),
 	}
 
 	s := d3.Pt{0, 0, 0}
@@ -151,7 +145,7 @@ func TestCamera(t *testing.T) {
 			{0, 0, 0, 1},
 		}
 		fmt.Println(r.Pt(ref))
-		c.Pre = r.T(d3.Translate(d3.V{0, 0, -3}).T())
+		//c.Pre = r.T(d3.Translate(d3.V{0, 0, -3}).T())
 		m := m.T(c.T())
 		ctx := gg.NewContext(500, 500)
 		ctx.SetRGB(0, 0, 0)

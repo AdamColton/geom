@@ -13,7 +13,6 @@ type Camera struct {
 	d3.Q
 	Near, Far float64
 	Angle     angle.Rad
-	Pre, Post *d3.T
 }
 
 func (c Camera) T() *d3.T {
@@ -24,8 +23,7 @@ func (c Camera) T() *d3.T {
 
 	perspective := c.Perspective()
 
-	t := c.Pre.T(translate.T()).T(rot).T(perspective).T(c.Post)
-	return t
+	return translate.T().T(rot).T(perspective)
 }
 
 func (c Camera) Perspective() *d3.T {

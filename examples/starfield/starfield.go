@@ -59,9 +59,11 @@ func main() {
 		panic(err)
 	}
 
+	post := d3.Translate(d3.V{1, 1, 0}).T().T(d3.Scale(d3.V{scale, scale, -1}).T())
+
 	for frame := 0; frame < 1000; frame++ {
 		c.Pt.Z = float64(frame) * (-150.0 / 1000.0)
-		ct := c.T()
+		ct := c.T().T(post)
 		buf := render.New(size, size)
 		for _, s := range stars {
 			if s.Z+0.2 > c.Z {
@@ -121,8 +123,6 @@ func setupCamera(scale float64) render.Camera {
 		Near:  0.1,
 		Far:   200,
 		Angle: 3.1415 / 2.0,
-		Pre:   d3.Identity(),
-		Post:  d3.Translate(d3.V{1, 1, 0}).T().T(d3.Scale(d3.V{scale, scale, -1}).T()),
 	}
 }
 

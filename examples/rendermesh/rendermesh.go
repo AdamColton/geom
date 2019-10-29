@@ -38,11 +38,13 @@ func main() {
 		panic(err)
 	}
 
+	post := d3.Translate(d3.V{1, 1, 0}).T().T(d3.Scale(d3.V{scale, scale, -1}).T())
+
 	step := angle.Rot(0.05)
 	for rot := angle.Rot(0); rot < angle.Rot(1); rot += step {
 		r := d3.Rotation{rot, d3.XY}.T()
-		c.Pre = r.T(d3.Translate(d3.V{0, 0, -5}).T())
-		m1 := m.T(c.T())
+		t := r.T(d3.Translate(d3.V{0, 0, -5}).T()).T(c.T()).T(post)
+		m1 := m.T(t)
 
 		ctx := ggctx.New(size, size)
 		render.Wireframe(ctx, m1, colors[0], colors[8])
@@ -50,8 +52,8 @@ func main() {
 	}
 	for rot := angle.Rot(0); rot < angle.Rot(1); rot += step {
 		r := d3.Rotation{rot, d3.XY}.T()
-		c.Pre = r.T(d3.Translate(d3.V{0, 0, -5}).T())
-		m1 := m.T(c.T())
+		t := r.T(d3.Translate(d3.V{0, 0, -5}).T()).T(c.T()).T(post)
+		m1 := m.T(t)
 		render.RoundXY(m1)
 
 		ctx := ggctx.New(size, size)
@@ -60,8 +62,8 @@ func main() {
 	}
 	for rot := angle.Rot(0); rot < angle.Rot(1); rot += step {
 		r := d3.Rotation{rot, d3.XZ}.T()
-		c.Pre = r.T(d3.Translate(d3.V{0, 0, -5}).T())
-		m1 := m.T(c.T())
+		t := r.T(d3.Translate(d3.V{0, 0, -5}).T()).T(c.T()).T(post)
+		m1 := m.T(t)
 		render.RoundXY(m1)
 
 		ctx := ggctx.New(size, size)
@@ -70,8 +72,8 @@ func main() {
 	}
 	for rot := angle.Rot(0); rot < angle.Rot(1); rot += step {
 		r := d3.Rotation{rot, d3.XZ}.T()
-		c.Pre = r.T(d3.Translate(d3.V{0, 0, -5}).T())
-		m1 := m.T(c.T())
+		t := r.T(d3.Translate(d3.V{0, 0, -5}).T()).T(c.T()).T(post)
+		m1 := m.T(t)
 		render.RoundXY(m1)
 
 		ctx := ggctx.New(size, size)
@@ -112,7 +114,5 @@ func setupCamera(scale float64) render.Camera {
 		Near:  0.1,
 		Far:   10,
 		Angle: 3.1415 / 2.0,
-		Pre:   d3.Identity(),
-		Post:  d3.Translate(d3.V{1, 1, 0}).T().T(d3.Scale(d3.V{scale, scale, -1}).T()),
 	}
 }
