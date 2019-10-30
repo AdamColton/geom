@@ -72,6 +72,14 @@ func (t *T) PtScl(pt Pt) Pt {
 	}
 }
 
+func (t *T) PtsScl(pts []Pt) []Pt {
+	out := make([]Pt, len(pts))
+	for i, pt := range pts {
+		out[i] = t.PtScl(pt)
+	}
+	return out
+}
+
 func (t *T) VF(v V) (V, float64) {
 	return V{
 		v.X*t[0][0] + v.Y*t[0][1] + v.Z*t[0][2] + t[0][3],

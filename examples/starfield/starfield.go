@@ -1,0 +1,162 @@
+package main
+
+import (
+	"fmt"
+	"image/color"
+	"math/rand"
+	"os"
+	"runtime/pprof"
+
+	"github.com/adamcolton/geom/d3/render/zbuf"
+	"github.com/adamcolton/geom/d3/shape/plane"
+
+	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/d2"
+	d2poly "github.com/adamcolton/geom/d2/shape/polygon"
+	"github.com/adamcolton/geom/d3"
+	triangle3 "github.com/adamcolton/geom/d3/shape/triangle"
+	"github.com/adamcolton/geom/d3/solid/mesh"
+)
+
+const (
+	frames     = 100
+	stars      = 200
+	width      = 500
+	imageScale = 1.25
+)
+
+var cr = string([]byte{13})
+
+func main() {
+	f, err := os.Create("profile.out")
+	if err != nil {
+		panic(err)
+	}
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+
+	m := getMesh()
+	w := width
+	if w%2 == 1 {
+		w++
+	}
+	h := (w * 9) / 16
+	if h%2 == 1 {
+		h++
+	}
+
+	scene := &zbuf.Scene{
+		W:    w,
+		H:    h,
+		A:    angle.Deg(45),
+		Near: 0.1, Far: 200,
+		Framerate:          15,
+		Name:               "stars",
+		ConstantRateFactor: 25,
+		Background:         color.RGBA{255, 255, 255, 255},
+		ImageScale:         1.25,
+	}
+
+	stars := defineStarField()
+
+	cPt := d3.Pt{}
+	q := d3.Q{0, 0, 0, 0}
+	for frame := 0; frame < frames; frame++ {
+		d := float64(frame) / float64(frames)
+		cPt.Z = d * -150.0
+		rot := angle.Rot(d)
+		q.A, q.D = rot.Sincos()
+		f := scene.NewFrame(cPt, q, len(stars))
+		for _, s := range stars {
+			if s.Z+0.2 > cPt.Z {
+				continue
+			}
+			f.AddMesh(&m, starShader, s.T(float64(frame)))
+		}
+		f.Render()
+		fmt.Print(cr, "Frame ", frame, "         ")
+	}
+	scene.Done()
+}
+
+func getMesh() mesh.TriangleMesh {
+	outer := d2poly.RegularPolygonRadius(d2.Pt{0, 0}, 2, angle.Rot(0.25), 5)
+	inner := d2poly.RegularPolygonRadius(d2.Pt{0, 0}, 1, angle.Rot(0.35), 5)
+	star2d := make([]d2.Pt, 10)
+	for i, oPt := range outer {
+		star2d[2*i] = oPt
+		star2d[2*i+1] = inner[i]
+	}
+	f := plane.New(d3.Pt{0, 0, 0}, d3.Pt{1, 0, 0}, d3.Pt{0, 1, 0}).ConvertMany(star2d)
+	tm := mesh.TriangleMesh{
+		Pts: append(f, d3.Pt{0, 0, 0.5}, d3.Pt{0, 0, -0.5}),
+	}
+	for i := uint32(0); i < 5; i++ {
+		tm.Polygons = append(tm.Polygons, [][3]uint32{
+			{i * 2, i*2 + 1, 10},
+		}, [][3]uint32{
+			{i * 2, i*2 + 1, 11},
+		}, [][3]uint32{
+			{i*2 + 1, (i*2 + 2) % 10, 10},
+		}, [][3]uint32{
+			{i*2 + 1, (i*2 + 2) % 10, 11},
+		})
+	}
+
+	return tm
+}
+
+type star struct {
+	d3.V
+	angle.Rad
+	speed angle.Rad
+}
+
+func (s *star) T(frame float64) *d3.T {
+	return d3.Rotation{
+		s.Rad + s.speed*angle.Rad(frame),
+		d3.XZ,
+	}.
+		T().
+		T(
+			d3.Translate(s.V).T(),
+		)
+}
+
+func defineStarField() []star {
+	out := make([]star, stars)
+	for i := range out {
+		v2 := d2.Polar{
+			M: rand.Float64()*10 + 3,
+			A: angle.Rot(rand.Float64()),
+		}.V()
+
+		out[i] = star{
+			V:     d3.V{v2.X, v2.Y, rand.Float64() * -200},
+			Rad:   angle.Rot(rand.Float64()),
+			speed: angle.Rot(rand.Float64()*.05) + .05,
+		}
+		if rand.Intn(2) == 0 {
+			out[i].speed = -out[i].speed
+		}
+	}
+	return out
+}
+
+var black = color.RGBA{0, 0, 0, 255}
+
+func starShader(ctx *zbuf.Context) *color.RGBA {
+	if ctx.B.U < 0.03 || ctx.B.V < 0.03 || ctx.B.U+ctx.B.V > 0.97 {
+		return &black
+	}
+	tIdxs := ctx.Original.Polygons[ctx.PolygonIdx][ctx.TriangleIdx]
+	n := (&triangle3.Triangle{
+		ctx.Space[tIdxs[0]],
+		ctx.Space[tIdxs[1]],
+		ctx.Space[tIdxs[2]],
+	}).Normal().Normal()
+	r := (n.X*0.25 + 0.75) * 255
+	g := (n.Y*0.25 + 0.75) * 255
+
+	return &(color.RGBA{uint8(r), uint8(g), 0, 255})
+}
