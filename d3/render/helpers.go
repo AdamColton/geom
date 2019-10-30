@@ -40,7 +40,7 @@ m = (-n*V.Y)/ U.Y
 func Scan(t triangle.Triangle, step float64) (*barycentric.BIterator, *triangle.BT) {
 	bi := scanU(t)
 	bt := t.BT(bi.Origin, bi.U)
-	if bt.U.Y == 0 {
+	if bt == nil || bt.U.Y == 0 {
 		return nil, bt // triangle is horizontal line
 	}
 	bi.Step[1] = barycentric.B{U: step / bt.U.Y, V: 0}
