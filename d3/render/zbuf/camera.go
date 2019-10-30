@@ -1,10 +1,9 @@
-package render
+package zbuf
 
 import (
 	"math"
 
 	"github.com/adamcolton/geom/angle"
-
 	"github.com/adamcolton/geom/d3"
 )
 

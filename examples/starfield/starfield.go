@@ -2,92 +2,81 @@ package main
 
 import (
 	"fmt"
-	"image"
 	"image/color"
 	"math/rand"
 	"os"
 	"runtime/pprof"
 
+	"github.com/adamcolton/geom/d3/render/zbuf"
 	"github.com/adamcolton/geom/d3/shape/plane"
 
 	"github.com/adamcolton/geom/angle"
 	"github.com/adamcolton/geom/d2"
-	"github.com/adamcolton/geom/d2/grid"
 	d2poly "github.com/adamcolton/geom/d2/shape/polygon"
 	"github.com/adamcolton/geom/d3"
-	"github.com/adamcolton/geom/d3/render"
-	"github.com/adamcolton/geom/d3/render/ffmpeg"
 	triangle3 "github.com/adamcolton/geom/d3/shape/triangle"
 	"github.com/adamcolton/geom/d3/solid/mesh"
 )
 
-// Stop using gg
-// Setup scene
-// Setup a pipeline
-// * Init scene frame
-// * Scene transforms
-// * Camera transforms
-// * Render mesh to zbuf
-// * merge zbufs
-// * draw
+const (
+	frames     = 100
+	stars      = 200
+	width      = 500
+	imageScale = 1.25
+)
+
+var cr = string([]byte{13})
 
 func main() {
 	f, err := os.Create("profile.out")
 	if err != nil {
 		panic(err)
 	}
-
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
 
-	width := 546
-	height := 1 + (width*9)/16
-	c := setupCamera(width, height)
 	m := getMesh()
-	//es, _ := m.Edges()
+	w := width
+	if w%2 == 1 {
+		w++
+	}
+	h := (w * 9) / 16
+	if h%2 == 1 {
+		h++
+	}
 
-	stars := defineStarField()
-
-	out := &ffmpeg.Proc{
+	scene := &zbuf.Scene{
+		W:    w,
+		H:    h,
+		A:    angle.Deg(45),
+		Near: 0.1, Far: 200,
 		Framerate:          15,
 		Name:               "stars",
 		ConstantRateFactor: 25,
-		InputFormat:        "bmp",
-		Width:              width,
-		Height:             height,
-	}
-	if err := out.Start(); err != nil {
-		panic(err)
+		Background:         color.RGBA{255, 255, 255, 255},
+		ImageScale:         1.25,
 	}
 
-	buf := render.New(width, height)
+	stars := defineStarField()
 
-	for frame := 0; frame < 1000; frame++ {
-		c.Pt.Z = float64(frame) * (-150.0 / 1000.0)
-		ct := c.T()
-		buf.Reset()
+	cPt := d3.Pt{}
+	q := d3.Q{0, 0, 0, 0}
+	for frame := 0; frame < frames; frame++ {
+		d := float64(frame) / float64(frames)
+		cPt.Z = d * -150.0
+		rot := angle.Rot(d)
+		q.A, q.D = rot.Sincos()
+		f := scene.NewFrame(cPt, q, len(stars))
 		for _, s := range stars {
-			if s.Z+0.2 > c.Z {
+			if s.Z+0.2 > cPt.Z {
 				continue
 			}
-			space := d3.Rotation{
-				s.Rad + s.speed*angle.Rad(frame),
-				d3.XZ,
-			}.
-				T().
-				T(
-					d3.Translate(s.V).T(),
-				)
-			rm := render.NewRenderMesh(&m, space, ct, starShader)
-			buf.Add(rm)
-			//buf.Edge(es, mt, &([3]float64{0, 0, 0}))
+			f.AddMesh(&m, starShader, s.T(float64(frame)))
 		}
-		img := getImage(width, height)
-		buf.Draw(img)
-		out.AddPng(img)
-		fmt.Println("Frame ", frame)
+		f.Render()
+		fmt.Print(cr, "Frame ", frame, "         ")
 	}
-	out.Close()
+	scene.Done()
 }
 
 func getMesh() mesh.TriangleMesh {
@@ -117,26 +106,25 @@ func getMesh() mesh.TriangleMesh {
 	return tm
 }
 
-func setupCamera(w, h int) render.Camera {
-	return render.Camera{
-		Pt:    d3.Pt{0, 0, 0},
-		Q:     d3.Q{1, 0, 0, 0},
-		Near:  0.1,
-		Far:   200,
-		Angle: 3.1415 / 2.0,
-		W:     w,
-		H:     h,
-	}
-}
-
 type star struct {
 	d3.V
 	angle.Rad
 	speed angle.Rad
 }
 
+func (s *star) T(frame float64) *d3.T {
+	return d3.Rotation{
+		s.Rad + s.speed*angle.Rad(frame),
+		d3.XZ,
+	}.
+		T().
+		T(
+			d3.Translate(s.V).T(),
+		)
+}
+
 func defineStarField() []star {
-	out := make([]star, 100)
+	out := make([]star, stars)
 	for i := range out {
 		v2 := d2.Polar{
 			M: rand.Float64()*10 + 3,
@@ -157,7 +145,7 @@ func defineStarField() []star {
 
 var black = color.RGBA{0, 0, 0, 255}
 
-func starShader(ctx *render.Context) *color.RGBA {
+func starShader(ctx *zbuf.Context) *color.RGBA {
 	if ctx.B.U < 0.03 || ctx.B.V < 0.03 || ctx.B.U+ctx.B.V > 0.97 {
 		return &black
 	}
@@ -171,25 +159,4 @@ func starShader(ctx *render.Context) *color.RGBA {
 	g := (n.Y*0.25 + 0.75) * 255
 
 	return &(color.RGBA{uint8(r), uint8(g), 0, 255})
-
-}
-
-var white = color.RGBA{255, 255, 255, 255}
-var baseImg *image.RGBA
-
-func getImage(width, height int) *image.RGBA {
-	if baseImg == nil {
-		baseImg = image.NewRGBA(image.Rect(0, 0, width, height))
-		for iter, done := (grid.Pt{width, height}.Iter()).Start(); !done; done = iter.Next() {
-			pt := iter.Pt()
-			baseImg.SetRGBA(pt.X, pt.Y, white)
-		}
-	}
-	img := &image.RGBA{
-		Pix:    make([]uint8, len(baseImg.Pix)),
-		Stride: baseImg.Stride,
-		Rect:   baseImg.Rect,
-	}
-	copy(img.Pix, baseImg.Pix)
-	return img
 }

@@ -1,11 +1,8 @@
-package render
+package zbuf
 
 import (
-	"math"
-
 	"github.com/adamcolton/geom/barycentric"
 	"github.com/adamcolton/geom/d3/shape/triangle"
-	"github.com/adamcolton/geom/d3/solid/mesh"
 )
 
 /*
@@ -87,13 +84,4 @@ func scanU(t triangle.Triangle) *barycentric.BIterator {
 		}
 	}
 	return bi
-}
-
-// RoundXY rounds the X and Y values, useful to help with aliasing when
-// rendering.
-func RoundXY(m mesh.TriangleMesh) {
-	for i, p := range m.Pts {
-		m.Pts[i].X = math.Round(p.X)
-		m.Pts[i].Y = math.Round(p.Y)
-	}
 }

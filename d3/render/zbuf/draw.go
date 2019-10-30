@@ -1,4 +1,4 @@
-package render
+package zbuf
 
 import (
 	"image"
@@ -85,7 +85,7 @@ func (buf ZBuffer) Add(rm *RenderMesh) {
 			if !ok {
 				continue
 			}
-			bi, bt := Scan(triangle.Triangle(t), 0.75)
+			bi, bt := Scan(triangle.Triangle(t), 0.9)
 			for b, done := bi.Start(); !done; b, done = bi.Next() {
 				buf.Insert(bt.PtB(b), b, pIdx, tIdx, rm)
 			}
