@@ -162,3 +162,19 @@ func TestPts(t *testing.T) {
 	pts := Scale(V{1, 2, 3}).T().Pts([]Pt{{1, 1, 1}, {2, 2, 2}})
 	assert.Equal(t, []Pt{{1, 2, 3}, {2, 4, 6}}, pts)
 }
+
+func TestPtsScale(t *testing.T) {
+	tr := Rotation{angle.Deg(90), XY}.T()
+	tr[3][3] = 2
+	got := tr.PtsScl([]Pt{
+		{1, 0, 0},
+		{0, 1, 0},
+	})
+	expected := []Pt{
+		{0, 0.5, 0},
+		{-0.5, 0, 0},
+	}
+	for i, exp := range expected {
+		EqualPt(t, exp, got[i])
+	}
+}
