@@ -13,6 +13,7 @@ type Camera struct {
 	d3.Q
 	Near, Far float64
 	Angle     angle.Rad
+	W, H      int
 }
 
 func (c Camera) T() *d3.T {
@@ -22,16 +23,18 @@ func (c Camera) T() *d3.T {
 	rot := c.Q.Normalize().T()
 
 	perspective := c.Perspective()
+	post := d3.Translate(d3.V{1, 1, 0}).T().T(d3.Scale(d3.V{float64(c.W) / 2, float64(c.H) / 2, -1}).T())
 
-	return translate.T().T(rot).T(perspective)
+	return translate.T().T(rot).T(perspective).T(post)
 }
 
 func (c Camera) Perspective() *d3.T {
 	a, b := c.ab()
-	m := 1.0 / math.Tan(float64(c.Angle)/2.0)
+	x := 1.0 / math.Tan(float64(c.Angle)/2.0)
+	y := x * float64(c.W) / float64(c.H)
 	return &d3.T{
-		{m, 0, 0, 0},
-		{0, m, 0, 0},
+		{x, 0, 0, 0},
+		{0, y, 0, 0},
 		{0, 0, a, b},
 		{0, 0, -1, 0},
 	}

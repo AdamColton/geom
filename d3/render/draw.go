@@ -1,30 +1,33 @@
 package render
 
 import (
+	"image"
+
 	"github.com/adamcolton/geom/barycentric"
 	"github.com/adamcolton/geom/d3"
 	"github.com/adamcolton/geom/d3/shape/triangle"
-	"github.com/fogleman/gg"
 )
 
 type ZBuffer struct {
 	w, h int
 	buf  []bufEntry
+	set  []bool
 }
 
 type bufEntry struct {
 	*RenderMesh
 	PolygonIdx, TriangleIdx int
 	barycentric.B
-	Z   float64
-	Set bool
+	Z float64
 }
 
 func newZbuf(w, h int) ZBuffer {
+	size := w * h
 	return ZBuffer{
 		w:   w,
 		h:   h,
-		buf: make([]bufEntry, w*h),
+		buf: make([]bufEntry, size),
+		set: make([]bool, size),
 	}
 }
 
@@ -33,15 +36,22 @@ func (z ZBuffer) Insert(pt d3.Pt, b barycentric.B, pIdx, tIdx int, rm *RenderMes
 		return
 	}
 	idx := getIdx(z.w, &pt)
-	if idx < 0 || idx >= len(z.buf) || (z.buf[idx].Set && z.buf[idx].Z < pt.Z) {
+	if idx < 0 || idx >= len(z.buf) || (z.set[idx] && z.buf[idx].Z < pt.Z) {
 		return
 	}
-	z.buf[idx].RenderMesh = rm
-	z.buf[idx].B = b
-	z.buf[idx].Z = pt.Z
-	z.buf[idx].PolygonIdx = pIdx
-	z.buf[idx].TriangleIdx = tIdx
-	z.buf[idx].Set = true
+	buf := &z.buf[idx]
+	buf.RenderMesh = rm
+	buf.B = b
+	buf.Z = pt.Z
+	buf.PolygonIdx = pIdx
+	buf.TriangleIdx = tIdx
+	z.set[idx] = true
+}
+
+func (z ZBuffer) Reset() {
+	for i := range z.set {
+		z.set[i] = false
+	}
 }
 
 func getIdx(w int, pt *d3.Pt) int {
@@ -93,9 +103,9 @@ var cards = [5]d3.V{
 	{0, -1, zfix},
 }
 
-func (buf ZBuffer) Draw(ctx *gg.Context) {
+func (buf ZBuffer) Draw(img *image.RGBA) {
 	for idx, be := range buf.buf {
-		if !be.Set {
+		if !buf.set[idx] {
 			continue
 		}
 		x, y := idx%buf.w, idx/buf.w
@@ -105,8 +115,6 @@ func (buf ZBuffer) Draw(ctx *gg.Context) {
 			PolygonIdx:  be.PolygonIdx,
 			TriangleIdx: be.TriangleIdx,
 		})
-		ctx.SetRGB(c[0], c[1], c[2])
-		ctx.SetPixel(x, buf.h-y-1)
-		ctx.Stroke()
+		img.SetRGBA(x, buf.h-y-1, *c)
 	}
 }

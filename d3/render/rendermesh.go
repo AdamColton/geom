@@ -1,6 +1,8 @@
 package render
 
 import (
+	"image/color"
+
 	"github.com/adamcolton/geom/barycentric"
 	"github.com/adamcolton/geom/d3"
 	"github.com/adamcolton/geom/d3/solid/mesh"
@@ -36,4 +38,4 @@ type Context struct {
 	d3.Pt
 }
 
-type Shader func(ctx *Context) *[3]float64
+type Shader func(ctx *Context) *color.RGBA
