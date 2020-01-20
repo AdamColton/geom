@@ -163,7 +163,7 @@ func TestIntersections(t *testing.T) {
 	tri := &Triangle{{0, 0}, {0, 1}, {1, 0}}
 	l := line.New(d2.Pt{0, .1}, d2.Pt{1, .1})
 	expected := []float64{0, .9}
-	assert.Equal(t, expected, tri.Intersections(l))
+	assert.Equal(t, expected, tri.LineIntersections(l))
 }
 
 func TestBoundingBox(t *testing.T) {
