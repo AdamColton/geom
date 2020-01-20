@@ -198,9 +198,9 @@ func (p Polygon) Collision(lineSegment line.Line) (lineT float64, idx int, sideT
 	ln := len(p)
 	for i, f := range p {
 		side := line.New(f, p[(i+1)%ln])
-		t0, ok := side.LineIntersection(lineSegment)
+		t0, ok := side.Intersection(lineSegment)
 		if ok && t0 >= 0 && t0 < 1 {
-			t1, _ := lineSegment.LineIntersection(side)
+			t1, _ := lineSegment.Intersection(side)
 			if t1 >= 0 && t1 < 1 {
 				if idx == -1 || lineT > t0 {
 					lineT = t0
@@ -213,15 +213,15 @@ func (p Polygon) Collision(lineSegment line.Line) (lineT float64, idx int, sideT
 	return
 }
 
-// Intersections fulfills line.Intersections
-func (p Polygon) Intersections(ln line.Line) []float64 {
+// LineIntersections fulfills line.LineIntersector
+func (p Polygon) LineIntersections(ln line.Line) []float64 {
 	var out []float64
 	prev := p[len(p)-1]
 	for _, cur := range p {
 		side := line.New(prev, cur)
-		t, ok := ln.LineIntersection(side)
+		t, ok := ln.Intersection(side)
 		if ok && t >= 0 && t < 1 {
-			t, _ = side.LineIntersection(ln)
+			t, _ = side.Intersection(ln)
 			out = append(out, t)
 		}
 		prev = cur
@@ -248,7 +248,7 @@ func (p Polygon) NonIntersecting() bool {
 	// index.
 	for i, si := range side[:len(side)-2] {
 		for _, sj := range side[i+2:] {
-			t, _ := si.LineIntersection(sj)
+			t, _ := si.Intersection(sj)
 			if !math.IsNaN(t) && t > 0 && t < 1.0 {
 				return false
 			}
