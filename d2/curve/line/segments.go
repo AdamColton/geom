@@ -29,9 +29,9 @@ func (ls Segments) Pt1(t float64) d2.Pt {
 	return New(ls[ti], ls[ti+1]).Pt1(ts - float64(ti))
 }
 
-// Intersections fulfills Intersections, returning the points that intersect
+// LineIntersections fulfills Intersections, returning the points that intersect
 // l2.
-func (ls Segments) Intersections(l2 Line) []float64 {
+func (ls Segments) LineIntersections(l2 Line) []float64 {
 	if len(ls) < 2 {
 		return nil
 	}
@@ -40,11 +40,11 @@ func (ls Segments) Intersections(l2 Line) []float64 {
 	for _, pt := range ls[1:] {
 		l := New(prev, pt)
 		prev = pt
-		i, ok := l2.LineIntersection(l)
+		i, ok := l2.Intersection(l)
 		if !ok || i < 0 || i >= 1 {
 			continue
 		}
-		i, _ = l.LineIntersection(l2)
+		i, _ = l.Intersection(l2)
 		out = append(out, i)
 	}
 	return out
