@@ -41,6 +41,8 @@ func TestBisect(t *testing.T) {
 }
 
 func TestLineIntersect(t *testing.T) {
+	_ = LineIntersector(Line{})
+
 	testCases := map[string]struct {
 		points    []d2.Pt
 		expectNil bool
@@ -72,8 +74,8 @@ func TestLineIntersect(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			l0 := New(tc.points[0], tc.points[1])
 			l1 := New(tc.points[2], tc.points[3])
-			t1 := l0.Intersections(l1)
-			t0 := l1.Intersections(l0)
+			t1 := l0.LineIntersections(l1)
+			t0 := l1.LineIntersections(l0)
 			if tc.expectNil {
 				assert.Nil(t, t0)
 				assert.Nil(t, t1)
