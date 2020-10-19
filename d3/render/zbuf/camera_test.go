@@ -1,16 +1,13 @@
 package zbuf
 
 import (
-	"fmt"
 	"math"
-	"strconv"
 	"testing"
 
 	"github.com/adamcolton/geom/d3"
 	"github.com/adamcolton/geom/d3/shape/triangle"
 	"github.com/adamcolton/geom/d3/solid/mesh"
 	"github.com/adamcolton/geom/geomtest"
-	"github.com/fogleman/gg"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,44 +18,51 @@ func TestCameraBasic(t *testing.T) {
 		Near:  1,
 		Far:   10,
 		Angle: math.Pi / 2.0,
+		W:     1,
+		H:     1,
 	}
+
+	assert.Equal(t, c.Q.T(), d3.Identity())
 
 	ca, cb := c.ab()
 	assert.Equal(t, c.Near, -ca*c.Near+cb)
 	assert.Equal(t, -c.Far, -ca*c.Far+cb)
 
 	tr := c.T()
-	assert.Equal(t, c.Perspective(), tr)
+	//assert.Equal(t, c.Perspective(), tr)
 
-	n, nw := tr.PtF(d3.Pt{0, 0, -c.Near})
-	assert.Equal(t, d3.Pt{0, 0, c.Near}, n)
-	assert.Equal(t, nw, c.Near)
+	//n, nw := tr.PtF(d3.Pt{0, 0, -c.Near})
+	//assert.Equal(t, d3.Pt{0, 0, c.Near}, n)
+	//assert.Equal(t, nw, c.Near)
 
-	xy := math.Tan(float64(c.Angle) / 2.0)
+	// since the perspective is square, edge is the distance in both x and y
+	// from the z to the perimeter at the near point.
+	edge := math.Tan(float64(c.Angle) / 2.0)
+
 	testPoints := []d3.Pt{
 		{0, 0, -c.Near},
 		{0, 0, -c.Far},
-		{xy, xy, -c.Near},
-		{xy, -xy, -c.Near},
-		{-xy, -xy, -c.Near},
-		{-xy, xy, -c.Near},
-		{10 * xy, 10 * xy, -c.Far},
-		{10 * xy, 10 * -xy, -c.Far},
-		{10 * -xy, 10 * -xy, -c.Far},
-		{10 * -xy, 10 * xy, -c.Far},
+		{edge, edge, -c.Near},
+		{edge, -edge, -c.Near},
+		{-edge, -edge, -c.Near},
+		{-edge, edge, -c.Near},
+		{10 * edge, 10 * edge, -c.Far},
+		{10 * edge, 10 * -edge, -c.Far},
+		{10 * -edge, 10 * -edge, -c.Far},
+		{10 * -edge, 10 * edge, -c.Far},
 	}
 
 	expected := []d3.Pt{
-		{0, 0, 1},
-		{0, 0, -1},
+		{0.5, 0.5, 0},
+		{0.5, 0.5, 1},
+		{1, 1, 0},
+		{1, 0, 0},
+		{0, 0, 0},
+		{0, 1, 0},
 		{1, 1, 1},
-		{1, -1, 1},
-		{-1, -1, 1},
-		{-1, 1, 1},
-		{1, 1, -1},
-		{1, -1, -1},
-		{-1, -1, -1},
-		{-1, 1, -1},
+		{1, 0, 1},
+		{0, 0, 1},
+		{0, 1, 1},
 	}
 
 	for i, p := range testPoints {
@@ -105,62 +109,118 @@ func TestCameraMesh(t *testing.T) {
 	}
 }
 
-func TestCamera(t *testing.T) {
-	t.Skip()
-	fmt.Println("Generating Images")
+func TestCameraWH(t *testing.T) {
 	c := Camera{
-		Pt:    d3.Pt{},
+		Pt:    d3.Pt{0, 0, 0},
 		Q:     d3.Q{1, 0, 0, 0},
-		Near:  0.1,
+		Near:  1,
 		Far:   10,
-		Angle: 3.1415 / 2.0,
+		Angle: math.Pi / 2.0,
+		W:     150,
+		H:     100,
 	}
 
-	s := d3.Pt{0, 0, 0}
-	f := []d3.Pt{
-		s,
-		s.Add(d3.V{1, 1, 0}),
-		s.Add(d3.V{2, 1, 0}),
-		s.Add(d3.V{3, 0, 0}),
-		s.Add(d3.V{0, -3, 0}),
-		s.Add(d3.V{-3, 0, 0}),
-		s.Add(d3.V{-2, 1, 0}),
-		s.Add(d3.V{-1, 1, 0}),
+	assert.Equal(t, c.Q.T(), d3.Identity())
+
+	ca, cb := c.ab()
+	assert.Equal(t, c.Near, -ca*c.Near+cb)
+	assert.Equal(t, -c.Far, -ca*c.Far+cb)
+
+	tr := c.T()
+	//assert.Equal(t, c.Perspective(), tr)
+
+	//n, nw := tr.PtF(d3.Pt{0, 0, -c.Near})
+	//assert.Equal(t, d3.Pt{0, 0, c.Near}, n)
+	//assert.Equal(t, nw, c.Near)
+
+	edge := math.Tan(float64(c.Angle) / 2.0)
+	y := float64(c.H) / float64(c.W)
+	testPoints := []d3.Pt{
+		{0, 0, -c.Near},
+		{0, 0, -c.Far},
+		{edge, y * edge, -c.Near},
+		{edge, y * -edge, -c.Near},
+		{-edge, y * -edge, -c.Near},
+		{-edge, y * edge, -c.Near},
+		{10 * edge, y * 10 * edge, -c.Far},
+		{10 * edge, y * 10 * -edge, -c.Far},
+		{10 * -edge, y * 10 * -edge, -c.Far},
+		{10 * -edge, y * 10 * edge, -c.Far},
 	}
 
-	m := mesh.NewExtrusion(f).
-		Extrude(d3.Translate(d3.V{0.5, 0.5, -1.5}).T()).
-		Close()
-
-	fmt.Println(m.Pts)
-
-	ref := d3.Pt{1, 0, -3}
-	for i := 0.0; i < 21; i++ {
-		//c.Pre = d3.NewTSet().AddBoth(d3.Translate(d3.V{0, 0, -3.5})).Add(d3.Q{1, i, 0, 0}.T()).Get()
-		s, cs := math.Sincos(math.Pi * i / 10.0)
-		r := d3.T{
-			{cs, -s, 0, 0},
-			{s, cs, 0, 0},
-			{0, 0, 1, 0},
-			{0, 0, 0, 1},
-		}
-		fmt.Println(r.Pt(ref))
-		//c.Pre = r.T(d3.Translate(d3.V{0, 0, -3}).T())
-		m := m.T(c.T())
-		ctx := gg.NewContext(500, 500)
-		ctx.SetRGB(0, 0, 0)
-		ctx.DrawRectangle(0, 0, 500, 500)
-		ctx.Fill()
-		ctx.Stroke()
-		ctx.SetLineWidth(4)
-		ctx.SetRGB(1, 0, 0.1)
-		tm, err := m.TriangleMesh()
-		assert.NoError(t, err)
-		Wireframe(ctx, tm, &([3]float64{1, 0, 0}), &([3]float64{0, 1, 0}))
-		ctx.SavePNG("test" + strconv.FormatFloat(i, 'f', 0, 64) + ".png")
+	expected := []d3.Pt{
+		{0.5, 0.5, 0},
+		{0.5, 0.5, 1},
+		{1, 1, 0},
+		{1, 0, 0},
+		{0, 0, 0},
+		{0, 1, 0},
+		{1, 1, 1},
+		{1, 0, 1},
+		{0, 0, 1},
+		{0, 1, 1},
 	}
 
+	for i, p := range testPoints {
+		assert.Equal(t, expected[i], tr.PtScl(p))
+	}
 }
+
+// func TestCamera(t *testing.T) {
+// 	t.Skip()
+// 	fmt.Println("Generating Images")
+// 	c := Camera{
+// 		Pt:    d3.Pt{},
+// 		Q:     d3.Q{1, 0, 0, 0},
+// 		Near:  0.1,
+// 		Far:   10,
+// 		Angle: 3.1415 / 2.0,
+// 	}
+
+// 	s := d3.Pt{0, 0, 0}
+// 	f := []d3.Pt{
+// 		s,
+// 		s.Add(d3.V{1, 1, 0}),
+// 		s.Add(d3.V{2, 1, 0}),
+// 		s.Add(d3.V{3, 0, 0}),
+// 		s.Add(d3.V{0, -3, 0}),
+// 		s.Add(d3.V{-3, 0, 0}),
+// 		s.Add(d3.V{-2, 1, 0}),
+// 		s.Add(d3.V{-1, 1, 0}),
+// 	}
+
+// 	m := mesh.NewExtrusion(f).
+// 		Extrude(d3.Translate(d3.V{0.5, 0.5, -1.5}).T()).
+// 		Close()
+
+// 	fmt.Println(m.Pts)
+
+// 	ref := d3.Pt{1, 0, -3}
+// 	for i := 0.0; i < 21; i++ {
+// 		//c.Pre = d3.NewTSet().AddBoth(d3.Translate(d3.V{0, 0, -3.5})).Add(d3.Q{1, i, 0, 0}.T()).Get()
+// 		s, cs := math.Sincos(math.Pi * i / 10.0)
+// 		r := d3.T{
+// 			{cs, -s, 0, 0},
+// 			{s, cs, 0, 0},
+// 			{0, 0, 1, 0},
+// 			{0, 0, 0, 1},
+// 		}
+// 		fmt.Println(r.Pt(ref))
+// 		//c.Pre = r.T(d3.Translate(d3.V{0, 0, -3}).T())
+// 		m := m.T(c.T())
+// 		ctx := gg.NewContext(500, 500)
+// 		ctx.SetRGB(0, 0, 0)
+// 		ctx.DrawRectangle(0, 0, 500, 500)
+// 		ctx.Fill()
+// 		ctx.Stroke()
+// 		ctx.SetLineWidth(4)
+// 		ctx.SetRGB(1, 0, 0.1)
+// 		tm, err := m.TriangleMesh()
+// 		assert.NoError(t, err)
+// 		Wireframe(ctx, tm, &([3]float64{1, 0, 0}), &([3]float64{0, 1, 0}))
+// 		ctx.SavePNG("test" + strconv.FormatFloat(i, 'f', 0, 64) + ".png")
+// 	}
+// }
 
 func TestScan(t *testing.T) {
 	tr := triangle.Triangle{{10, 10, 0}, {100, 50, 0}, {50, 100, 0}}

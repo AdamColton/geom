@@ -15,16 +15,19 @@ type Camera struct {
 	W, H      int
 }
 
+// Move so that the field of view is (0,1) instead of (-1,1) in both x and y.
+// In Z it remains (-1,1)
+var scaleAndMove = d3.Scale(d3.V{0.5, 0.5, -0.5}).T().T(d3.Translate(d3.V{0.5, 0.5, 0.5}).T())
+
 func (c Camera) T() *d3.T {
 	// https://www.youtube.com/watch?v=mpTl003EXCY&list=PL_w_qWAQZtAZhtzPI5pkAtcUVgmzdAP8g&index=5
 	v := d3.Pt{}.Subtract(c.Pt)
-	translate := d3.Translate(v)
+	translate := d3.Translate(v).T()
 	rot := c.Q.Normalize().T()
 
 	perspective := c.Perspective()
-	post := d3.Translate(d3.V{1, 1, 0}).T().T(d3.Scale(d3.V{float64(c.W) / 2, float64(c.H) / 2, -1}).T())
 
-	return translate.T().T(rot).T(perspective).T(post)
+	return d3.TProd(translate, rot, perspective, scaleAndMove)
 }
 
 func (c Camera) Perspective() *d3.T {

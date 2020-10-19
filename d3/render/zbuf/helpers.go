@@ -57,7 +57,7 @@ func Scan(t triangle.Triangle, step float64) (*barycentric.BIterator, *triangle.
 		m = (-n * bt.V.Y) / bt.U.Y
 	} else {
 		r := bt.U.Y / bt.U.X
-		d := (bt.V.Y - r*bt.V.X)
+		d := bt.V.Y - r*bt.V.X
 		if d == 0 {
 			return nil, bt // ???
 		}

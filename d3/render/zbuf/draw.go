@@ -85,7 +85,7 @@ func (buf ZBuffer) Add(rm *RenderMesh) {
 			if !ok {
 				continue
 			}
-			bi, bt := Scan(triangle.Triangle(t), 0.9)
+			bi, bt := Scan(triangle.Triangle(t), 0.8)
 			for b, done := bi.Start(); !done; b, done = bi.Next() {
 				buf.Insert(bt.PtB(b), b, pIdx, tIdx, rm)
 			}
