@@ -26,13 +26,15 @@ func (p Polygon) D2() (d2polygon.Polygon, plane.Plane, error) {
 	out[1], _ = pln.Project(p[1])
 	out[2], _ = pln.Project(p[2])
 	var v d3.V
+	var err error
 	for i, pt := range p[3:] {
 		out[i+3], v = pln.Project(pt)
 		if !cmpr.Zero(v.Mag2()) {
-			return nil, pln, errors.New("Not planar")
+			err = errors.New("Not planar")
+			break
 		}
 	}
-	return d2polygon.Polygon(out), pln, nil
+	return d2polygon.Polygon(out), pln, err
 }
 
 // From2D takes a 2D polygon and a Plane and creates a 3D polygon.
