@@ -114,6 +114,17 @@ func (t *T) T(t2 *T) *T {
 	}
 }
 
+func TProd(ts ...*T) *T {
+	if len(ts) == 0 {
+		return Identity()
+	}
+	t := ts[0]
+	for _, t2 := range ts[1:] {
+		t = t.T(t2)
+	}
+	return t
+}
+
 func Identity() *T {
 	return &T{
 		{1, 0, 0, 0},
