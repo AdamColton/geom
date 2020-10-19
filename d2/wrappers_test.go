@@ -13,12 +13,15 @@ func (mockPt1) Pt1(t0 float64) Pt {
 }
 
 func TestV1Wrapper(t *testing.T) {
-	w := V1Wrapper{mockPt1{}}
+	var w Pt1V1
+	w = V1Wrapper{mockPt1{}}
 
 	vApproxEqual(t, V{2, 0}, w.V1(0))
 	vApproxEqual(t, V{2, 0.2}, w.V1(0.1))
 	vApproxEqual(t, V{2, 1}, w.V1(0.5))
 	vApproxEqual(t, V{2, 2}, w.V1(1))
+
+	assert.Equal(t, Pt{1, 0.25}, w.Pt1(0.5))
 }
 
 func vApproxEqual(t *testing.T, v1, v2 V) {
