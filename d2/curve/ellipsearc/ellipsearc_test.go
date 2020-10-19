@@ -18,7 +18,7 @@ func TestEllipseArc(t *testing.T) {
 
 	e := New(f1, f2, r)
 	assert.Equal(t, r, e.Pt1(0.25).Distance(e.c))
-	assert.InDelta(t, 0.0, e.Pt1(0).Y, 1E-10)
+	assert.InDelta(t, 0.0, e.Pt1(0).Y, 1e-10)
 
 	// Test by definition of ellipse
 	p0 := e.Pt1(0)
@@ -26,13 +26,13 @@ func TestEllipseArc(t *testing.T) {
 	for i := 0.0; i <= 1.0; i += 0.2 {
 		p := e.Pt1(i)
 		d := f1.Distance(p) + f2.Distance(p)
-		assert.InDelta(t, d0, d, 1E-10)
+		assert.InDelta(t, d0, d, 1e-10)
 	}
 
 	// Get correct foci
 	tf1, tf2 := e.Foci()
-	assert.InDelta(t, 0, f1.Distance(tf1), 1E-10)
-	assert.InDelta(t, 0, f2.Distance(tf2), 1E-10)
+	assert.InDelta(t, 0, f1.Distance(tf1), 1e-10)
+	assert.InDelta(t, 0, f2.Distance(tf2), 1e-10)
 
 	geomtest.Equal(t, d2.Pt{1, 0}, e.Centroid())
 
@@ -57,7 +57,7 @@ func TestEllipseStandard(t *testing.T) {
 	assert.Equal(t, d2.Pt{math.Sqrt2, 0}, e.Pt1(0))
 
 	// 1/4 rotation should be +Y
-	assert.InDelta(t, 0.0, e.Pt1(0.25).Distance(d2.Pt{0, 1}), 1E-10)
+	assert.InDelta(t, 0.0, e.Pt1(0.25).Distance(d2.Pt{0, 1}), 1e-10)
 }
 
 func TestBoundingBox(t *testing.T) {
@@ -90,7 +90,7 @@ func TestCartesianArc(t *testing.T) {
 		x2 := e.c.X + (-b-math.Sqrt(b*b-4*a*c))/(2*a)
 		d1 := math.Abs(pt.X - x1)
 		d2 := math.Abs(pt.X - x2)
-		assert.InDelta(t, 0, math.Min(d1, d2), 1E-10)
+		assert.InDelta(t, 0, math.Min(d1, d2), 1e-10)
 	}
 }
 
@@ -134,10 +134,16 @@ func TestLineIntersections(t *testing.T) {
 			EllipseArc: New(d2.Pt{2, 0}, d2.Pt{3, 0}, 1),
 			expected:   nil,
 		},
+		"slopeline": {
+			Line:       line.New(d2.Pt{0, 0}, d2.Pt{5, 5}),
+			EllipseArc: New(d2.Pt{2, 2}, d2.Pt{3, 2}, 1),
+			expected:   []float64{0.584990, 0.303898},
+		},
 	}
 
 	for n, tc := range tt {
 		t.Run(n, func(t *testing.T) {
+			_ = n
 			is := tc.EllipseArc.LineIntersections(tc.Line)
 			assert.Equal(t, len(tc.expected), len(is))
 			for idx, ti := range tc.expected {
