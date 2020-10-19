@@ -4,12 +4,45 @@ import (
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/adamcolton/geom/angle"
 )
 
 // Q is a quaternion used for rotations. B, C and D correspond to the X, Y and Z
 // axis.
 type Q struct {
 	A, B, C, D float64
+}
+
+func QX(ang angle.Rad) Q {
+	s, c := (ang / 2.0).Sincos()
+	return Q{c, -s, 0, 0}
+}
+
+func QY(ang angle.Rad) Q {
+	s, c := (ang / 2.0).Sincos()
+	return Q{c, 0, -s, 0}
+}
+
+func QZ(ang angle.Rad) Q {
+	s, c := (ang / 2.0).Sincos()
+	return Q{c, 0, 0, -s}
+}
+
+func QV(v V) Q {
+	s, c := (angle.Atan(v.Y, v.X) / 2.0).Sincos()
+	qy := Q{c, 0, 0, -s}
+	if v.Y < 1e-5 && v.Y > -1e-1 {
+		qy = Q{1, 0, 0, 0}
+	}
+	v = qy.TInv().V(v)
+	s, c = (angle.Atan(v.Z, v.X) / 2.0).Sincos()
+	qz := Q{c, 0, s, 0}
+	if v.Z < 1e-5 && v.Z > -1e-1 {
+		qz = Q{1, 0, 0, 0}
+	}
+	out := qz.Product(qy)
+	return out
 }
 
 func (q Q) Normalize() Q {
@@ -59,6 +92,10 @@ func (q Q) T() *T {
 			1,
 		},
 	}
+}
+
+func (q Q) TInv() *T {
+	return Q{q.A, -q.B, -q.C, -q.D}.T()
 }
 
 func (q Q) String() string {
