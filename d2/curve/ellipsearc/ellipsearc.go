@@ -82,7 +82,7 @@ func (e EllipseArc) Angle() (ang angle.Rad, sin, cos float64) {
 	return e.a, e.as, e.ac
 }
 
-var padding = 1E-10
+var padding = 1e-10
 
 // BoundingBox fulfills shape.BoundingBoxer. It returns a min and max that are
 // the corners of a bounding rectangle that will contain the ellipse arc. This
@@ -108,6 +108,7 @@ func (e EllipseArc) LineIntersections(l line.Line) []float64 {
 	// but the further off from horizontal it is, the more error there is.
 	//
 	// http://quickcalcbasic.com/ellipse%20line%20intersection.pdf
+	// Intersection of Rotated Ellipse with Sloping Line(s)
 	v, h := e.sma, e.sMa
 	v2, h2 := v*v, h*h
 	s, c := e.as, e.ac
@@ -131,13 +132,13 @@ func (e EllipseArc) LineIntersections(l line.Line) []float64 {
 		}
 		sqrt = math.Sqrt(sqrt)
 
-		y0 := e.c.Y + (-B+sqrt)/(2*A)
-		y1 := e.c.Y + (-B-sqrt)/(2*A)
+		y0 := (-B + sqrt) / (2 * A)
+		y1 := (-B - sqrt) / (2 * A)
 		t0 := (y0 - l.T0.Y) / l.D.Y
 		t1 := (y1 - l.T0.Y) / l.D.Y
 		return []float64{t0, t1}
 	}
-	m := -l.M()
+	m := l.M()
 	m2 := m * m
 	b := l.B()
 	b2 := b * b
