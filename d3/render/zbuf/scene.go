@@ -13,13 +13,15 @@ import (
 )
 
 type Scene struct {
-	W, H                      int
-	A                         angle.Rad
-	Near, Far                 float64
-	Framerate                 byte
-	Name                      string
-	ConstantRateFactor        byte
-	Background                color.RGBA
+	W, H               int
+	A                  angle.Rad
+	Near, Far          float64
+	Framerate          byte
+	Name               string
+	ConstantRateFactor byte
+	Background         color.RGBA
+	// ImageScale will render the image larger than the final size then scale it
+	// down. This helps eliminate artifacts.
 	ImageScale                float64
 	wg                        sync.WaitGroup
 	proc                      *ffmpeg.Proc
@@ -50,6 +52,10 @@ func (s *Scene) NewFrame(pt d3.Pt, q d3.Q, meshes int) *SceneFrame {
 		},
 	}
 }
+
+// It would be more efficient to store the space transform then combine it with
+// the camera transform and not save the space points. If the shader needs it,
+// it can be computed then.
 
 func (sf *SceneFrame) AddMesh(m *mesh.TriangleMesh, shader Shader, space *d3.T) {
 	sf.Meshes = append(sf.Meshes, &RenderMesh{
@@ -89,6 +95,8 @@ func (s *Scene) cameraTransform() {
 			break
 		}
 		ct := sf.Camera.T()
+		scale := d3.Scale(d3.V{float64(sf.Camera.W), float64(sf.Camera.H), 1}).T()
+		ct = ct.T(scale)
 		for _, m := range sf.Meshes {
 			m.Camera = ct.PtsScl(m.Space)
 		}
