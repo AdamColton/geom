@@ -82,12 +82,17 @@ const (
 
 // V1Wrapper takes any Pt1 and approximates V1
 type V1Wrapper struct {
-	Pt1
+	P Pt1
 }
 
 // V1 approximates V1 from two points close together
 func (v1 V1Wrapper) V1(t0 float64) V {
-	return v1.Pt1.Pt1(t0 + small).Subtract(v1.Pt1.Pt1(t0)).Multiply(big)
+	return v1.P.Pt1(t0 + small).Subtract(v1.P.Pt1(t0)).Multiply(big)
+}
+
+// Pt1 calls underlying Pt1 to fulfill Pt1V1 interface
+func (v1 V1Wrapper) Pt1(t0 float64) Pt {
+	return v1.P.Pt1(t0)
 }
 
 // GetV1 takes any Pt1 and returns the optimal V1.
