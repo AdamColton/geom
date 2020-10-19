@@ -70,25 +70,37 @@ func (pt Pt) String() string {
 }
 
 // Min returns a Pt with the lowest X and the lowest Y.
-func Min(pt1, pt2 Pt) Pt {
-	if pt2.X < pt1.X {
-		pt1.X = pt2.X
+func Min(pts ...Pt) Pt {
+	if len(pts) == 0 {
+		return Pt{}
 	}
-	if pt2.Y < pt1.Y {
-		pt1.Y = pt2.Y
+	m := pts[0]
+	for _, pt := range pts[1:] {
+		if pt.X < m.X {
+			m.X = pt.X
+		}
+		if pt.Y < m.Y {
+			m.Y = pt.Y
+		}
 	}
-	return pt1
+	return m
 }
 
 // Max returns a Pt with the highest X and highest Y.
-func Max(pt1, pt2 Pt) Pt {
-	if pt2.X > pt1.X {
-		pt1.X = pt2.X
+func Max(pts ...Pt) Pt {
+	if len(pts) == 0 {
+		return Pt{}
 	}
-	if pt2.Y > pt1.Y {
-		pt1.Y = pt2.Y
+	m := pts[0]
+	for _, pt := range pts[1:] {
+		if pt.X > m.X {
+			m.X = pt.X
+		}
+		if pt.Y > m.Y {
+			m.Y = pt.Y
+		}
 	}
-	return pt1
+	return m
 }
 
 // MinMax takes any number of points and returns a min point with the lowest X
