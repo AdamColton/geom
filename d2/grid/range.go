@@ -44,6 +44,11 @@ func (r Range) Iter() Iterator {
 	return BaseIteratorWrapper{NewScanner(r)}
 }
 
+// Start creates and starts an iterator over the range.
+func (r Range) Start() (i Iterator, done bool) {
+	return r.Iter().Start()
+}
+
 // Min returns the point with the lowest X and Y value that is contained in the
 // range.
 func (r Range) Min() Pt {
