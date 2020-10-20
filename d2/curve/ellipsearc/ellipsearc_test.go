@@ -61,7 +61,7 @@ func TestEllipseStandard(t *testing.T) {
 }
 
 func TestBoundingBox(t *testing.T) {
-	es := []EllipseArc{
+	es := []*EllipseArc{
 		New(d2.Pt{0, 0}, d2.Pt{1, 0}, 1),
 		New(d2.Pt{0, 0}, d2.Pt{1, 1}, 1.23),
 		New(d2.Pt{0, 0}, d2.Pt{0, 0}, 5),
@@ -106,7 +106,7 @@ func TestV1(t *testing.T) {
 func TestLineIntersections(t *testing.T) {
 	tt := map[string]struct {
 		line.Line
-		EllipseArc
+		*EllipseArc
 		expected []float64
 	}{
 		"basic": {
