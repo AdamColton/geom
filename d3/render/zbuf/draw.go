@@ -2,6 +2,8 @@ package zbuf
 
 import (
 	"image"
+	"runtime"
+	"sync"
 
 	"github.com/adamcolton/geom/barycentric"
 	"github.com/adamcolton/geom/d3"
@@ -12,6 +14,7 @@ type ZBuffer struct {
 	w, h int
 	buf  []bufEntry
 	set  []bool
+	cpus int
 }
 
 type bufEntry struct {
@@ -24,10 +27,11 @@ type bufEntry struct {
 func newZbuf(w, h int) ZBuffer {
 	size := w * h
 	return ZBuffer{
-		w:   w,
-		h:   h,
-		buf: make([]bufEntry, size),
-		set: make([]bool, size),
+		w:    w,
+		h:    h,
+		buf:  make([]bufEntry, size),
+		set:  make([]bool, size),
+		cpus: runtime.NumCPU(),
 	}
 }
 
@@ -65,32 +69,48 @@ func New(w, h int) ZBuffer {
 func (buf ZBuffer) Add(rm *RenderMesh) {
 	w64 := float64(buf.w)
 	h64 := float64(buf.h)
-	for pIdx, p := range rm.Original.Polygons {
-		for tIdx, ptIdxs := range p {
-			t := [3]d3.Pt{
-				rm.Camera[ptIdxs[0]],
-				rm.Camera[ptIdxs[1]],
-				rm.Camera[ptIdxs[2]],
-			}
-			ok := false
-			for _, pt := range t {
-				x := pt.X >= 0 && pt.X <= w64
-				y := pt.Y >= 0 && pt.Y <= h64
-				z := pt.Z <= 1 && pt.Z >= -1
-				ok = x && y && z
-				if ok {
-					break
+
+	wg := &sync.WaitGroup{}
+	wg.Add(len(rm.Original.Polygons))
+	ch := make(chan int)
+	fn := func() {
+		for pIdx := range ch {
+			p := rm.Original.Polygons[pIdx]
+			for tIdx, ptIdxs := range p {
+				t := [3]d3.Pt{
+					rm.Camera[ptIdxs[0]],
+					rm.Camera[ptIdxs[1]],
+					rm.Camera[ptIdxs[2]],
+				}
+				ok := false
+				for _, pt := range t {
+					x := pt.X >= 0 && pt.X <= w64
+					y := pt.Y >= 0 && pt.Y <= h64
+					z := pt.Z <= 1 && pt.Z >= -1
+					ok = x && y && z
+					if ok {
+						break
+					}
+				}
+				if !ok {
+					continue
+				}
+				bi, bt := Scan(triangle.Triangle(t), 0.8)
+				for b, done := bi.Start(); !done; b, done = bi.Next() {
+					buf.Insert(bt.PtB(b), b, pIdx, tIdx, rm)
 				}
 			}
-			if !ok {
-				continue
-			}
-			bi, bt := Scan(triangle.Triangle(t), 0.8)
-			for b, done := bi.Start(); !done; b, done = bi.Next() {
-				buf.Insert(bt.PtB(b), b, pIdx, tIdx, rm)
-			}
+			wg.Add(-1)
 		}
 	}
+	for i := 0; i < buf.cpus; i++ {
+		go fn()
+	}
+	for i := range rm.Original.Polygons {
+		ch <- i
+	}
+	wg.Wait()
+	close(ch)
 }
 
 const zfix = -0.0001
