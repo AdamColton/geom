@@ -23,8 +23,8 @@ type EllipseArc struct {
 // perimeter point that corresponds to an angle of 0 will be 1/4 rotation going
 // from f1 to f2, which will lie along the minor axis. So an ellipse with foci
 // (0,0) and (0,2) with a minor radius of 1 will have angle 0 at point (1,1).
-func New(pt1, pt2 d2.Pt, r float64) EllipseArc {
-	e := EllipseArc{
+func New(pt1, pt2 d2.Pt, r float64) *EllipseArc {
+	e := &EllipseArc{
 		c:      line.New(pt1, pt2).Pt1(0.5),
 		Length: math.Pi * 2,
 	}
@@ -39,18 +39,18 @@ func New(pt1, pt2 d2.Pt, r float64) EllipseArc {
 }
 
 // Pt1 returns the float64 vector at t.
-func (e EllipseArc) Pt1(t float64) d2.Pt {
+func (e *EllipseArc) Pt1(t float64) d2.Pt {
 	return e.c.Add(e.ByAngle((e.Length)*t + e.Start))
 }
 
 // V1 returns a tangent vector at t.
-func (e EllipseArc) V1(t float64) d2.V {
+func (e *EllipseArc) V1(t float64) d2.V {
 	t = (e.Length)*t + e.Start
 	return e.ByAngle(t + math.Pi/2).V().Multiply(2 * math.Pi)
 }
 
 // ByAngle returns the vector at the given angle relative to the center
-func (e EllipseArc) ByAngle(a float64) d2.V {
+func (e *EllipseArc) ByAngle(a float64) d2.V {
 	// https://en.wikipedia.org/wiki/Parametric_equation#Ellipse
 	s, c := math.Sincos(a)
 	return d2.V{
@@ -60,7 +60,7 @@ func (e EllipseArc) ByAngle(a float64) d2.V {
 }
 
 // Foci of the ellipse
-func (e EllipseArc) Foci() (d2.Pt, d2.Pt) {
+func (e *EllipseArc) Foci() (d2.Pt, d2.Pt) {
 	fociLen := math.Sqrt(e.sMa*e.sMa - e.sma*e.sma)
 	v1 := d2.V{fociLen * e.ac, fociLen * e.as}
 	v2 := d2.V{-v1.X, -v1.Y}
@@ -68,17 +68,17 @@ func (e EllipseArc) Foci() (d2.Pt, d2.Pt) {
 }
 
 // Centroid of the ellipse
-func (e EllipseArc) Centroid() d2.Pt {
+func (e *EllipseArc) Centroid() d2.Pt {
 	return e.c
 }
 
 // Axis returns the lengths of the major and minor axis of the ellipse
-func (e EllipseArc) Axis() (major, minor float64) {
+func (e *EllipseArc) Axis() (major, minor float64) {
 	return e.sMa, e.sma
 }
 
 // Angle returns the information about the ellipse rotation angle.
-func (e EllipseArc) Angle() (ang angle.Rad, sin, cos float64) {
+func (e *EllipseArc) Angle() (ang angle.Rad, sin, cos float64) {
 	return e.a, e.as, e.ac
 }
 
@@ -88,7 +88,7 @@ var padding = 1e-10
 // the corners of a bounding rectangle that will contain the ellipse arc. This
 // ignores the start and end of the arc so it may not be the minimal bounding
 // box.
-func (e EllipseArc) BoundingBox() (min, max d2.Pt) {
+func (e *EllipseArc) BoundingBox() (min, max d2.Pt) {
 	// https://math.stackexchange.com/questions/91132/how-to-get-the-limits-of-rotated-ellipse
 	a2 := e.sMa * e.sMa
 	b2 := e.sma * e.sma
@@ -103,7 +103,7 @@ func (e EllipseArc) BoundingBox() (min, max d2.Pt) {
 
 // LineIntersections fulfills line.LineIntersector. Returns the points on the
 // line that intersect the EllipseArc relative to the line.
-func (e EllipseArc) LineIntersections(l line.Line) []float64 {
+func (e *EllipseArc) LineIntersections(l line.Line) []float64 {
 	// TODO: this is not correct, works for horizontal or vertical lines
 	// but the further off from horizontal it is, the more error there is.
 	//
@@ -164,7 +164,7 @@ func (e EllipseArc) LineIntersections(l line.Line) []float64 {
 
 // ABC returns the values so the A*x^2 + B*x + C = 0 is true for the ellipse at
 // y.
-func (e EllipseArc) ABC(y float64) (float64, float64, float64) {
+func (e *EllipseArc) ABC(y float64) (float64, float64, float64) {
 	v, h := e.sma, e.sMa
 	v2, h2 := v*v, h*h
 	s, c := e.as, e.ac
