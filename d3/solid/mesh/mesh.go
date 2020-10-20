@@ -74,10 +74,7 @@ func (m Mesh) TriangleMesh() (TriangleMesh, error) {
 
 	for i = range m.Polygons {
 		p3D := polygon.Polygon(m.Face(i))
-		p2D, _, err := p3D.D2()
-		if err != nil {
-			return out, err
-		}
+		p2D, _, _ := p3D.D2()
 		triangles := p2D.FindTriangles()
 		byIdx := make([][3]uint32, len(triangles))
 		for j, t := range triangles {
