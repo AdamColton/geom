@@ -22,7 +22,7 @@ import (
 
 const (
 	// Frames of video to render
-	frames = 1000
+	frames = 50
 	// Number of stars to render
 	stars = 200
 
@@ -35,7 +35,7 @@ const (
 	imageScale = 1.5
 
 	// enable the profiler
-	profile = false
+	profile = true
 )
 
 var cr = string([]byte{13})

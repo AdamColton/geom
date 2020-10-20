@@ -3,6 +3,7 @@ package zbuf
 import (
 	"image"
 	"image/color"
+	"runtime"
 	"sync"
 
 	"github.com/adamcolton/geom/angle"
@@ -90,6 +91,7 @@ func (s *Scene) Done() {
 }
 
 func (s *Scene) cameraTransform() {
+	cpus := runtime.NumCPU()
 	for sf := range s.toCameraTransform {
 		if sf == nil {
 			break
@@ -97,9 +99,25 @@ func (s *Scene) cameraTransform() {
 		ct := sf.Camera.T()
 		scale := d3.Scale(d3.V{float64(sf.Camera.W), float64(sf.Camera.H), 1}).T()
 		ct = ct.T(scale)
-		for _, m := range sf.Meshes {
-			m.Camera = ct.PtsScl(m.Space)
+
+		wg := &sync.WaitGroup{}
+		wg.Add(len(sf.Meshes))
+		ch := make(chan int)
+		fn := func() {
+			for idx := range ch {
+				m := sf.Meshes[idx]
+				m.Camera = ct.PtsScl(m.Space)
+				wg.Add(-1)
+			}
 		}
+		for i := 0; i < cpus; i++ {
+			go fn()
+		}
+		for i := range sf.Meshes {
+			ch <- i
+		}
+		wg.Wait()
+		close(ch)
 		s.toZbuf <- sf
 	}
 	close(s.toZbuf)
