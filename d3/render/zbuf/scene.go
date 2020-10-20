@@ -137,8 +137,7 @@ func (s *Scene) makeImg() *image.RGBA {
 }
 
 func (s *Scene) reset(img *image.RGBA) {
-	for iter, done := (grid.Pt{img.Rect.Max.X, img.Rect.Max.Y}.Iter()).Start(); !done; done = iter.Next() {
-		pt := iter.Pt()
+	grid.Pt{img.Rect.Max.X, img.Rect.Max.Y}.Iter().Each(func(idx int, pt grid.Pt) {
 		img.SetRGBA(pt.X, pt.Y, s.Background)
-	}
+	})
 }

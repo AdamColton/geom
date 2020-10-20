@@ -18,22 +18,37 @@ import (
 	"github.com/adamcolton/geom/d3/solid/mesh"
 )
 
+// For this to run, ffmpeg must be installed
+
 const (
-	frames     = 100
-	stars      = 200
-	width      = 500
-	imageScale = 1.25
+	// Frames of video to render
+	frames = 1000
+	// Number of stars to render
+	stars = 200
+
+	// width sets the size, the aspect ratio is always widescreen
+	width = 1000
+
+	// Set to between 1.0 and 2.0
+	// 1.0 is low quality
+	// 2.0 is high quality
+	imageScale = 1.5
+
+	// enable the profiler
+	profile = false
 )
 
 var cr = string([]byte{13})
 
 func main() {
-	f, err := os.Create("profile.out")
-	if err != nil {
-		panic(err)
+	if profile {
+		f, err := os.Create("profile.out")
+		if err != nil {
+			panic(err)
+		}
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
 	}
-	pprof.StartCPUProfile(f)
-	defer pprof.StopCPUProfile()
 
 	m := getMesh()
 	w := width
@@ -80,9 +95,10 @@ func main() {
 }
 
 func getMesh() mesh.TriangleMesh {
-	outer := d2poly.RegularPolygonRadius(d2.Pt{0, 0}, 2, angle.Rot(0.25), 5)
-	inner := d2poly.RegularPolygonRadius(d2.Pt{0, 0}, 1, angle.Rot(0.35), 5)
-	star2d := make([]d2.Pt, 10)
+	var points = 6
+	outer := d2poly.RegularPolygonRadius(d2.Pt{0, 0}, 2, angle.Rot(0.25), points)
+	inner := d2poly.RegularPolygonRadius(d2.Pt{0, 0}, 1, angle.Rot(0.25+1.0/float64(points*2)), points)
+	star2d := make([]d2.Pt, points*2)
 	for i, oPt := range outer {
 		star2d[2*i] = oPt
 		star2d[2*i+1] = inner[i]
@@ -91,15 +107,17 @@ func getMesh() mesh.TriangleMesh {
 	tm := mesh.TriangleMesh{
 		Pts: append(f, d3.Pt{0, 0, 0.5}, d3.Pt{0, 0, -0.5}),
 	}
-	for i := uint32(0); i < 5; i++ {
+
+	up := uint32(points)
+	for i := uint32(0); i < up; i++ {
 		tm.Polygons = append(tm.Polygons, [][3]uint32{
-			{i * 2, i*2 + 1, 10},
+			{i * 2, i*2 + 1, (up * 2)},
 		}, [][3]uint32{
-			{i * 2, i*2 + 1, 11},
+			{i * 2, i*2 + 1, (up * 2) + 1},
 		}, [][3]uint32{
-			{i*2 + 1, (i*2 + 2) % 10, 10},
+			{i*2 + 1, (i*2 + 2) % (up * 2), (up * 2)},
 		}, [][3]uint32{
-			{i*2 + 1, (i*2 + 2) % 10, 11},
+			{i*2 + 1, (i*2 + 2) % (up * 2), (up * 2) + 1},
 		})
 	}
 
@@ -116,11 +134,8 @@ func (s *star) T(frame float64) *d3.T {
 	return d3.Rotation{
 		s.Rad + s.speed*angle.Rad(frame),
 		d3.XZ,
-	}.
-		T().
-		T(
-			d3.Translate(s.V).T(),
-		)
+	}.T().
+		T(d3.Translate(s.V).T())
 }
 
 func defineStarField() []star {
