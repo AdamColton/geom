@@ -7,7 +7,6 @@ import (
 	"sync"
 
 	"github.com/adamcolton/geom/angle"
-	"github.com/adamcolton/geom/d2/grid"
 	"github.com/adamcolton/geom/d3"
 	"github.com/adamcolton/geom/d3/render/ffmpeg"
 	"github.com/adamcolton/geom/d3/solid/mesh"
@@ -102,7 +101,7 @@ func (s *Scene) cameraTransform() {
 
 		wg := &sync.WaitGroup{}
 		wg.Add(len(sf.Meshes))
-		ch := make(chan int)
+		ch := make(chan int, cpus)
 		fn := func() {
 			for idx := range ch {
 				m := sf.Meshes[idx]
@@ -125,14 +124,12 @@ func (s *Scene) cameraTransform() {
 
 func (s *Scene) zbuf() {
 	// Todo: break this up into parallel renders
-	buf := newZbuf(int(float64(s.W)*s.ImageScale), int(float64(s.H)*s.ImageScale))
+	buf := newZbuf(int(float64(s.W)*s.ImageScale), int(float64(s.H)*s.ImageScale), &s.Background)
 	for sf := range s.toZbuf {
-		buf.Reset()
 		for _, m := range sf.Meshes {
 			buf.Add(m)
 		}
 		img := <-s.recycleImg
-		s.reset(img)
 		buf.Draw(img)
 		s.toFF <- img
 	}
@@ -160,10 +157,4 @@ func (s *Scene) ff() {
 
 func (s *Scene) makeImg() *image.RGBA {
 	return image.NewRGBA(image.Rect(0, 0, int(float64(s.W)*s.ImageScale), int(float64(s.H)*s.ImageScale)))
-}
-
-func (s *Scene) reset(img *image.RGBA) {
-	grid.Pt{img.Rect.Max.X, img.Rect.Max.Y}.Iter().Each(func(idx int, pt grid.Pt) {
-		img.SetRGBA(pt.X, pt.Y, s.Background)
-	})
 }

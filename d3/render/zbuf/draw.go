@@ -2,6 +2,7 @@ package zbuf
 
 import (
 	"image"
+	"image/color"
 	"runtime"
 	"sync"
 
@@ -11,10 +12,11 @@ import (
 )
 
 type ZBuffer struct {
-	w, h int
-	buf  []bufEntry
-	set  []bool
-	cpus int
+	w, h       int
+	background *color.RGBA
+	buf        []bufEntry
+	set        []bool
+	cpus       int
 }
 
 type bufEntry struct {
@@ -24,14 +26,15 @@ type bufEntry struct {
 	Z float64
 }
 
-func newZbuf(w, h int) ZBuffer {
+func newZbuf(w, h int, background *color.RGBA) ZBuffer {
 	size := w * h
 	return ZBuffer{
-		w:    w,
-		h:    h,
-		buf:  make([]bufEntry, size),
-		set:  make([]bool, size),
-		cpus: runtime.NumCPU(),
+		w:          w,
+		h:          h,
+		background: background,
+		buf:        make([]bufEntry, size),
+		set:        make([]bool, size),
+		cpus:       runtime.NumCPU(),
 	}
 }
 
@@ -52,18 +55,12 @@ func (z ZBuffer) Insert(pt d3.Pt, b barycentric.B, pIdx, tIdx int, rm *RenderMes
 	z.set[idx] = true
 }
 
-func (z ZBuffer) Reset() {
-	for i := range z.set {
-		z.set[i] = false
-	}
-}
-
 func getIdx(w int, pt *d3.Pt) int {
 	return w*int(pt.Y) + int(pt.X)
 }
 
-func New(w, h int) ZBuffer {
-	return newZbuf(w, h)
+func New(w, h int, background *color.RGBA) ZBuffer {
+	return newZbuf(w, h, background)
 }
 
 func (buf ZBuffer) Add(rm *RenderMesh) {
@@ -72,7 +69,7 @@ func (buf ZBuffer) Add(rm *RenderMesh) {
 
 	wg := &sync.WaitGroup{}
 	wg.Add(len(rm.Original.Polygons))
-	ch := make(chan int)
+	ch := make(chan int, buf.cpus)
 	fn := func() {
 		for pIdx := range ch {
 			p := rm.Original.Polygons[pIdx]
@@ -124,17 +121,32 @@ var cards = [5]d3.V{
 }
 
 func (buf ZBuffer) Draw(img *image.RGBA) {
-	for idx, be := range buf.buf {
-		if !buf.set[idx] {
-			continue
+	wg := &sync.WaitGroup{}
+	wg.Add(buf.cpus)
+	ln := len(buf.buf)
+	fn := func(offset int) {
+		var c *color.RGBA
+		for idx := offset; idx < ln; idx += buf.cpus {
+			x, y := idx%buf.w, idx/buf.w
+			be := buf.buf[idx]
+			if buf.set[idx] {
+				c = be.Shader(&Context{
+					B:           be.B,
+					RenderMesh:  be.RenderMesh,
+					PolygonIdx:  be.PolygonIdx,
+					TriangleIdx: be.TriangleIdx,
+				})
+				buf.set[idx] = false
+			} else {
+				c = buf.background
+			}
+
+			img.SetRGBA(x, buf.h-y-1, *c)
 		}
-		x, y := idx%buf.w, idx/buf.w
-		c := be.Shader(&Context{
-			B:           be.B,
-			RenderMesh:  be.RenderMesh,
-			PolygonIdx:  be.PolygonIdx,
-			TriangleIdx: be.TriangleIdx,
-		})
-		img.SetRGBA(x, buf.h-y-1, *c)
+		wg.Add(-1)
 	}
+	for i := 0; i < buf.cpus; i++ {
+		go fn(i)
+	}
+	wg.Wait()
 }
