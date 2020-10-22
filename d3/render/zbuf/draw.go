@@ -112,16 +112,6 @@ func (buf ZBuffer) Add(rm *RenderMesh) {
 	wg.Wait()
 }
 
-const zfix = -0.0001
-
-var cards = [5]d3.V{
-	{0, 0, zfix},
-	{1, 0, zfix},
-	{0, 1, zfix},
-	{-1, 0, zfix},
-	{0, -1, zfix},
-}
-
 func (buf ZBuffer) Draw(img *image.RGBA) {
 	wg := &sync.WaitGroup{}
 	wg.Add(buf.cpus)
