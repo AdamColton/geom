@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"runtime"
 	"sync"
+	"sync/atomic"
 
 	"github.com/adamcolton/geom/barycentric"
 	"github.com/adamcolton/geom/d3"
@@ -67,11 +68,16 @@ func (buf ZBuffer) Add(rm *RenderMesh) {
 	w64 := float64(buf.w)
 	h64 := float64(buf.h)
 
+	ln := len(rm.Original.Polygons)
 	wg := &sync.WaitGroup{}
-	wg.Add(len(rm.Original.Polygons))
-	ch := make(chan int, buf.cpus)
+	wg.Add(buf.cpus)
+	var idx32 int32 = -1
 	fn := func() {
-		for pIdx := range ch {
+		for {
+			pIdx := int(atomic.AddInt32(&idx32, 1))
+			if pIdx >= ln {
+				break
+			}
 			p := rm.Original.Polygons[pIdx]
 			for tIdx, ptIdxs := range p {
 				t := [3]d3.Pt{
@@ -97,17 +103,13 @@ func (buf ZBuffer) Add(rm *RenderMesh) {
 					buf.Insert(bt.PtB(b), b, pIdx, tIdx, rm)
 				}
 			}
-			wg.Add(-1)
 		}
+		wg.Add(-1)
 	}
 	for i := 0; i < buf.cpus; i++ {
 		go fn()
 	}
-	for i := range rm.Original.Polygons {
-		ch <- i
-	}
 	wg.Wait()
-	close(ch)
 }
 
 const zfix = -0.0001
@@ -124,9 +126,14 @@ func (buf ZBuffer) Draw(img *image.RGBA) {
 	wg := &sync.WaitGroup{}
 	wg.Add(buf.cpus)
 	ln := len(buf.buf)
+	var idx32 int32 = -1
 	fn := func(offset int) {
 		var c *color.RGBA
-		for idx := offset; idx < ln; idx += buf.cpus {
+		for {
+			idx := int(atomic.AddInt32(&idx32, 1))
+			if idx >= ln {
+				break
+			}
 			x, y := idx%buf.w, idx/buf.w
 			be := buf.buf[idx]
 			if buf.set[idx] {
