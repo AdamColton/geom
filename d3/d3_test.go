@@ -2,6 +2,7 @@ package d3
 
 import (
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/adamcolton/geom/angle"
@@ -222,4 +223,15 @@ func TestProject(t *testing.T) {
 			EqualV(t, tc.aOnB, tc.b.Project(tc.a))
 		})
 	}
+}
+
+func TestAng(t *testing.T) {
+	a := math.Pi / 2
+	v := V{1, 0, 0}
+	v2 := Rotation{
+		Angle: angle.Rad(a),
+		Plane: XY,
+	}.T().V(v)
+
+	assert.InDelta(t, a, float64(v.Ang(v2)), 1e-5)
 }
