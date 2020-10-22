@@ -3,16 +3,13 @@ package zbuf
 import (
 	"math"
 
-	"github.com/adamcolton/geom/angle"
 	"github.com/adamcolton/geom/d3"
+	"github.com/adamcolton/geom/d3/render/scene"
 )
 
 type Camera struct {
-	d3.Pt
-	d3.Q
 	Near, Far float64
-	Angle     angle.Rad
-	W, H      int
+	scene.Camera
 }
 
 // Move so that the field of view is (0,1) instead of (-1,1) in both x and y.
@@ -33,7 +30,7 @@ func (c Camera) T() *d3.T {
 func (c Camera) Perspective() *d3.T {
 	a, b := c.ab()
 	x := 1.0 / math.Tan(float64(c.Angle)/2.0)
-	y := x * float64(c.W) / float64(c.H)
+	y := x * float64(c.Width) / float64(c.Height)
 	return &d3.T{
 		{x, 0, 0, 0},
 		{0, y, 0, 0},

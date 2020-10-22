@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/adamcolton/geom/d3"
+	"github.com/adamcolton/geom/d3/render/scene"
 	"github.com/adamcolton/geom/d3/shape/triangle"
 	"github.com/adamcolton/geom/d3/solid/mesh"
 	"github.com/adamcolton/geom/geomtest"
@@ -13,13 +14,15 @@ import (
 
 func TestCameraBasic(t *testing.T) {
 	c := Camera{
-		Pt:    d3.Pt{0, 0, 0},
-		Q:     d3.Q{1, 0, 0, 0},
-		Near:  1,
-		Far:   10,
-		Angle: math.Pi / 2.0,
-		W:     1,
-		H:     1,
+		Camera: scene.Camera{
+			Pt:     d3.Pt{0, 0, 0},
+			Q:      d3.Q{1, 0, 0, 0},
+			Angle:  math.Pi / 2.0,
+			Width:  1,
+			Height: 1,
+		},
+		Near: 1,
+		Far:  10,
 	}
 
 	assert.Equal(t, c.Q.T(), d3.Identity())
@@ -72,11 +75,13 @@ func TestCameraBasic(t *testing.T) {
 
 func TestCameraMesh(t *testing.T) {
 	c := Camera{
-		Pt:    d3.Pt{0, 0, 0},
-		Q:     d3.Q{1, 0, 0, 0},
-		Near:  2,
-		Far:   10,
-		Angle: math.Pi / 2.0,
+		Camera: scene.Camera{
+			Pt:    d3.Pt{0, 0, 0},
+			Q:     d3.Q{1, 0, 0, 0},
+			Angle: math.Pi / 2.0,
+		},
+		Near: 2,
+		Far:  10,
 	}
 
 	expected := make([]d3.Pt, 0, 8)
@@ -111,13 +116,15 @@ func TestCameraMesh(t *testing.T) {
 
 func TestCameraWH(t *testing.T) {
 	c := Camera{
-		Pt:    d3.Pt{0, 0, 0},
-		Q:     d3.Q{1, 0, 0, 0},
-		Near:  1,
-		Far:   10,
-		Angle: math.Pi / 2.0,
-		W:     150,
-		H:     100,
+		Camera: scene.Camera{
+			Pt:     d3.Pt{0, 0, 0},
+			Q:      d3.Q{1, 0, 0, 0},
+			Angle:  math.Pi / 2.0,
+			Width:  150,
+			Height: 100,
+		},
+		Near: 1,
+		Far:  10,
 	}
 
 	assert.Equal(t, c.Q.T(), d3.Identity())
@@ -134,7 +141,7 @@ func TestCameraWH(t *testing.T) {
 	//assert.Equal(t, nw, c.Near)
 
 	edge := math.Tan(float64(c.Angle) / 2.0)
-	y := float64(c.H) / float64(c.W)
+	y := float64(c.Height) / float64(c.Width)
 	testPoints := []d3.Pt{
 		{0, 0, -c.Near},
 		{0, 0, -c.Far},
