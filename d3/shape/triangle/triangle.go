@@ -8,7 +8,7 @@ import (
 // Triangle in 3D
 type Triangle [3]d3.Pt
 
-const epsilon float64 = 1E-8
+const epsilon float64 = 1e-8
 
 // Intersections returns the intersection as a []float64
 func (t *Triangle) Intersections(l line.Line) []float64 {
@@ -17,6 +17,8 @@ func (t *Triangle) Intersections(l line.Line) []float64 {
 	}
 	return nil
 }
+
+var Small = 1e-6
 
 // Intersection returns the intersection point if there is one and bool
 // indicating if there was an intersection.
@@ -35,13 +37,13 @@ func (t *Triangle) Intersection(l line.Line) (float64, bool) {
 
 	// u and v are Barycentric Coordinates
 	u := f * s.Dot(h)
-	if u < 0 || u > 1 {
+	if u < -Small || u > 1+Small {
 		// point on plane is outside triangle
 		return 0, false
 	}
 	q := s.Cross(v1)
 	v := f * l.D.Dot(q)
-	if v < 0 || u+v > 1 {
+	if v < -Small || u+v > 1+Small {
 		// point on plane is outside triangle
 		return 0, false
 	}
