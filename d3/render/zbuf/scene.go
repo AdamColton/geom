@@ -5,17 +5,15 @@ import (
 	"image/color"
 	"runtime"
 	"sync"
+	"sync/atomic"
 
-	"github.com/adamcolton/geom/angle"
 	"github.com/adamcolton/geom/d3"
 	"github.com/adamcolton/geom/d3/render/ffmpeg"
 	"github.com/adamcolton/geom/d3/solid/mesh"
 )
 
 type Scene struct {
-	W, H               int
-	A                  angle.Rad
-	Near, Far          float64
+	Camera
 	Framerate          byte
 	Name               string
 	ConstantRateFactor byte
@@ -25,39 +23,27 @@ type Scene struct {
 	ImageScale                float64
 	wg                        sync.WaitGroup
 	proc                      *ffmpeg.Proc
-	toCameraTransform, toZbuf chan *SceneFrame
+	toCameraTransform, toZbuf chan *Frame
 	toFF, recycleImg          chan *image.RGBA
 	done                      chan bool
 }
 
-type SceneFrame struct {
+type Frame struct {
 	Camera
 	Meshes    []*RenderMesh
 	s         *Scene
 	Wireframe bool
 }
 
-func (s *Scene) NewFrame(pt d3.Pt, q d3.Q, meshes int) *SceneFrame {
-	return &SceneFrame{
+func (s *Scene) NewFrame(meshes int) *Frame {
+	return &Frame{
 		s:      s,
 		Meshes: make([]*RenderMesh, 0, meshes),
-		Camera: Camera{
-			Pt:    pt,
-			Q:     q,
-			Near:  s.Near,
-			Far:   s.Far,
-			Angle: s.A,
-			W:     int(float64(s.W) * s.ImageScale),
-			H:     int(float64(s.H) * s.ImageScale),
-		},
+		Camera: s.Camera,
 	}
 }
 
-// It would be more efficient to store the space transform then combine it with
-// the camera transform and not save the space points. If the shader needs it,
-// it can be computed then.
-
-func (sf *SceneFrame) AddMesh(m *mesh.TriangleMesh, shader Shader, space *d3.T) {
+func (sf *Frame) AddMesh(m *mesh.TriangleMesh, shader Shader, space *d3.T) {
 	sf.Meshes = append(sf.Meshes, &RenderMesh{
 		Original: m,
 		Space:    space.Pts(m.Pts),
@@ -66,8 +52,8 @@ func (sf *SceneFrame) AddMesh(m *mesh.TriangleMesh, shader Shader, space *d3.T) 
 }
 
 func (s *Scene) init() {
-	s.toCameraTransform = make(chan *SceneFrame)
-	s.toZbuf = make(chan *SceneFrame)
+	s.toCameraTransform = make(chan *Frame)
+	s.toZbuf = make(chan *Frame)
 	s.toFF = make(chan *image.RGBA)
 	s.recycleImg = make(chan *image.RGBA)
 
@@ -76,7 +62,7 @@ func (s *Scene) init() {
 	go s.ff()
 }
 
-func (sf *SceneFrame) Render() {
+func (sf *Frame) Render() {
 	if sf.s.toCameraTransform == nil {
 		sf.s.init()
 	}
@@ -96,27 +82,28 @@ func (s *Scene) cameraTransform() {
 			break
 		}
 		ct := sf.Camera.T()
-		scale := d3.Scale(d3.V{float64(sf.Camera.W), float64(sf.Camera.H), 1}).T()
+		scale := d3.Scale(d3.V{float64(sf.Camera.Width), float64(sf.Camera.Height), 1}).T()
 		ct = ct.T(scale)
 
+		var idx32 int32 = -1
+		ln := len(sf.Meshes)
 		wg := &sync.WaitGroup{}
-		wg.Add(len(sf.Meshes))
-		ch := make(chan int, cpus)
+		wg.Add(cpus)
 		fn := func() {
-			for idx := range ch {
+			for {
+				idx := int(atomic.AddInt32(&idx32, 1))
+				if idx >= ln {
+					break
+				}
 				m := sf.Meshes[idx]
 				m.Camera = ct.PtsScl(m.Space)
-				wg.Add(-1)
 			}
+			wg.Add(-1)
 		}
 		for i := 0; i < cpus; i++ {
 			go fn()
 		}
-		for i := range sf.Meshes {
-			ch <- i
-		}
 		wg.Wait()
-		close(ch)
 		s.toZbuf <- sf
 	}
 	close(s.toZbuf)
@@ -124,7 +111,7 @@ func (s *Scene) cameraTransform() {
 
 func (s *Scene) zbuf() {
 	// Todo: break this up into parallel renders
-	buf := newZbuf(int(float64(s.W)*s.ImageScale), int(float64(s.H)*s.ImageScale), &s.Background)
+	buf := newZbuf(int(float64(s.Camera.Width)*s.ImageScale), int(float64(s.Camera.Height)*s.ImageScale), &s.Background)
 	for sf := range s.toZbuf {
 		for _, m := range sf.Meshes {
 			buf.Add(m)
@@ -142,8 +129,8 @@ func (s *Scene) ff() {
 		Framerate:          s.Framerate,
 		Name:               s.Name,
 		ConstantRateFactor: s.ConstantRateFactor,
-		Width:              s.W,
-		Height:             s.H,
+		Width:              s.Camera.Width,
+		Height:             s.Camera.Height,
 	}
 	proc.Start()
 	s.recycleImg <- s.makeImg()
@@ -156,5 +143,5 @@ func (s *Scene) ff() {
 }
 
 func (s *Scene) makeImg() *image.RGBA {
-	return image.NewRGBA(image.Rect(0, 0, int(float64(s.W)*s.ImageScale), int(float64(s.H)*s.ImageScale)))
+	return image.NewRGBA(image.Rect(0, 0, int(float64(s.Camera.Width)*s.ImageScale), int(float64(s.Camera.Height)*s.ImageScale)))
 }

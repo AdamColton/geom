@@ -7,6 +7,7 @@ import (
 	"os"
 	"runtime/pprof"
 
+	"github.com/adamcolton/geom/d3/render/scene"
 	"github.com/adamcolton/geom/d3/render/zbuf"
 	"github.com/adamcolton/geom/d3/shape/plane"
 
@@ -22,12 +23,12 @@ import (
 
 const (
 	// Frames of video to render
-	frames = 50
+	frames = 100
 	// Number of stars to render
 	stars = 200
 
 	// width sets the size, the aspect ratio is always widescreen
-	width = 1000
+	width = 500
 
 	// Set to between 1.0 and 2.0
 	// 1.0 is low quality
@@ -60,11 +61,17 @@ func main() {
 		h++
 	}
 
-	scene := &zbuf.Scene{
-		W:    w,
-		H:    h,
-		A:    angle.Deg(45),
-		Near: 0.1, Far: 200,
+	s := &zbuf.Scene{
+		Camera: zbuf.Camera{
+			Camera: scene.Camera{
+				Width:  w,
+				Height: h,
+				Angle:  angle.Deg(45),
+				Q:      d3.Q{1, 0, 0, 0},
+			},
+			Near: 0.1,
+			Far:  200,
+		},
 		Framerate:          15,
 		Name:               "stars",
 		ConstantRateFactor: 25,
@@ -74,28 +81,26 @@ func main() {
 
 	stars := defineStarField()
 
-	cPt := d3.Pt{}
-	q := d3.Q{0, 0, 0, 0}
 	for frame := 0; frame < frames; frame++ {
 		d := float64(frame) / float64(frames)
-		cPt.Z = d * -150.0
+		s.Camera.Pt.Z = d * -150.0
 		rot := angle.Rot(d)
-		q.A, q.D = rot.Sincos()
-		f := scene.NewFrame(cPt, q, len(stars))
-		for _, s := range stars {
-			if s.Z+0.2 > cPt.Z {
+		s.Camera.Q.A, s.Camera.Q.D = rot.Sincos()
+		f := s.NewFrame(len(stars))
+		for _, star := range stars {
+			if star.Z+0.2 > s.Camera.Pt.Z {
 				continue
 			}
-			f.AddMesh(&m, starShader, s.T(float64(frame)))
+			f.AddMesh(&m, starShader, star.T(float64(frame)))
 		}
 		f.Render()
 		fmt.Print(cr, "Frame ", frame, "         ")
 	}
-	scene.Done()
+	s.Done()
 }
 
 func getMesh() mesh.TriangleMesh {
-	var points = 6
+	var points = 8
 	outer := d2poly.RegularPolygonRadius(d2.Pt{0, 0}, 2, angle.Rot(0.25), points)
 	inner := d2poly.RegularPolygonRadius(d2.Pt{0, 0}, 1, angle.Rot(0.25+1.0/float64(points*2)), points)
 	star2d := make([]d2.Pt, points*2)
