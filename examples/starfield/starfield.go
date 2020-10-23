@@ -6,18 +6,27 @@ import (
 	"os"
 	"runtime/pprof"
 
-	"github.com/adamcolton/geom/d3/render/ffmpeg"
+	"github.com/adamcolton/geom/d3/render/material"
 	"github.com/adamcolton/geom/d3/render/scene"
 	"github.com/adamcolton/geom/d3/render/zbuf"
 	"github.com/adamcolton/geom/d3/shape/plane"
+	"github.com/adamcolton/geom/ffmpeg"
 
 	"github.com/adamcolton/geom/angle"
 	"github.com/adamcolton/geom/d2"
 	d2poly "github.com/adamcolton/geom/d2/shape/polygon"
 	"github.com/adamcolton/geom/d3"
-	triangle3 "github.com/adamcolton/geom/d3/shape/triangle"
 	"github.com/adamcolton/geom/d3/solid/mesh"
 )
+
+// TODO
+// * Look at profiling - speed up raytrace rendering
+// * * creating all the intersectors is slowing things down and creating garbage
+//	   create them before and cache them
+// * * try putting each triangle in a box and check the intersection with that
+//	   first. Again, with a pre-compute. I could also probably put each mesh in
+//	   a box and check that.
+// * set up shaders to look good.
 
 // For this to run, ffmpeg must be installed
 
@@ -33,10 +42,10 @@ const (
 	// Set to between 1.0 and 2.0
 	// 1.0 is low quality
 	// 2.0 is high quality
-	imageScale = 1.5
+	imageScale = 1.25
 
 	// enable the profiler
-	profile = false
+	profile = true
 )
 
 var cr = string([]byte{13})
@@ -64,17 +73,47 @@ func main() {
 
 	starMesh := getStarMesh()
 	for _, starTransform := range defineStarField() {
-		s.AddMesh(starMesh, starTransform, starShader{})
+		s.AddMesh(starMesh, starTransform, starMaterial)
 	}
 
-	proc.Framer(&zbuf.Framer{
-		Count:      frames,
-		Scene:      s,
-		Near:       0.1,
-		Far:        200,
-		Background: color.RGBA{255, 255, 255, 255},
-		ImageScale: 1.25,
-	})
+	// sf := &raytrace.SceneFrame{
+	// 	SceneFrame: s.Frame(50),
+	// 	RayFrame: &raytrace.RayFrame{
+	// 		Background: (&raytrace.MaterialWrapper{backgroundMaterial}).RayShader,
+	// 		Depth:      3,
+	// 		RayMult:    2,
+	// 		ImageScale: 1.25,
+	// 	},
+	// }
+	// img := sf.Image(nil)
+	// f, _ := os.Create("test.png")
+	// png.Encode(f, resize.Resize(uint(sf.Camera.Width), 0, img, resize.Bilinear))
+	// f.Close()
+
+	//return
+
+	proc.Framer(
+		&zbuf.Framer{
+			Count:      frames,
+			Scene:      s,
+			ImageScale: imageScale,
+			ZBufFrame: &zbuf.ZBufFrame{
+				Near:       0.1,
+				Far:        200,
+				Background: color.RGBA{255, 255, 255, 255},
+			},
+		},
+		// &raytrace.Framer{
+		// 	Count: frames,
+		// 	Scene: s,
+		// 	RayFrame: &raytrace.RayFrame{
+		// 		ImageScale: imageScale,
+		// 		Depth:      3,
+		// 		RayMult:    2,
+		// 		Background: (&raytrace.MaterialWrapper{backgroundMaterial}).RayShader,
+		// 	},
+		// },
+	)
 
 }
 
@@ -97,7 +136,7 @@ func (cf cameraFactory) Camera(frameIdx int) *scene.Camera {
 }
 
 func getStarMesh() *mesh.TriangleMesh {
-	var points = 8
+	var points = 5
 	outer := d2poly.RegularPolygonRadius(d2.Pt{0, 0}, 2, angle.Rot(0.25), points)
 	inner := d2poly.RegularPolygonRadius(d2.Pt{0, 0}, 1, angle.Rot(0.25+1.0/float64(points*2)), points)
 	star2d := make([]d2.Pt, points*2)
@@ -112,15 +151,19 @@ func getStarMesh() *mesh.TriangleMesh {
 
 	up := uint32(points)
 	for i := uint32(0); i < up; i++ {
-		tm.Polygons = append(tm.Polygons, [][3]uint32{
-			{i * 2, i*2 + 1, (up * 2)},
-		}, [][3]uint32{
-			{i * 2, i*2 + 1, (up * 2) + 1},
-		}, [][3]uint32{
-			{(i*2 + 2) % (up * 2), i*2 + 1, (up * 2)},
-		}, [][3]uint32{
-			{(i*2 + 2) % (up * 2), i*2 + 1, (up * 2) + 1},
-		})
+		tm.Polygons = append(tm.Polygons,
+			[][3]uint32{
+				{i * 2, i*2 + 1, (up * 2)},
+			},
+			[][3]uint32{
+				{i*2 + 1, i * 2, (up * 2) + 1},
+			},
+			[][3]uint32{
+				{i*2 + 1, (i*2 + 2) % (up * 2), (up * 2)},
+			},
+			[][3]uint32{
+				{(i*2 + 2) % (up * 2), i*2 + 1, (up * 2) + 1},
+			})
 	}
 
 	return &tm
@@ -167,24 +210,17 @@ func defineStarField() []*star {
 	return out
 }
 
-type starShader struct{}
+var starMaterial = &material.Material{
+	Specular:    angle.Deg(5),
+	Diffuse:     angle.Deg(1),
+	Color:       &material.Color{0.95, 0.95, 0},
+	Border:      0.03,
+	BorderColor: &material.Color{0, 0, 0},
+}
 
-var black = color.RGBA{0, 0, 0, 255}
-
-func (starShader) ZBufShader(ctx *zbuf.Context) *color.RGBA {
-	if ctx.B.U < 0.03 || ctx.B.V < 0.03 || ctx.B.U+ctx.B.V > 0.97 {
-		return &black
-	}
-	m := ctx.SceneFrame.Meshes[ctx.MeshIdx]
-	tIdxs := m.Original.Polygons[ctx.PolygonIdx][ctx.TriangleIdx]
-	n := (&triangle3.Triangle{
-		m.Space[tIdxs[0]],
-		m.Space[tIdxs[1]],
-		m.Space[tIdxs[2]],
-	}).Normal().Normal()
-
-	r := ((angle.Rot(n.X).Cos() + 1) / 4) + 0.5
-	g := ((angle.Rot(n.Y).Cos() + 1) / 4) + 0.5
-
-	return &(color.RGBA{uint8(r * 255), uint8(g * 255), 0, 255})
+var backgroundMaterial = material.Material{
+	Specular:    angle.Deg(5),
+	Diffuse:     angle.Deg(1),
+	Color:       &material.Color{1, 1, 0},
+	BorderColor: &material.Color{0, 0, 0},
 }

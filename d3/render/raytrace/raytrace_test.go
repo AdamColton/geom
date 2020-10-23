@@ -25,10 +25,10 @@ func TestReflect(t *testing.T) {
 	l := line.New(d3.Pt{-1, -1, -1}, d3.Pt{0, 0, 0})
 	n := tri.Normal().Normal()
 	geomtest.Equal(t, d3.V{0, 0, 1}, n)
-	t0, ok := tri.Intersection(l)
-	assert.True(t, ok)
+	i := tri.Intersection(l)
+	assert.True(t, i.Does)
 	r := line.Line{
-		T0: l.Pt1(t0),
+		T0: l.Pt1(i.T),
 		D:  reflect(l.D, n),
 	}
 	geomtest.Equal(t, d3.Pt{1, 1, -1}, r.Pt1(1.0))
@@ -41,10 +41,10 @@ func TestReflect(t *testing.T) {
 	l = line.New(d3.Pt{-1, -1, -1}, d3.Pt{0, 0, 0})
 	n = tri.Normal().Normal()
 	geomtest.Equal(t, d3.V{0, 0, -1}, n)
-	t0, ok = tri.Intersection(l)
-	assert.True(t, ok)
+	i = tri.Intersection(l)
+	assert.True(t, i.Does)
 	r = line.Line{
-		T0: l.Pt1(t0),
+		T0: l.Pt1(i.T),
 		D:  reflect(l.D, n),
 	}
 	geomtest.Equal(t, d3.Pt{1, 1, -1}, r.Pt1(1.0))
