@@ -14,18 +14,14 @@ import (
 
 func TestCameraBasic(t *testing.T) {
 	c := Camera{
-		Camera: scene.Camera{
-			Pt:     d3.Pt{0, 0, 0},
-			Q:      d3.Q{1, 0, 0, 0},
-			Angle:  math.Pi / 2.0,
-			Width:  1,
-			Height: 1,
-		},
+		Camera: scene.NewCamera(d3.Pt{0, 0, 0}, math.Pi/2.0).
+			SetRot(d3.Q{1, 0, 0, 0}).
+			Square(1),
 		Near: 1,
 		Far:  10,
 	}
 
-	assert.Equal(t, c.Q.T(), d3.Identity())
+	geomtest.Equal(t, d3.Identity(), c.Rot)
 
 	ca, cb := c.ab()
 	assert.Equal(t, c.Near, -ca*c.Near+cb)
@@ -75,17 +71,16 @@ func TestCameraBasic(t *testing.T) {
 
 func TestCameraMesh(t *testing.T) {
 	c := Camera{
-		Camera: scene.Camera{
-			Pt:    d3.Pt{0, 0, 0},
-			Q:     d3.Q{1, 0, 0, 0},
-			Angle: math.Pi / 2.0,
-		},
+		Camera: scene.NewCamera(d3.Pt{0, 0, 0}, math.Pi/2.0).
+			SetRot(d3.Q{1, 0, 0, 0}).
+			SetSize(1, 1),
+
 		Near: 2,
 		Far:  10,
 	}
 
 	expected := make([]d3.Pt, 0, 8)
-	f := []float64{1, -1}
+	f := []float64{0, 1}
 	for _, z := range f {
 		for _, y := range f {
 			for _, x := range f {
@@ -98,10 +93,10 @@ func TestCameraMesh(t *testing.T) {
 	scale := c.Far / c.Near
 	m := mesh.NewExtrusion(
 		[]d3.Pt{
-			{xy, xy, -c.Near},
-			{-xy, xy, -c.Near},
-			{xy, -xy, -c.Near},
 			{-xy, -xy, -c.Near},
+			{xy, -xy, -c.Near},
+			{-xy, xy, -c.Near},
+			{xy, xy, -c.Near},
 		}).
 		Extrude(
 			d3.Scale(d3.V{scale, scale, 1}).T().T(d3.Translate(d3.V{0, 0, -c.Far + c.Near}).T()),
@@ -109,25 +104,19 @@ func TestCameraMesh(t *testing.T) {
 		Close()
 	mt := m.T(c.T())
 
-	for i, p := range mt.Pts {
-		geomtest.Equal(t, expected[i], p)
-	}
+	geomtest.Equal(t, expected, mt.Pts)
 }
 
 func TestCameraWH(t *testing.T) {
 	c := Camera{
-		Camera: scene.Camera{
-			Pt:     d3.Pt{0, 0, 0},
-			Q:      d3.Q{1, 0, 0, 0},
-			Angle:  math.Pi / 2.0,
-			Width:  150,
-			Height: 100,
-		},
+		Camera: scene.NewCamera(d3.Pt{0, 0, 0}, math.Pi/2.0).
+			SetRot(d3.Q{1, 0, 0, 0}).
+			SetSize(150, 100),
 		Near: 1,
 		Far:  10,
 	}
 
-	assert.Equal(t, c.Q.T(), d3.Identity())
+	geomtest.Equal(t, d3.Identity(), c.Rot)
 
 	ca, cb := c.ab()
 	assert.Equal(t, c.Near, -ca*c.Near+cb)
@@ -141,7 +130,7 @@ func TestCameraWH(t *testing.T) {
 	//assert.Equal(t, nw, c.Near)
 
 	edge := math.Tan(float64(c.Angle) / 2.0)
-	y := float64(c.Height) / float64(c.Width)
+	y := float64(c.Size.X) / float64(c.Size.Y)
 	testPoints := []d3.Pt{
 		{0, 0, -c.Near},
 		{0, 0, -c.Far},
@@ -230,15 +219,15 @@ func TestCameraWH(t *testing.T) {
 // }
 
 func TestScan(t *testing.T) {
-	tr := triangle.Triangle{{10, 10, 0}, {100, 50, 0}, {50, 100, 0}}
-	bi, bt := Scan(tr, 1)
+	tr := &triangle.Triangle{{10, 10, 0}, {100, 50, 0}, {50, 100, 0}}
+	bi, bt := Scan(tr, 0.5, 0.7)
 	assert.NotNil(t, bi)
 	assert.Equal(t, bt.Pt, d3.Pt{10, 10, 0})
 
 	// m*U.X + n*V.X = dx
 	// m*U.Y + n*V.Y = 0
 
-	assert.Equal(t, 1.0, bt.U.X*bi.Step[0].U+bt.V.X*bi.Step[0].V)
+	assert.Equal(t, 0.5, bt.U.X*bi.Step[0].U+bt.V.X*bi.Step[0].V)
 	assert.Equal(t, 0.0, bt.U.Y*bi.Step[0].U+bt.V.Y*bi.Step[0].V)
 }
 
@@ -261,7 +250,7 @@ func TestScanU(t *testing.T) {
 
 	for name, tc := range tt {
 		t.Run(name, func(t *testing.T) {
-			bt := scanU(tc.t)
+			bt := scanU(&(tc.t))
 			assert.Equal(t, tc.origin, bt.Origin)
 			assert.Equal(t, tc.u, bt.U)
 		})
