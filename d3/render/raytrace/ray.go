@@ -15,7 +15,6 @@ import (
 	"github.com/adamcolton/geom/d3/curve/line"
 	"github.com/adamcolton/geom/d3/render/scene"
 	"github.com/adamcolton/geom/d3/shape/triangle"
-	"github.com/adamcolton/geom/d3/solid/mesh"
 )
 
 type Context struct {
@@ -24,54 +23,43 @@ type Context struct {
 
 type Shader func(*Context) *Material
 
-type RenderMesh struct {
-	Original *mesh.TriangleMesh
-	Space    []d3.Pt
-	Shader
-}
-
-type Scene struct {
-	scene.Camera
-	Background Shader
-	Depth      int
-	RayMult    int
-}
-
-func (s *Scene) NewFrame(meshes int) *SceneFrame {
-	return &SceneFrame{
-		Scene:  s,
-		Meshes: make([]*RenderMesh, 0, meshes),
-		Camera: s.Camera,
-	}
+type RayShader interface {
+	RayShader(*Context) *Material
 }
 
 type SceneFrame struct {
-	scene.Camera
-	*Scene
-	Meshes []*RenderMesh
+	*scene.SceneFrame
+	Background Shader
+	Depth      int
+	RayMult    int
+	Shaders    []Shader
 }
 
-func (sf *SceneFrame) Add(m *mesh.TriangleMesh, space *d3.T, shader Shader) {
-	sf.Meshes = append(sf.Meshes, &RenderMesh{
-		Original: m,
-		Space:    space.Pts(m.Pts),
-		Shader:   shader,
-	})
+func (sf *SceneFrame) PopulateShaders() {
+	sf.Shaders = make([]Shader, len(sf.SceneFrame.Meshes))
+	for i, m := range sf.SceneFrame.Meshes {
+		shader, _ := m.Shader.(RayShader)
+		sf.Shaders[i] = shader.RayShader
+	}
 }
 
 type Intersection struct {
 	Ray line.Line
-	*RenderMesh
+	*scene.SceneFrame
 	*triangle.Triangle
-	PolygonIndex, TriangleIndex int
-	T                           float64
+	MeshIdx       int
+	PolygonIndex  int
+	TriangleIndex int
+	T             float64
 }
 
 func (sf *SceneFrame) intersect(ray line.Line) *Intersection {
 	out := &Intersection{
-		Ray: ray,
+		Ray:        ray,
+		SceneFrame: sf.SceneFrame,
+		MeshIdx:    -1,
 	}
-	for _, m := range sf.Meshes {
+	for mIdx, m := range sf.Meshes {
 		for pIdx, p := range m.Original.Polygons {
 			for tIdx, ptIdxs := range p {
 				t := &triangle.Triangle{
@@ -81,10 +69,10 @@ func (sf *SceneFrame) intersect(ray line.Line) *Intersection {
 				}
 				t0, ok := t.Intersection(ray)
 				if ok && t0 > 1e-5 && (out.Triangle == nil || out.T > t0) {
-					out.RenderMesh = m
-					out.Triangle = t
+					out.MeshIdx = mIdx
 					out.PolygonIndex = pIdx
 					out.TriangleIndex = tIdx
+					out.Triangle = t
 					out.T = t0
 				}
 			}
@@ -97,10 +85,10 @@ func (sf *SceneFrame) trace(ray line.Line, depth int) *Color {
 	ctx := &Context{
 		Intersection: sf.intersect(ray),
 	}
-	if ctx.RenderMesh == nil {
+	if ctx.MeshIdx == -1 {
 		return sf.Background(ctx).Color
 	}
-	m := ctx.RenderMesh.Shader(ctx)
+	m := sf.Shaders[ctx.MeshIdx](ctx)
 	//return m.Color
 	if m.Luminous > 0 {
 		return m.Color.Scale(m.Luminous)
@@ -108,7 +96,7 @@ func (sf *SceneFrame) trace(ray line.Line, depth int) *Color {
 
 	pt := ctx.Ray.Pt1(ctx.T)
 	rv := reflect(ctx.Ray.D, ctx.Triangle.Normal().Normal())
-	colors := make([]*Color, sf.Scene.RayMult*depth)
+	colors := make([]*Color, sf.RayMult*depth)
 	for i := range colors {
 		q := randomAngle(m.Diffuse)
 		t := q.T()
@@ -124,12 +112,13 @@ func (sf *SceneFrame) trace(ray line.Line, depth int) *Color {
 }
 
 func (sf *SceneFrame) Image() *image.RGBA {
-	z := (0.5 * float64(sf.Width)) / math.Tan(float64(sf.Camera.Angle)*0.5)
+	w, h := sf.Camera.Width, sf.Camera.Height
+	z := (0.5 * float64(w)) / math.Tan(float64(sf.Camera.Angle)*0.5)
 	t := sf.Camera.Q.TInv().T(d3.Translate(sf.Camera.Pt).TInv())
 	img := image.NewRGBA(image.Rect(0, 0, sf.Camera.Width, sf.Camera.Height))
-	ln := sf.Width * sf.Height
+	ln := w * h
 	//w64, h64 := float64(sf.Width), float64(sf.Height)
-	dx, dy := sf.Width/2, sf.Height/2
+	dx, dy := w/2, h/2
 	var idx32 int32 = -1
 	wg := &sync.WaitGroup{}
 	cpus := runtime.NumCPU()
@@ -140,14 +129,14 @@ func (sf *SceneFrame) Image() *image.RGBA {
 			if idx >= ln {
 				break
 			}
-			ptX, ptY := (idx%sf.Width)-dx, (idx/sf.Width)-dy
+			ptX, ptY := (idx%w)-dx, (idx/w)-dy
 
 			v := t.V(d3.V{float64(ptX), float64(ptY), z})
 			l := line.Line{
 				T0: sf.Camera.Pt,
 				D:  v,
 			}
-			ix, iy := ptX+dx, sf.Height-ptY-dy-1
+			ix, iy := ptX+dx, h-ptY-dy-1
 			c := sf.trace(l, sf.Depth)
 			img.SetRGBA(ix, iy, color.RGBA{uint8(c.R * 255), uint8(c.G * 255), uint8(c.B * 255), 255})
 		}
