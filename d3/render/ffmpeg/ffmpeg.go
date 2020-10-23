@@ -20,10 +20,50 @@ type Proc struct {
 	in                 io.WriteCloser
 }
 
+const (
+	Widescreen = 9.0 / 16.0
+)
+
+func NewWidescreen(name string, width int) *Proc {
+	return NewByAspect(name, width, Widescreen)
+}
+
+func NewByAspect(name string, width int, aspect float64) *Proc {
+	p := &Proc{
+		Name: name,
+	}
+	p.ByAspect(width, aspect)
+	return p
+}
+
+func New(name string, w, h int) *Proc {
+	p := &Proc{
+		Name: name,
+	}
+	p.Set(w, h)
+	return p
+}
+
+func (p *Proc) ByAspect(width int, aspect float64) {
+	p.Set(width, int(float64(width)*aspect))
+}
+
+func (p *Proc) Set(w, h int) {
+	if w%2 == 1 {
+		w++
+	}
+	if h%2 == 1 {
+		h++
+	}
+	p.Width = w
+	p.Height = h
+}
+
 func (p *Proc) Start() error {
 	if p.cmd != nil {
 		return errors.New("Already running")
 	}
+
 	framerate := 24
 	if p.Framerate != 0 {
 		framerate = int(p.Framerate)
