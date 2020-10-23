@@ -14,22 +14,25 @@ import (
 )
 
 func main() {
-	s := &raytrace.Scene{
+	s := &raytrace.SceneFrame{
+		SceneFrame: &scene.SceneFrame{
+			Camera: &scene.Camera{
+				Q:      d3.Q{1, 0, 0, 0},
+				Angle:  angle.Deg(30),
+				Width:  1000,
+				Height: 560,
+			},
+			Meshes: make([]*scene.FrameMesh, 0, 3),
+		},
 		Depth:      3,
 		RayMult:    4,
-		Background: backgroundShader,
-		Camera: scene.Camera{
-			Q:      d3.Q{1, 0, 0, 0},
-			Angle:  angle.Deg(30),
-			Width:  500,
-			Height: 500,
-		},
+		Background: backgroundShader{}.RayShader,
 	}
-	sf := s.NewFrame(3)
-	sf.Add(getArrow(), d3.Identity(), arrowShader)
-	sf.Add(getLight(), d3.Identity(), lightShader)
-	sf.Add(getFloor(), d3.Identity(), floorShader)
-	img := sf.Image()
+	s.AddMesh(getArrow(), d3.Identity(), arrowShader{})
+	s.AddMesh(getLight(), d3.Identity(), lightShader{})
+	s.AddMesh(getFloor(), d3.Identity(), floorShader{})
+	s.PopulateShaders()
+	img := s.Image()
 
 	q := .75
 	rx := float64(s.Camera.Width) * q
@@ -103,7 +106,9 @@ func getFloor() *mesh.TriangleMesh {
 	}
 }
 
-func backgroundShader(ctx *raytrace.Context) *raytrace.Material {
+type backgroundShader struct{}
+
+func (backgroundShader) RayShader(ctx *raytrace.Context) *raytrace.Material {
 	return &raytrace.Material{
 		Color:    &raytrace.Color{0.6, 0.6, 1.0},
 		Luminous: 1.0,
@@ -111,13 +116,16 @@ func backgroundShader(ctx *raytrace.Context) *raytrace.Material {
 	}
 }
 
-func arrowShader(ctx *raytrace.Context) *raytrace.Material {
+type arrowShader struct{}
+
+func (arrowShader) RayShader(ctx *raytrace.Context) *raytrace.Material {
 	pt := ctx.Ray.Pt1(ctx.T)
 	y := ((pt.Y + 1.5) / 4.0)
+	r := ctx.Ray.D.Ang(ctx.Triangle.Normal()).Rot() * 2
 	return &raytrace.Material{
 		Color:      &raytrace.Color{y, 0.5, 0.5},
 		Luminous:   0,
-		Reflective: 0.8,
+		Reflective: r,
 		Diffuse:    angle.Deg(2),
 	}
 }
@@ -128,7 +136,9 @@ var lightMaterial = &raytrace.Material{
 	Diffuse:  angle.Deg(90),
 }
 
-func lightShader(ctx *raytrace.Context) *raytrace.Material {
+type lightShader struct{}
+
+func (lightShader) RayShader(ctx *raytrace.Context) *raytrace.Material {
 	return lightMaterial
 }
 
@@ -137,16 +147,21 @@ var (
 	c2 = &raytrace.Color{0.1, 0.1, 0.1}
 )
 
-func floorShader(ctx *raytrace.Context) *raytrace.Material {
+type floorShader struct{}
+
+func (floorShader) RayShader(ctx *raytrace.Context) *raytrace.Material {
 	pt := ctx.Ray.Pt1(ctx.T)
 	x, z := int(pt.X), int(pt.Z)
 	c := c1
 	if (x^z)&1 == 1 {
 		c = c2
 	}
+
+	r := ctx.Ray.D.Ang(ctx.Triangle.Normal()).Rot() * 2
+
 	return &raytrace.Material{
 		Color:      c,
-		Reflective: 0.8,
+		Reflective: r,
 		Diffuse:    angle.Deg(45),
 	}
 }
