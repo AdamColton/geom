@@ -4,146 +4,166 @@ import (
 	"image"
 	"image/color"
 	"runtime"
-	"sync"
-	"sync/atomic"
 
 	"github.com/adamcolton/geom/barycentric"
 	"github.com/adamcolton/geom/d3"
+	"github.com/adamcolton/geom/d3/render/scene"
 	"github.com/adamcolton/geom/d3/shape/triangle"
 )
 
 type ZBuffer struct {
-	w, h       int
-	background *color.RGBA
-	buf        []bufEntry
-	set        []bool
-	cpus       int
+	w, h     int
+	w64, h64 float64
+	buf      []bufEntry
+	set      []bool
+	cpus     int
+}
+
+type triRef struct {
+	meshIdx     int
+	polygonIdx  int
+	triangleIdx int
 }
 
 type bufEntry struct {
-	*RenderMesh
-	PolygonIdx, TriangleIdx int
+	*triRef
 	barycentric.B
 	Z float64
 }
 
-func newZbuf(w, h int, background *color.RGBA) ZBuffer {
+func New(w, h int) *ZBuffer {
 	size := w * h
-	return ZBuffer{
-		w:          w,
-		h:          h,
-		background: background,
-		buf:        make([]bufEntry, size),
-		set:        make([]bool, size),
-		cpus:       runtime.NumCPU(),
+	return &ZBuffer{
+		w:    w,
+		h:    h,
+		w64:  float64(w),
+		h64:  float64(h),
+		buf:  make([]bufEntry, size),
+		set:  make([]bool, size),
+		cpus: runtime.NumCPU(),
 	}
 }
 
-func (z ZBuffer) Insert(pt d3.Pt, b barycentric.B, pIdx, tIdx int, rm *RenderMesh) {
-	if pt.X < 0 || pt.X >= float64(z.w) || pt.Y < 0 || pt.Y >= float64(z.h) || pt.Z < -1 || pt.Z > 1 {
+func (buf *ZBuffer) Draw(sf *SceneFrame, img *image.RGBA) *image.RGBA {
+	if sf.CameraMeshes == nil {
+		sf.PopulateCameraMeshes()
+	}
+	if sf.Shaders == nil {
+		sf.PopulateShaders()
+	}
+	buf.scanScene(sf)
+
+	if img == nil {
+		r := image.Rect(0, 0, buf.w, buf.h)
+		img = image.NewRGBA(r)
+	}
+	buf.draw(sf, img)
+	return img
+}
+
+func getTriRefs(sf *SceneFrame) []triRef {
+	ln := 0
+	for _, m := range sf.Meshes {
+		for _, p := range m.Original.Polygons {
+			ln += len(p)
+		}
+	}
+	out := make([]triRef, ln)
+	idx := 0
+	for mIdx, m := range sf.Meshes {
+		for pIdx, p := range m.Original.Polygons {
+			for tIdx := range p {
+				out[idx] = triRef{
+					meshIdx:     mIdx,
+					polygonIdx:  pIdx,
+					triangleIdx: tIdx,
+				}
+				idx++
+			}
+		}
+	}
+	return out
+}
+
+func (buf *ZBuffer) scanScene(sf *SceneFrame) {
+	trs := getTriRefs(sf)
+	ln := len(trs)
+
+	dx := 0.8 / buf.w64
+	dy := 0.8 / buf.h64
+
+	scene.RunRange(ln, func(idx, _ int) {
+		tr := trs[idx]
+		m := sf.Meshes[tr.meshIdx]
+		cm := sf.CameraMeshes[tr.meshIdx]
+		p := m.Original.Polygons[tr.polygonIdx]
+		ptIdxs := p[tr.triangleIdx]
+		t := &triangle.Triangle{
+			cm[ptIdxs[0]],
+			cm[ptIdxs[1]],
+			cm[ptIdxs[2]],
+		}
+
+		if !triangleVisible(t) {
+			return
+		}
+
+		bi, bt := Scan(t, dx, dy)
+		for b, done := bi.Start(); !done; b, done = bi.Next() {
+			buf.insert(bt.PtB(b), b, &tr)
+		}
+	})
+}
+
+func triangleVisible(t *triangle.Triangle) bool {
+	for _, pt := range t {
+		if !(pt.X < 0 || pt.X > 1 ||
+			pt.Y < 0 || pt.Y > 1 ||
+			pt.Z < 0 || pt.Z > 1) {
+			return true
+		}
+	}
+	return false
+}
+
+func (buf *ZBuffer) insert(pt d3.Pt, b barycentric.B, tr *triRef) {
+	if pt.X < 0 || pt.X > 1 || pt.Y < 0 || pt.Y > 1 || pt.Z < 0 || pt.Z > 1 {
 		return
 	}
-	idx := getIdx(z.w, &pt)
-	if idx < 0 || idx >= len(z.buf) || (z.set[idx] && z.buf[idx].Z < pt.Z) {
+	pt.X *= buf.w64
+	pt.Y *= buf.h64
+	idx := getIdx(buf.w, &pt)
+	if idx < 0 || idx >= len(buf.buf) || (buf.set[idx] && buf.buf[idx].Z < pt.Z) {
 		return
 	}
-	buf := &z.buf[idx]
-	buf.RenderMesh = rm
-	buf.B = b
-	buf.Z = pt.Z
-	buf.PolygonIdx = pIdx
-	buf.TriangleIdx = tIdx
-	z.set[idx] = true
+	be := &buf.buf[idx]
+	be.triRef = tr
+	be.B = b
+	be.Z = pt.Z
+	buf.set[idx] = true
 }
 
 func getIdx(w int, pt *d3.Pt) int {
 	return w*int(pt.Y) + int(pt.X)
 }
 
-func New(w, h int, background *color.RGBA) ZBuffer {
-	return newZbuf(w, h, background)
-}
-
-func (buf ZBuffer) Add(rm *RenderMesh) {
-	w64 := float64(buf.w)
-	h64 := float64(buf.h)
-
-	ln := len(rm.Original.Polygons)
-	wg := &sync.WaitGroup{}
-	wg.Add(buf.cpus)
-	var idx32 int32 = -1
-	fn := func() {
-		for {
-			pIdx := int(atomic.AddInt32(&idx32, 1))
-			if pIdx >= ln {
-				break
-			}
-			p := rm.Original.Polygons[pIdx]
-			for tIdx, ptIdxs := range p {
-				t := [3]d3.Pt{
-					rm.Camera[ptIdxs[0]],
-					rm.Camera[ptIdxs[1]],
-					rm.Camera[ptIdxs[2]],
-				}
-				ok := false
-				for _, pt := range t {
-					x := pt.X >= 0 && pt.X <= w64
-					y := pt.Y >= 0 && pt.Y <= h64
-					z := pt.Z <= 1 && pt.Z >= -1
-					ok = x && y && z
-					if ok {
-						break
-					}
-				}
-				if !ok {
-					continue
-				}
-				bi, bt := Scan(triangle.Triangle(t), 0.8)
-				for b, done := bi.Start(); !done; b, done = bi.Next() {
-					buf.Insert(bt.PtB(b), b, pIdx, tIdx, rm)
-				}
-			}
-		}
-		wg.Add(-1)
-	}
-	for i := 0; i < buf.cpus; i++ {
-		go fn()
-	}
-	wg.Wait()
-}
-
-func (buf ZBuffer) Draw(img *image.RGBA) {
-	wg := &sync.WaitGroup{}
-	wg.Add(buf.cpus)
-	ln := len(buf.buf)
-	var idx32 int32 = -1
-	fn := func(offset int) {
+func (buf *ZBuffer) draw(sf *SceneFrame, img *image.RGBA) {
+	scene.RunRange(len(buf.buf), func(idx, _ int) {
 		var c *color.RGBA
-		for {
-			idx := int(atomic.AddInt32(&idx32, 1))
-			if idx >= ln {
-				break
-			}
-			x, y := idx%buf.w, idx/buf.w
-			be := buf.buf[idx]
-			if buf.set[idx] {
-				c = be.Shader(&Context{
-					B:           be.B,
-					RenderMesh:  be.RenderMesh,
-					PolygonIdx:  be.PolygonIdx,
-					TriangleIdx: be.TriangleIdx,
-				})
-				buf.set[idx] = false
-			} else {
-				c = buf.background
-			}
-
-			img.SetRGBA(x, buf.h-y-1, *c)
+		x, y := idx%buf.w, idx/buf.w
+		be := buf.buf[idx]
+		if buf.set[idx] {
+			c = sf.Shaders[be.meshIdx](&Context{
+				SceneFrame:  sf,
+				MeshIdx:     be.meshIdx,
+				PolygonIdx:  be.polygonIdx,
+				TriangleIdx: be.triangleIdx,
+				B:           be.B,
+			})
+			buf.set[idx] = false
+		} else {
+			c = &sf.Background
 		}
-		wg.Add(-1)
-	}
-	for i := 0; i < buf.cpus; i++ {
-		go fn(i)
-	}
-	wg.Wait()
+		img.SetRGBA(x, buf.h-y-1, *c)
+	})
 }
