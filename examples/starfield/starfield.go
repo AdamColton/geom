@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"image/color"
 	"math/rand"
 	"os"
 	"runtime/pprof"
 
+	"github.com/adamcolton/geom/d3/render/ffmpeg"
 	"github.com/adamcolton/geom/d3/render/scene"
 	"github.com/adamcolton/geom/d3/render/zbuf"
 	"github.com/adamcolton/geom/d3/shape/plane"
@@ -23,12 +23,12 @@ import (
 
 const (
 	// Frames of video to render
-	frames = 100
+	frames = 1000
 	// Number of stars to render
 	stars = 200
 
 	// width sets the size, the aspect ratio is always widescreen
-	width = 500
+	width = 1000
 
 	// Set to between 1.0 and 2.0
 	// 1.0 is low quality
@@ -36,7 +36,7 @@ const (
 	imageScale = 1.5
 
 	// enable the profiler
-	profile = true
+	profile = false
 )
 
 var cr = string([]byte{13})
@@ -49,57 +49,54 @@ func main() {
 		}
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()
+		defer f.Close()
 	}
 
-	m := getMesh()
-	w := width
-	if w%2 == 1 {
-		w++
-	}
-	h := (w * 9) / 16
-	if h%2 == 1 {
-		h++
-	}
+	proc := ffmpeg.NewWidescreen("stars", width)
 
-	s := &zbuf.Scene{
-		Camera: zbuf.Camera{
-			Camera: scene.Camera{
-				Width:  w,
-				Height: h,
-				Angle:  angle.Deg(45),
-				Q:      d3.Q{1, 0, 0, 0},
-			},
-			Near: 0.1,
-			Far:  200,
+	s := &scene.Scene{
+		GetCamera: cameraFactory{
+			w:      proc.Width,
+			h:      proc.Height,
+			frames: frames,
 		},
-		Framerate:          15,
-		Name:               "stars",
-		ConstantRateFactor: 25,
-		Background:         color.RGBA{255, 255, 255, 255},
-		ImageScale:         1.25,
 	}
 
-	stars := defineStarField()
-
-	for frame := 0; frame < frames; frame++ {
-		d := float64(frame) / float64(frames)
-		s.Camera.Pt.Z = d * -150.0
-		rot := angle.Rot(d)
-		s.Camera.Q.A, s.Camera.Q.D = rot.Sincos()
-		f := s.NewFrame(len(stars))
-		for _, star := range stars {
-			if star.Z+0.2 > s.Camera.Pt.Z {
-				continue
-			}
-			f.AddMesh(&m, starShader, star.T(float64(frame)))
-		}
-		f.Render()
-		fmt.Print(cr, "Frame ", frame, "         ")
+	starMesh := getStarMesh()
+	for _, starTransform := range defineStarField() {
+		s.AddMesh(starMesh, starTransform, starShader{})
 	}
-	s.Done()
+
+	proc.Framer(&zbuf.Framer{
+		Count:      frames,
+		Scene:      s,
+		Near:       0.1,
+		Far:        200,
+		Background: color.RGBA{255, 255, 255, 255},
+		ImageScale: 1.25,
+	})
+
 }
 
-func getMesh() mesh.TriangleMesh {
+type cameraFactory struct {
+	w, h   int
+	frames int
+}
+
+func (cf cameraFactory) Camera(frameIdx int) *scene.Camera {
+	d := float64(frameIdx) / float64(frames)
+	c := &scene.Camera{
+		Width:  cf.w,
+		Height: cf.h,
+		Angle:  angle.Deg(45),
+	}
+	c.Pt.Z = d * -150.0
+	rot := angle.Rot(d)
+	c.Q.A, c.Q.D = rot.Sincos()
+	return c
+}
+
+func getStarMesh() *mesh.TriangleMesh {
 	var points = 8
 	outer := d2poly.RegularPolygonRadius(d2.Pt{0, 0}, 2, angle.Rot(0.25), points)
 	inner := d2poly.RegularPolygonRadius(d2.Pt{0, 0}, 1, angle.Rot(0.25+1.0/float64(points*2)), points)
@@ -120,41 +117,48 @@ func getMesh() mesh.TriangleMesh {
 		}, [][3]uint32{
 			{i * 2, i*2 + 1, (up * 2) + 1},
 		}, [][3]uint32{
-			{i*2 + 1, (i*2 + 2) % (up * 2), (up * 2)},
+			{(i*2 + 2) % (up * 2), i*2 + 1, (up * 2)},
 		}, [][3]uint32{
-			{i*2 + 1, (i*2 + 2) % (up * 2), (up * 2) + 1},
+			{(i*2 + 2) % (up * 2), i*2 + 1, (up * 2) + 1},
 		})
 	}
 
-	return tm
+	return &tm
 }
 
 type star struct {
 	d3.V
 	angle.Rad
-	speed angle.Rad
+	speed  angle.Rad
+	offset *d3.T
 }
 
-func (s *star) T(frame float64) *d3.T {
-	return d3.Rotation{
-		s.Rad + s.speed*angle.Rad(frame),
+func (s *star) T(frame int) *d3.T {
+	xz := d3.Rotation{
+		s.Rad + s.speed*angle.Rad(float64(frame)),
 		d3.XZ,
-	}.T().
-		T(d3.Translate(s.V).T())
+	}.T()
+	t := d3.Translate(s.V).T()
+	return xz.T(s.offset).T(t)
+
 }
 
-func defineStarField() []star {
-	out := make([]star, stars)
+func defineStarField() []*star {
+	out := make([]*star, stars)
 	for i := range out {
 		v2 := d2.Polar{
 			M: rand.Float64()*10 + 3,
 			A: angle.Rot(rand.Float64()),
 		}.V()
 
-		out[i] = star{
+		out[i] = &star{
 			V:     d3.V{v2.X, v2.Y, rand.Float64() * -200},
 			Rad:   angle.Rot(rand.Float64()),
 			speed: angle.Rot(rand.Float64()*.05) + .05,
+			offset: d3.Rotation{
+				angle.Rot(rand.Float64()),
+				d3.XY,
+			}.T(),
 		}
 		if rand.Intn(2) == 0 {
 			out[i].speed = -out[i].speed
@@ -163,20 +167,24 @@ func defineStarField() []star {
 	return out
 }
 
+type starShader struct{}
+
 var black = color.RGBA{0, 0, 0, 255}
 
-func starShader(ctx *zbuf.Context) *color.RGBA {
+func (starShader) ZBufShader(ctx *zbuf.Context) *color.RGBA {
 	if ctx.B.U < 0.03 || ctx.B.V < 0.03 || ctx.B.U+ctx.B.V > 0.97 {
 		return &black
 	}
-	tIdxs := ctx.Original.Polygons[ctx.PolygonIdx][ctx.TriangleIdx]
+	m := ctx.SceneFrame.Meshes[ctx.MeshIdx]
+	tIdxs := m.Original.Polygons[ctx.PolygonIdx][ctx.TriangleIdx]
 	n := (&triangle3.Triangle{
-		ctx.Space[tIdxs[0]],
-		ctx.Space[tIdxs[1]],
-		ctx.Space[tIdxs[2]],
+		m.Space[tIdxs[0]],
+		m.Space[tIdxs[1]],
+		m.Space[tIdxs[2]],
 	}).Normal().Normal()
-	r := (n.X*0.25 + 0.75) * 255
-	g := (n.Y*0.25 + 0.75) * 255
 
-	return &(color.RGBA{uint8(r), uint8(g), 0, 255})
+	r := ((angle.Rot(n.X).Cos() + 1) / 4) + 0.5
+	g := ((angle.Rot(n.Y).Cos() + 1) / 4) + 0.5
+
+	return &(color.RGBA{uint8(r * 255), uint8(g * 255), 0, 255})
 }

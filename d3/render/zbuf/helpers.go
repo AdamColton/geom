@@ -34,18 +34,17 @@ m*U.Y + n*V.Y = 0
 m = (-n*V.Y)/ U.Y
 */
 
-func Scan(t triangle.Triangle, step float64) (*barycentric.BIterator, *triangle.BT) {
+func Scan(t *triangle.Triangle, dx, dy float64) (*barycentric.BIterator, *triangle.BT) {
 	bi := scanU(t)
 	bt := t.BT(bi.Origin, bi.U)
 	if bt == nil || bt.U.Y == 0 {
 		return nil, bt // triangle is horizontal line
 	}
-	bi.Step[1] = barycentric.B{U: step / bt.U.Y, V: 0}
+	bi.Step[1] = barycentric.B{U: dy / bt.U.Y, V: 0}
 
-	dx := step
 	c := bt.U.Cross(bt.V)
 	if c.Z > 0 {
-		dx = -step
+		dx = -dx
 	}
 
 	var m, n float64
@@ -70,7 +69,7 @@ func Scan(t triangle.Triangle, step float64) (*barycentric.BIterator, *triangle.
 	return bi, bt
 }
 
-func scanU(t triangle.Triangle) *barycentric.BIterator {
+func scanU(t *triangle.Triangle) *barycentric.BIterator {
 	bi := &barycentric.BIterator{}
 
 	// Choose Origin and U so that they span the height of the triangle

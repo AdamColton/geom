@@ -12,8 +12,7 @@ type Camera struct {
 	scene.Camera
 }
 
-// Move so that the field of view is (0,1) instead of (-1,1) in both x and y.
-// In Z it remains (-1,1)
+// Move so that the field of view is (0,1) instead of (-1,1) in x, y and z.
 var scaleAndMove = d3.Scale(d3.V{0.5, 0.5, -0.5}).T().T(d3.Translate(d3.V{0.5, 0.5, 0.5}).T())
 
 func (c Camera) T() *d3.T {
@@ -21,7 +20,6 @@ func (c Camera) T() *d3.T {
 	v := d3.Pt{}.Subtract(c.Pt)
 	translate := d3.Translate(v).T()
 	rot := c.Q.Normalize().T()
-
 	perspective := c.Perspective()
 
 	return d3.TProd(translate, rot, perspective, scaleAndMove)
