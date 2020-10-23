@@ -32,10 +32,15 @@ func (rm *RenderMesh) ApplyT(space, camera *d3.T) {
 }
 
 type Context struct {
+	*SceneFrame
+	MeshIdx     int
+	PolygonIdx  int
+	TriangleIdx int
 	barycentric.B
-	*RenderMesh
-	PolygonIdx, TriangleIdx int
-	d3.Pt
 }
 
 type Shader func(ctx *Context) *color.RGBA
+
+type ZBufShader interface {
+	ZBufShader(ctx *Context) *color.RGBA
+}
