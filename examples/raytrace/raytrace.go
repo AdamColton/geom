@@ -8,6 +8,7 @@ import (
 	"github.com/nfnt/resize"
 
 	"github.com/adamcolton/geom/d3"
+	"github.com/adamcolton/geom/d3/render/material"
 	"github.com/adamcolton/geom/d3/render/raytrace"
 	"github.com/adamcolton/geom/d3/render/scene"
 	"github.com/adamcolton/geom/d3/solid/mesh"
@@ -19,26 +20,26 @@ func main() {
 			Camera: &scene.Camera{
 				Q:      d3.Q{1, 0, 0, 0},
 				Angle:  angle.Deg(30),
-				Width:  1000,
-				Height: 560,
+				Width:  1000 / 2,
+				Height: 560 / 2,
 			},
 			Meshes: make([]*scene.FrameMesh, 0, 3),
 		},
-		Depth:      3,
-		RayMult:    4,
-		Background: backgroundShader{}.RayShader,
+		RayFrame: &raytrace.RayFrame{
+			Background: backgroundShader{}.RayShader,
+			Depth:      3,
+			RayMult:    2,
+			ImageScale: 1.25,
+		},
 	}
 	s.AddMesh(getArrow(), d3.Identity(), arrowShader{})
 	s.AddMesh(getLight(), d3.Identity(), lightShader{})
 	s.AddMesh(getFloor(), d3.Identity(), floorShader{})
 	s.PopulateShaders()
-	img := s.Image()
-
-	q := .75
-	rx := float64(s.Camera.Width) * q
+	img := s.Image(nil)
 
 	f, _ := os.Create("test.png")
-	png.Encode(f, resize.Resize(uint(rx), 0, img, resize.Bilinear))
+	png.Encode(f, resize.Resize(uint(s.Camera.Width), 0, img, resize.Bilinear))
 	f.Close()
 }
 
@@ -110,7 +111,7 @@ type backgroundShader struct{}
 
 func (backgroundShader) RayShader(ctx *raytrace.Context) *raytrace.Material {
 	return &raytrace.Material{
-		Color:    &raytrace.Color{0.6, 0.6, 1.0},
+		Color:    &material.Color{0.6, 0.6, 1.0},
 		Luminous: 1.0,
 		Diffuse:  angle.Deg(90),
 	}
@@ -119,19 +120,15 @@ func (backgroundShader) RayShader(ctx *raytrace.Context) *raytrace.Material {
 type arrowShader struct{}
 
 func (arrowShader) RayShader(ctx *raytrace.Context) *raytrace.Material {
-	pt := ctx.Ray.Pt1(ctx.T)
-	y := ((pt.Y + 1.5) / 4.0)
-	r := ctx.Ray.D.Ang(ctx.Triangle.Normal()).Rot() * 2
 	return &raytrace.Material{
-		Color:      &raytrace.Color{y, 0.5, 0.5},
-		Luminous:   0,
-		Reflective: r,
-		Diffuse:    angle.Deg(2),
+		Color:    &material.Color{0.8, 0.5, 0.5},
+		Luminous: 0,
+		Diffuse:  angle.Deg(2),
 	}
 }
 
 var lightMaterial = &raytrace.Material{
-	Color:    &raytrace.Color{1.0, 1.0, 1.0},
+	Color:    &material.Color{1.0, 1.0, 1.0},
 	Luminous: 1.0,
 	Diffuse:  angle.Deg(90),
 }
@@ -143,8 +140,8 @@ func (lightShader) RayShader(ctx *raytrace.Context) *raytrace.Material {
 }
 
 var (
-	c1 = &raytrace.Color{0.9, 0.9, 0.9}
-	c2 = &raytrace.Color{0.1, 0.1, 0.1}
+	c1 = &material.Color{0.9, 0.9, 0.9}
+	c2 = &material.Color{0.1, 0.1, 0.1}
 )
 
 type floorShader struct{}
@@ -157,11 +154,8 @@ func (floorShader) RayShader(ctx *raytrace.Context) *raytrace.Material {
 		c = c2
 	}
 
-	r := ctx.Ray.D.Ang(ctx.Triangle.Normal()).Rot() * 2
-
 	return &raytrace.Material{
-		Color:      c,
-		Reflective: r,
-		Diffuse:    angle.Deg(45),
+		Color:   c,
+		Diffuse: angle.Deg(45),
 	}
 }

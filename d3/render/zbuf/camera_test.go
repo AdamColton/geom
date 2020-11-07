@@ -14,7 +14,7 @@ import (
 
 func TestCameraBasic(t *testing.T) {
 	c := Camera{
-		Camera: scene.Camera{
+		Camera: &scene.Camera{
 			Pt:     d3.Pt{0, 0, 0},
 			Q:      d3.Q{1, 0, 0, 0},
 			Angle:  math.Pi / 2.0,
@@ -75,7 +75,7 @@ func TestCameraBasic(t *testing.T) {
 
 func TestCameraMesh(t *testing.T) {
 	c := Camera{
-		Camera: scene.Camera{
+		Camera: &scene.Camera{
 			Pt:    d3.Pt{0, 0, 0},
 			Q:     d3.Q{1, 0, 0, 0},
 			Angle: math.Pi / 2.0,
@@ -116,7 +116,7 @@ func TestCameraMesh(t *testing.T) {
 
 func TestCameraWH(t *testing.T) {
 	c := Camera{
-		Camera: scene.Camera{
+		Camera: &scene.Camera{
 			Pt:     d3.Pt{0, 0, 0},
 			Q:      d3.Q{1, 0, 0, 0},
 			Angle:  math.Pi / 2.0,
