@@ -3,7 +3,7 @@ package cmpr
 import (
 	"testing"
 
-	"github.com/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEqualWithin(t *testing.T) {
