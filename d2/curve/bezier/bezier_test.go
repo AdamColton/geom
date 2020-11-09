@@ -53,6 +53,7 @@ func TestIntersection(t *testing.T) {
 
 	li := b.LineIntersections(l)
 	bi := b.BezierIntersections(l)
+	assert.Len(t, li, 3)
 	for i, lt := range li {
 		ptl := l.Pt1(lt)
 		ptb := b.Pt1(bi[i])
@@ -76,7 +77,7 @@ func TestBlossomAndSegment(t *testing.T) {
 	geomtest.Equal(t, b.Pt1(0.5), s.Pt1(0.5))
 	geomtest.Equal(t, b.Pt1(0.75), s.Pt1(1))
 
-	s = b.SegmentBuf(0.25, 0.75, make([]d2.Pt, 10))
+	s = b.SegmentBuf(0.25, 0.75, make([]d2.Pt, 10), make([]float64, 9))
 	geomtest.Equal(t, b.Pt1(0.25), s.Pt1(0))
 	geomtest.Equal(t, b.Pt1(0.5), s.Pt1(0.5))
 	geomtest.Equal(t, b.Pt1(0.75), s.Pt1(1))
