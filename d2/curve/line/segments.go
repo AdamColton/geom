@@ -40,12 +40,11 @@ func (ls Segments) LineIntersections(l2 Line) []float64 {
 	for _, pt := range ls[1:] {
 		l := New(prev, pt)
 		prev = pt
-		i, ok := l2.Intersection(l)
-		if !ok || i < 0 || i >= 1 {
+		t0, t1, ok := l.Intersection(l2)
+		if !ok || t1 < 0 || t1 >= 1 {
 			continue
 		}
-		i, _ = l.Intersection(l2)
-		out = append(out, i)
+		out = append(out, t0)
 	}
 	return out
 }

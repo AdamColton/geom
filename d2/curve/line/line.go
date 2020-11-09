@@ -47,23 +47,26 @@ func (l Line) M() float64 {
 // Otherwise a slice with a single value is returned indicating the parametric
 // point along l2 at which the intersection occures.
 func (l Line) LineIntersections(l2 Line) []float64 {
-	i, does := l.Intersection(l2)
+	t, _, does := l.Intersection(l2)
 	if !does {
 		return nil
 	}
-	return []float64{i}
+	return []float64{t}
 }
 
 // Intersection returns the parametric value of the intersection point on the
 // line passed in as an argument and a bool indicating if there was an
 // intersection.
-func (l Line) Intersection(l2 Line) (float64, bool) {
+func (l Line) Intersection(l2 Line) (float64, float64, bool) {
 	d := l.D.Cross(l2.D)
 	if d == 0 {
 		// lines are parallel do not intersect or overlap
-		return 0, false
+		return 0, 0, false
 	}
-	return (l.D.Y*(l2.T0.X-l.T0.X) + l.D.X*(l.T0.Y-l2.T0.Y)) / d, true
+	v := l.T0.Subtract(l2.T0)
+	t0 := (l.D.X*v.Y - l.D.Y*v.X) / d
+	t1 := (l2.D.Y*(v.X) + l2.D.X*(-v.Y)) / -d
+	return t0, t1, true
 }
 
 // Closest returns the point on the line closest to pt

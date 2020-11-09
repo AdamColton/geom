@@ -29,7 +29,7 @@ func TestLineSegments(t *testing.T) {
 	geomtest.Equal(t, ls[4], ls.Pt1(1))
 	geomtest.Equal(t, d2.Pt{4.5, -0.5}, ls.Pt1(1.125))
 
-	_ = LineIntersector(ls)
+	_ = Intersector(ls)
 
 	is := ls.LineIntersections(New(d2.Pt{-1, 0.5}, d2.Pt{5, 0.5}))
 	if assert.Len(t, is, 4) {
