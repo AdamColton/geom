@@ -42,6 +42,6 @@ type Closest interface {
 // allows for complex generic shape functions.
 type Shape interface {
 	Container
-	line.LineIntersector
+	line.Intersector
 	BoundingBoxer
 }
