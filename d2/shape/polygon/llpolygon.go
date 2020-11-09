@@ -59,19 +59,17 @@ func (p *LLPolygon) Contains(pt d2.Pt) bool {
 	return wn != 0
 }
 
-// DoesIntersect returns true if the line intersects any side.
+// DoesIntersect returns true if the line intersects any side with a parametric
+// value between 0 and 1.
 func (p *LLPolygon) DoesIntersect(ln line.Line) bool {
 	curNd := p.Nodes[p.Start]
 	for {
 		nextNd := p.Nodes[curNd.NextIdx]
 
 		side := line.New(p.Pts[curNd.PIdx], p.Pts[nextNd.PIdx])
-		i0, ok := side.Intersection(ln)
-		if ok && i0 >= small && i0 < 1.0-small {
-			i1, _ := ln.Intersection(side)
-			if i1 >= 0 && i1 < 1.0 {
-				return true
-			}
+		i0, i1, ok := side.Intersection(ln)
+		if ok && i0 >= small && i0 < 1.0-small && i1 >= 0 && i1 < 1.0 {
+			return true
 		}
 
 		if curNd.NextIdx == p.Start {

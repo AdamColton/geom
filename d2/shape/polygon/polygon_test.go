@@ -321,7 +321,7 @@ func TestIntersections(t *testing.T) {
 
 	for n, tc := range tt {
 		t.Run(n, func(t *testing.T) {
-			is := tc.Polygon.LineIntersections(tc.Line)
+			is := tc.Polygon.LineIntersections(tc.Line, nil)
 			assert.Equal(t, tc.expected, is)
 			if len(is) > 0 {
 				assert.True(t, NewLL(tc.Polygon).DoesIntersect(tc.Line))
