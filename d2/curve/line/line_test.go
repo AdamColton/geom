@@ -41,31 +41,31 @@ func TestBisect(t *testing.T) {
 }
 
 func TestLineIntersect(t *testing.T) {
-	_ = LineIntersector(Line{})
+	_ = Intersector(Line{})
 
 	testCases := map[string]struct {
 		points    []d2.Pt
 		expectNil bool
 	}{
 		"normal line": {
-			points: []d2.Pt{d2.Pt{0, 1}, d2.Pt{1, 2}, d2.Pt{1, 0}, d2.Pt{2, 3}},
+			points: []d2.Pt{{0, 1}, {1, 2}, {1, 0}, {2, 3}},
 		},
 		"first line is vertical": {
-			points: []d2.Pt{d2.Pt{0, 1}, d2.Pt{0, 2}, d2.Pt{1, 0}, d2.Pt{2, 3}},
+			points: []d2.Pt{{0, 1}, {0, 2}, {1, 0}, {2, 3}},
 		},
 		"second line is vertical": {
-			points: []d2.Pt{d2.Pt{0, 1}, d2.Pt{1, 2}, d2.Pt{1, 0}, d2.Pt{1, 3}},
+			points: []d2.Pt{{0, 1}, {1, 2}, {1, 0}, {1, 3}},
 		},
 		"lines are parallel": {
-			points:    []d2.Pt{d2.Pt{0, 1}, d2.Pt{1, 2}, d2.Pt{1, 2}, d2.Pt{2, 3}},
+			points:    []d2.Pt{{0, 1}, {1, 2}, {1, 2}, {2, 3}},
 			expectNil: true,
 		},
 		"lines are parallel but reversed": {
-			points:    []d2.Pt{d2.Pt{0, 1}, d2.Pt{1, 2}, d2.Pt{2, 3}, d2.Pt{1, 2}},
+			points:    []d2.Pt{{0, 1}, {1, 2}, {2, 3}, {1, 2}},
 			expectNil: true,
 		},
 		"first line is a point": {
-			points:    []d2.Pt{d2.Pt{0, 1}, d2.Pt{0, 1}, d2.Pt{1, 2}, d2.Pt{2, 3}},
+			points:    []d2.Pt{{0, 1}, {0, 1}, {1, 2}, {2, 3}},
 			expectNil: true,
 		},
 	}
@@ -74,13 +74,17 @@ func TestLineIntersect(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			l0 := New(tc.points[0], tc.points[1])
 			l1 := New(tc.points[2], tc.points[3])
-			t1 := l0.LineIntersections(l1)
-			t0 := l1.LineIntersections(l0)
+			i1 := l0.LineIntersections(l1, nil)
+			i0 := l1.LineIntersections(l0, nil)
+			t0, t1, ok := l1.Intersection(l0)
+			assert.Equal(t, tc.expectNil, !ok)
 			if tc.expectNil {
-				assert.Nil(t, t0)
-				assert.Nil(t, t1)
+				assert.Nil(t, i0)
+				assert.Nil(t, i1)
 			} else {
-				geomtest.Equal(t, l0.Pt1(t0[0]), l1.Pt1(t1[0]))
+				assert.Equal(t, i0[0], t0)
+				assert.Equal(t, i1[0], t1)
+				geomtest.Equal(t, l0.Pt1(t0), l1.Pt1(t1))
 			}
 		})
 	}

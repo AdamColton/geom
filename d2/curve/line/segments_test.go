@@ -29,9 +29,9 @@ func TestLineSegments(t *testing.T) {
 	geomtest.Equal(t, ls[4], ls.Pt1(1))
 	geomtest.Equal(t, d2.Pt{4.5, -0.5}, ls.Pt1(1.125))
 
-	_ = LineIntersector(ls)
+	_ = Intersector(ls)
 
-	is := ls.LineIntersections(New(d2.Pt{-1, 0.5}, d2.Pt{5, 0.5}))
+	is := ls.LineIntersections(New(d2.Pt{-1, 0.5}, d2.Pt{5, 0.5}), nil)
 	if assert.Len(t, is, 4) {
 		assert.InDelta(t, 0.25, is[0], 1e-4)
 		assert.InDelta(t, 0.4166, is[1], 1e-4)
@@ -55,11 +55,11 @@ func TestLineSegments(t *testing.T) {
 func TestSegmentsEdgeCase(t *testing.T) {
 	var s Segments
 	geomtest.Equal(t, d2.Pt{}, s.Pt1(0))
-	assert.Nil(t, s.LineIntersections(New(d2.Pt{1, 2}, d2.Pt{3, 5})))
+	assert.Nil(t, s.LineIntersections(New(d2.Pt{1, 2}, d2.Pt{3, 5}), nil))
 	s = Segments{d2.Pt{6, 7}}
 	geomtest.Equal(t, d2.Pt{6, 7}, s.Pt1(0))
 
 	s = Segments{d2.Pt{0, 0}, d2.Pt{1, 1}}
-	i := s.LineIntersections(New(d2.Pt{1, 1.5}, d2.Pt{2, 1.5}))
+	i := s.LineIntersections(New(d2.Pt{1, 1.5}, d2.Pt{2, 1.5}), nil)
 	assert.Nil(t, i)
 }
