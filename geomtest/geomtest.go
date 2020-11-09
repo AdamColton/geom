@@ -2,161 +2,99 @@
 package geomtest
 
 import (
-	"testing"
-
-	"github.com/adamcolton/geom/barycentric"
-	"github.com/adamcolton/geom/d2"
-	"github.com/adamcolton/geom/d3"
+	"fmt"
+	"reflect"
+	"strings"
 )
 
 const (
-	small = 1e-10
-	big   = 1.0 / small
+	Small = 1e-10
+	Big   = 1.0 / Small
 )
 
-// Equal can compare many types from various packages and check that they are
-// considered equal. This allows for small variations in floating point values
-// to be ignored. Supported types are d2.Pt, d2.V, d3.Pt, d3.V
-func Equal(t *testing.T, expected, actual interface{}) bool {
-	switch a := expected.(type) {
-	case d2.Pt:
-		b, ok := actual.(d2.Pt)
-		if !ok {
-			t.Error("Types do not match")
-			return false
-		}
-		v := a.Subtract(b).Abs()
-		if v.X > small || v.Y > small {
-			t.Errorf("Expected %s got %s", a, b)
-			return false
-		}
-		return true
-	case []d2.Pt:
-		b, ok := actual.([]d2.Pt)
-		if !ok {
-			t.Error("Types do not match")
-			return false
-		}
-		if len(a) != len(b) {
-			t.Error("Lengths do not match")
-			return false
-		}
-		equal := true
-		for i, a := range a {
-			v := a.Subtract(b[i]).Abs()
-			if v.X > small || v.Y > small {
-				t.Errorf("At %d expected %s got %s", i, a, b[i])
-				equal = false
-			}
-		}
-		return equal
-	case []d3.Pt:
-		b, ok := actual.([]d3.Pt)
-		if !ok {
-			t.Error("Types do not match")
-			return false
-		}
-		if len(a) != len(b) {
-			t.Error("Lengths do not match")
-			return false
-		}
-		equal := true
-		for i, a := range a {
-			v := a.Subtract(b[i]).Abs()
-			if v.X > small || v.Y > small || v.Z > small {
-				t.Errorf("At %d expected %s got %s", i, a, b[i])
-				equal = false
-			}
-		}
-		return equal
-	case d2.V:
-		b, ok := actual.(d2.V)
-		if !ok {
-			t.Error("Types do not match")
-			return false
-		}
-		v := d2.V{
-			X: a.X - b.X,
-			Y: a.Y - b.Y,
-		}.Abs()
-		if v.X > small || v.Y > small {
-			t.Errorf("Expected %s got %s", a, b)
-			return false
-		}
-		return true
-	case d3.Pt:
-		b, ok := actual.(d3.Pt)
-		if !ok {
-			t.Error("Types do not match")
-			return false
-		}
-		v := a.Subtract(b).Abs()
-		if v.X > small || v.Y > small || v.Z > small {
-			t.Errorf("Expected %s got %s", a, b)
-			return false
-		}
-		return true
-	case d3.V:
-		b, ok := actual.(d3.V)
-		if !ok {
-			t.Error("Types do not match")
-			return false
-		}
-		v := a.Subtract(b).Abs()
-		if v.X > small || v.Y > small || v.Z > small {
-			t.Errorf("Expected %s got %s", a, b)
-			return false
-		}
-		return true
-	case barycentric.B:
-		b, ok := actual.(barycentric.B)
-		if !ok {
-			t.Error("Types do not match")
-			return false
-		}
-		du, dv := a.U-b.U, a.V-b.V
-		if dv > small || dv < -small || du > small || du < -small {
-			t.Errorf("Expected %s got %s", a, b)
-			return false
-		}
-		return true
-	}
-	t.Error("Unsupported type")
-	return false
+func IsSmall(f float64) bool {
+	return f > -Small && f < Small
 }
 
-// V1 checks that the derivative is close the derivative approximation. A good
-// base check that an algorithm isn't completely wrong.
-func V1(t *testing.T, pv d2.Pt1V1) bool {
-	fn := make([]func(float64) d2.V, 2, 3)
-	fn[0] = func(t0 float64) d2.V {
-		return pv.Pt1(t0 + small).Subtract(pv.Pt1(t0)).Multiply(big)
+type AssertEqualizer interface {
+	AssertEqual(to interface{}) error
+}
+
+type ErrWrapper struct {
+	Code             int
+	expected, actual interface{}
+}
+
+const (
+	NotEqualCode int = iota + 1
+	TypeMismatchCode
+	LenMismatchCode
+)
+
+func (e ErrWrapper) Error() string {
+	switch e.Code {
+	case TypeMismatchCode:
+		et := reflect.TypeOf(e.expected)
+		at := reflect.TypeOf(e.actual)
+		return fmt.Sprintf(`Types do not match: expected "%s", got "%s"`, et, at)
+	case NotEqualCode:
+		return fmt.Sprintf("Expected %s got %s", e.expected, e.actual)
+	case LenMismatchCode:
+		eLn := reflect.ValueOf(e.expected).Len()
+		aLn := reflect.ValueOf(e.actual).Len()
+		return fmt.Sprintf("Lengths do not match: Expected %d got %d", eLn, aLn)
 	}
-	fn[1] = pv.V1
-	if v1c0, ok := pv.(d2.V1c0); ok {
-		fn = append(fn, v1c0.V1c0().V1)
+	return "Unsupported Error Code"
+}
+
+func NotEqual(expected, actual interface{}) error {
+	return ErrWrapper{
+		expected: expected,
+		actual:   actual,
+		Code:     NotEqualCode,
+	}
+}
+
+func TypeMismatch(expected, actual interface{}) error {
+	return ErrWrapper{
+		expected: expected,
+		actual:   actual,
+		Code:     TypeMismatchCode,
+	}
+}
+
+func LenMismatch(expected, actual interface{}) error {
+	return ErrWrapper{
+		expected: expected,
+		actual:   actual,
+		Code:     LenMismatchCode,
+	}
+}
+
+type SliceErrRecord struct {
+	Index int
+	Err   error
+}
+
+type SliceErrs []SliceErrRecord
+
+var MaxSliceErrs = 10
+
+func (e SliceErrs) Error() string {
+	var out []string
+	ln := len(e)
+	if ln > MaxSliceErrs {
+		out = make([]string, MaxSliceErrs+1)
+		out[MaxSliceErrs] = fmt.Sprintf("Omitting %d more", ln-MaxSliceErrs)
+		ln = MaxSliceErrs
+	} else {
+		out = make([]string, ln)
 	}
 
-	ok := true
-	v := make([]d2.V, len(fn))
-	for i := 0.0; i <= 1.0; i += 0.01 {
-		for j, f := range fn {
-			v[j] = f(i)
-			if j > 0 {
-				vd := d2.V{
-					X: v[0].X - v[j].X,
-					Y: v[0].Y - v[j].Y,
-				}.Abs()
-				if vd.X > 1e-4 || vd.Y > 1e-4 {
-					r := d2.V{
-						X: v[0].X / v[j].X,
-						Y: v[0].Y / v[j].Y,
-					}
-					t.Errorf("Bad derivative %0.2f %d %s %s %s", i, j, v[0], v[j], r)
-					ok = false
-				}
-			}
-		}
+	for i := 0; i < ln; i++ {
+		r := e[i]
+		out[i] = fmt.Sprintf("\t%d: %s", r.Index, r.Err.Error())
 	}
-	return ok
+
+	return strings.Join(out, "\n")
 }

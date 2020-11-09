@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/geomtest"
 )
 
 // V represents a Vector, the difference between two points.
@@ -88,4 +89,17 @@ func (v V) Abs() V {
 		v.Y = -v.Y
 	}
 	return v
+}
+
+// AssertEqual fulfils geomtest.AssertEqualizer
+func (v V) AssertEqual(actual interface{}) error {
+	v2, ok := actual.(V)
+	if !ok {
+		return geomtest.TypeMismatch(v, actual)
+	}
+	d := v.Subtract(v2).Abs()
+	if d.X > geomtest.Small || d.Y > geomtest.Small {
+		return geomtest.NotEqual(v, v2)
+	}
+	return nil
 }

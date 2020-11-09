@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/geomtest"
 )
 
 // Pt represets a two dimensional point.
@@ -115,4 +116,17 @@ func MinMax(pts ...Pt) (Pt, Pt) {
 		min, max = Min(min, pt), Max(max, pt)
 	}
 	return min, max
+}
+
+// AssertEqual fulfils geomtest.AssertEqualizer
+func (pt Pt) AssertEqual(actual interface{}) error {
+	pt2, ok := actual.(Pt)
+	if !ok {
+		return geomtest.TypeMismatch(pt, actual)
+	}
+	v := pt.Subtract(pt2).Abs()
+	if v.X > geomtest.Small || v.Y > geomtest.Small {
+		return geomtest.NotEqual(pt, pt2)
+	}
+	return nil
 }

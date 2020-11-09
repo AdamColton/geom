@@ -3,6 +3,7 @@ package d2
 import (
 	"testing"
 
+	"github.com/adamcolton/geom/geomtest"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,6 +23,8 @@ func TestV1Wrapper(t *testing.T) {
 	vApproxEqual(t, V{2, 2}, w.V1(1))
 
 	assert.Equal(t, Pt{1, 0.25}, w.Pt1(0.5))
+
+	geomtest.Equal(t, AssertV1{}, w)
 }
 
 func vApproxEqual(t *testing.T, v1, v2 V) {

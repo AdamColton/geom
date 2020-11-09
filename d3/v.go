@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/geomtest"
 )
 
 // V is a 3D vector.
@@ -117,4 +118,17 @@ func (v V) String() string {
 		strconv.FormatFloat(v.Z, 'f', Prec, 64),
 		")",
 	}, "")
+}
+
+// AssertEqual fulfils geomtest.AssertEqualizer
+func (v V) AssertEqual(actual interface{}) error {
+	v2, ok := actual.(V)
+	if !ok {
+		return geomtest.TypeMismatch(v, actual)
+	}
+	d := v.Subtract(v2).Abs()
+	if d.X > geomtest.Small || d.Y > geomtest.Small || d.Z > geomtest.Small {
+		return geomtest.NotEqual(v, v2)
+	}
+	return nil
 }

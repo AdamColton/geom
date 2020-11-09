@@ -3,6 +3,8 @@ package barycentric
 import (
 	"strconv"
 	"strings"
+
+	"github.com/adamcolton/geom/geomtest"
 )
 
 // B is a barycentric coordinate
@@ -81,4 +83,16 @@ func (bs *BIterator) Start() (b B, done bool) {
 	bs.Reset = B{}
 	bs.Idx = 0
 	return bs.Cur, false
+}
+
+// AssertEqual fulfils geomtest.AssertEqualizer
+func (b B) AssertEqual(actual interface{}) error {
+	b2, ok := actual.(B)
+	if !ok {
+		return geomtest.TypeMismatch(b, actual)
+	}
+	if !geomtest.IsSmall(b.U-b2.U) || !geomtest.IsSmall(b.V-b2.V) {
+		return geomtest.NotEqual(b, b2)
+	}
+	return nil
 }

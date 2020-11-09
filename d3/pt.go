@@ -4,6 +4,8 @@ import (
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/adamcolton/geom/geomtest"
 )
 
 type Pt D3
@@ -66,4 +68,17 @@ func (pt Pt) String() string {
 		strconv.FormatFloat(pt.Z, 'f', Prec, 64),
 		")",
 	}, "")
+}
+
+// AssertEqual fulfils geomtest.AssertEqualizer
+func (pt Pt) AssertEqual(actual interface{}) error {
+	pt2, ok := actual.(Pt)
+	if !ok {
+		return geomtest.TypeMismatch(pt, actual)
+	}
+	d := pt.Subtract(pt2).Abs()
+	if d.X > geomtest.Small || d.Y > geomtest.Small || d.Z > geomtest.Small {
+		return geomtest.NotEqual(pt, pt2)
+	}
+	return nil
 }
