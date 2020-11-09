@@ -9,85 +9,134 @@ import (
 // Blossom point for the control points of a bezier curve
 func (b Bezier) Blossom(fs ...float64) d2.Pt {
 	// https://en.wikipedia.org/wiki/Blossom_(functional)
-	return b.BlossomBuf(make([]d2.Pt, len(b)), fs...)
+	return b.newBuf(nil, fs).blossom()
 }
 
 // BlossomBuf computes the Blossom point for the control points of a bezier
 // curve using the provided buffer. Reusing a buffer can increase performance.
-func (b Bezier) BlossomBuf(buf []d2.Pt, fs ...float64) d2.Pt {
-	ln := len(buf)
-	copy(buf, b)
-	for _, f := range fs {
-		ln--
-		for i, pt := range buf[:ln] {
-			buf[i] = pt.Add(buf[i+1].Subtract(pt).Multiply(f))
-		}
-	}
-	return buf[0]
+func (b Bezier) BlossomBuf(ptBuf []d2.Pt, fs ...float64) d2.Pt {
+	return b.newBuf(ptBuf, fs).blossom()
 }
 
 // Segment returns a bezier curve that whose start and end is relative to the
 // base curve. So calling b.(0.2, 0.7) will return a curve that exactly matches
 // b from 0.2 to 0.7.
 func (b Bezier) Segment(start, end float64) Bezier {
-	return b.SegmentBuf(start, end, nil)
+	return b.newBuf(nil, nil).segment(start, end).Bezier
 }
 
 // SegmentBuf returns a bezier curve that whose start and end is relative to the
 // base curve. Providing a buf reduces the overhead.
-func (b Bezier) SegmentBuf(start, end float64, buf []d2.Pt) Bezier {
-	fs := make([]float64, len(b)-1)
-	for i := range fs {
-		fs[i] = start
-	}
-	ln := len(b)
-	out := make(Bezier, ln)
-	if ln > len(buf) {
-		buf = make([]d2.Pt, ln)
-	} else if ln < len(buf) {
-		buf = buf[:ln]
-	}
-	for i := range out {
-		if i > 0 {
-			fs[i-1] = end
-		}
-		out[i] = b.BlossomBuf(buf, fs...)
-	}
-	return out
+func (b Bezier) SegmentBuf(start, end float64, ptBuf []d2.Pt, floatBuf []float64) Bezier {
+	return b.newBuf(ptBuf, floatBuf).segment(start, end).Bezier
 }
 
 // LineIntersections fulfills line.LineIntersector returning the intersection
 // points relative to the line.
-func (b Bezier) LineIntersections(l line.Line) []float64 {
-	m, M := d2.MinMax(b...)
-	t, ok := box.Box{m, M}.LineIntersection(l)
-	if !ok {
-		return nil
-	}
-	if m.Distance(M) < maxSize {
-		return []float64{t}
-	}
-	buf := make([]d2.Pt, len(b))
-	return append(b.SegmentBuf(0, 0.5, buf).LineIntersections(l), b.SegmentBuf(0.5, 1, buf).LineIntersections(l)...)
+func (b Bezier) LineIntersections(l line.Line, buf []float64) []float64 {
+	max := len(buf)
+	buf = buf[:0]
+	return b.newBuf(nil, nil).line(l, max, buf)
 }
 
-const maxSize = 1e-10
+const maxSize = 1e-20
 
 // BezierIntersections returns the intersection points relative to the Bezier
 // curve.
 func (b Bezier) BezierIntersections(l line.Line) []float64 {
-	return b.bezierIntersections(l, 0, 1, make([]d2.Pt, len(b)))
+	return b.newBuf(nil, nil).bezier(l, 0, 1)
 }
 
-func (b Bezier) bezierIntersections(l line.Line, t0, t1 float64, buf []d2.Pt) []float64 {
-	m, M := d2.MinMax(b...)
-	_, ok := box.Box{m, M}.LineIntersection(l)
-	if !ok {
+type buf struct {
+	fs  []float64
+	pts []d2.Pt
+	box []float64
+	Bezier
+}
+
+func (b Bezier) newBuf(pts []d2.Pt, fs []float64) buf {
+	ln := len(b)
+	if ptsLn := len(pts); ptsLn < ln {
+		pts = make([]d2.Pt, ln)
+	} else if ptsLn > ln {
+		pts = pts[:ln]
+	}
+	ln--
+	if fsLn := len(fs); fsLn > ln {
+		fs = fs[:ln]
+	} else if fsLn < ln {
+		fs = make([]float64, ln)
+	}
+	return buf{
+		pts:    pts,
+		fs:     fs,
+		Bezier: b,
+	}
+}
+
+func (b buf) blossom() d2.Pt {
+	ln := len(b.pts)
+	copy(b.pts, b.Bezier)
+	for _, f := range b.fs {
+		ln--
+		for i, pt := range b.pts[:ln] {
+			b.pts[i] = pt.Add(b.pts[i+1].Subtract(pt).Multiply(f))
+		}
+	}
+	return b.pts[0]
+}
+
+func (b buf) segment(start, end float64) buf {
+	ln := len(b.Bezier)
+	out := make(Bezier, ln)
+
+	for j := range b.fs {
+		b.fs[j] = start
+	}
+	out[0] = b.blossom()
+	for i := range b.fs {
+		b.fs[i] = end
+		out[i+1] = b.blossom()
+	}
+	return buf{
+		fs:     b.fs,
+		pts:    b.pts,
+		Bezier: out,
+	}
+}
+
+func (b buf) bezier(l line.Line, t0, t1 float64) []float64 {
+	bx := box.New(b.Bezier...)
+	b.box = bx.LineIntersections(l, b.box[:0])
+	if len(b.box) == 0 {
 		return nil
 	}
 	tc := (t0 + t1) / 2.0
-	if m.Distance(M) < maxSize {
+	if bx.V().Mag2() < maxSize {
 		return []float64{tc}
 	}
-	return append(b.SegmentBuf(0, 0.5, buf).bezierIntersections(l, t0, tc, buf), b.SegmentBuf(0.5, 1, buf).bezierIntersections(l, tc, t1, buf)...)
+	return append(b.segment(0, 0.5).bezier(l, t0, tc), b.segment(0.5, 1).bezier(l, tc, t1)...)
+}
+
+func (b buf) line(l line.Line, max int, tBuf []float64) []float64 {
+	bx := box.New(b.Bezier...)
+	b.box = bx.LineIntersections(l, b.box[:0])
+	if len(b.box) == 0 {
+		return tBuf
+	}
+	if bx.V().Mag2() < maxSize {
+		if len(b.box) > 1 {
+			tBuf = append(tBuf, (b.box[0]+b.box[1])/2)
+		} else {
+			tBuf = append(tBuf, b.box[0])
+		}
+		return tBuf
+	}
+
+	tBuf = b.segment(0, 0.5).line(l, max, tBuf)
+	if max == 0 || len(tBuf) < max {
+		tBuf = b.segment(0.5, 1).line(l, max, tBuf)
+	}
+
+	return tBuf
 }
