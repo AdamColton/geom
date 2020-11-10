@@ -105,18 +105,22 @@ func (t *Triangle) L(ts, c int) d2.Limit {
 
 // LineIntersections find the intersections of the given line with the triangle
 // relative to the line
-func (t *Triangle) LineIntersections(l line.Line) []float64 {
-	var out []float64
+func (t *Triangle) LineIntersections(l line.Line, buf []float64) []float64 {
+	max := len(buf)
+	buf = buf[:0]
 	prev := t[2]
 	for _, cur := range t {
 		l2 := line.New(prev, cur)
 		prev = cur
 		tt, t0, ok := l.Intersection(l2)
 		if tt >= 0 && tt < 1 && ok {
-			out = append(out, t0)
+			buf = append(buf, t0)
+			if max > 0 && len(buf) == max {
+				return buf
+			}
 		}
 	}
-	return out
+	return buf
 }
 
 // BoundingBox returns a bounding box that contains the triangle
