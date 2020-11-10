@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAnd(t *testing.T) {
+func TestIntersection(t *testing.T) {
 	s := shape.Intersection{
 		&triangle.Triangle{{0, 1}, {2, 1}, {1, 3}},
 		&triangle.Triangle{{0, 2}, {2, 2}, {1, 0}},
@@ -20,7 +20,12 @@ func TestAnd(t *testing.T) {
 	assert.True(t, s.Contains(d2.Pt{1, 1}))
 	assert.False(t, s.Contains(d2.Pt{1, 0.1}))
 
-	assert.Equal(t, []float64{1.0 / 3.0, 2.0 / 3.0}, s.LineIntersections(line.New(d2.Pt{0, 0}, d2.Pt{2, 3})))
+	expected := []float64{1.0 / 3.0, 2.0 / 3.0}
+	l := line.New(d2.Pt{0, 0}, d2.Pt{2, 3})
+	assert.Equal(t, expected, s.LineIntersections(l, nil))
+	assert.Equal(t, expected[:1], s.LineIntersections(l, []float64{0}))
+	assert.Equal(t, expected[:2], s.LineIntersections(l, []float64{0, 0}))
+
 	m, M := s.BoundingBox()
 	geomtest.Equal(t, d2.Pt{0, 1}, m)
 	geomtest.Equal(t, d2.Pt{2, 2}, M)
@@ -35,7 +40,12 @@ func TestUnion(t *testing.T) {
 	assert.True(t, s.Contains(d2.Pt{1, 1}))
 	assert.True(t, s.Contains(d2.Pt{1, 0.1}))
 
-	assert.Equal(t, []float64{5.0 / 7.0, 2.0 / 7.0}, s.LineIntersections(line.New(d2.Pt{0, 0}, d2.Pt{2, 3})))
+	expected := []float64{5.0 / 7.0, 2.0 / 7.0}
+	l := line.New(d2.Pt{0, 0}, d2.Pt{2, 3})
+	assert.Equal(t, expected, s.LineIntersections(l, nil))
+	assert.Equal(t, expected[:1], s.LineIntersections(l, []float64{0}))
+	assert.Equal(t, expected[:2], s.LineIntersections(l, []float64{0, 0}))
+
 	m, M := s.BoundingBox()
 	geomtest.Equal(t, d2.Pt{0, 0}, m)
 	geomtest.Equal(t, d2.Pt{2, 3}, M)
@@ -51,7 +61,12 @@ func TestSubtract(t *testing.T) {
 	assert.False(t, s.Contains(d2.Pt{1, 0.1}))
 	assert.True(t, s.Contains(d2.Pt{1, 2.9}))
 
-	assert.Equal(t, []float64{5.0 / 7.0, 2.0 / 3.0}, s.LineIntersections(line.New(d2.Pt{0, 0}, d2.Pt{2, 3})))
+	expected := []float64{5.0 / 7.0, 2.0 / 3.0}
+	l := line.New(d2.Pt{0, 0}, d2.Pt{2, 3})
+	assert.Equal(t, expected, s.LineIntersections(l, nil))
+	assert.Equal(t, expected[:1], s.LineIntersections(l, []float64{0}))
+	assert.Equal(t, expected[:2], s.LineIntersections(l, []float64{0, 0}))
+
 	m, M := s.BoundingBox()
 	geomtest.Equal(t, d2.Pt{0, 1}, m)
 	geomtest.Equal(t, d2.Pt{2, 3}, M)
