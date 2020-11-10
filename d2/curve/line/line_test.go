@@ -74,8 +74,8 @@ func TestLineIntersect(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			l0 := New(tc.points[0], tc.points[1])
 			l1 := New(tc.points[2], tc.points[3])
-			i1 := l0.LineIntersections(l1)
-			i0 := l1.LineIntersections(l0)
+			i1 := l0.LineIntersections(l1, nil)
+			i0 := l1.LineIntersections(l0, nil)
 			t0, t1, ok := l1.Intersection(l0)
 			assert.Equal(t, tc.expectNil, !ok)
 			if tc.expectNil {

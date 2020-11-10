@@ -30,21 +30,25 @@ func (ls Segments) Pt1(t float64) d2.Pt {
 }
 
 // LineIntersections fulfills Intersections, returning the points that intersect
-// l2.
-func (ls Segments) LineIntersections(l2 Line) []float64 {
+// the line.
+func (ls Segments) LineIntersections(l Line, buf []float64) []float64 {
 	if len(ls) < 2 {
-		return nil
+		return buf[:0]
 	}
-	var out []float64
+	max := len(buf)
+	buf = buf[:0]
 	prev := ls[0]
 	for _, pt := range ls[1:] {
-		l := New(prev, pt)
+		seg := New(prev, pt)
 		prev = pt
-		t0, t1, ok := l.Intersection(l2)
+		t0, t1, ok := seg.Intersection(l)
 		if !ok || t1 < 0 || t1 >= 1 {
 			continue
 		}
-		out = append(out, t0)
+		buf = append(buf, t0)
+		if max > 0 && len(buf) == max {
+			return buf
+		}
 	}
-	return out
+	return buf
 }

@@ -47,12 +47,12 @@ func (l Line) M() float64 {
 // the Intersections interface. If the lines are parallel, nil is returned.
 // Otherwise a slice with a single value is returned indicating the parametric
 // point along l2 at which the intersection occures.
-func (l Line) LineIntersections(l2 Line) []float64 {
+func (l Line) LineIntersections(l2 Line, buf []float64) []float64 {
 	t, _, does := l.Intersection(l2)
 	if !does {
-		return nil
+		return buf[:0]
 	}
-	return []float64{t}
+	return append(buf[:0], t)
 }
 
 // Intersection returns the parametric value of the intersection point on the
@@ -76,7 +76,7 @@ func (l Line) Closest(pt d2.Pt) d2.Pt {
 		T0: pt,
 		D:  d2.V{-l.D.Y, l.D.X},
 	}
-	t0 := l2.LineIntersections(l)
+	t0 := l2.LineIntersections(l, nil)
 	if len(t0) == 0 {
 		return d2.Pt{}
 	}
