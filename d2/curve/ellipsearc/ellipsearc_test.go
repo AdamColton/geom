@@ -139,15 +139,26 @@ func TestLineIntersections(t *testing.T) {
 			EllipseArc: New(d2.Pt{2, 2}, d2.Pt{3, 2}, 1),
 			expected:   []float64{0.584990, 0.303898},
 		},
+		"onePoint": {
+			Line:       line.New(d2.Pt{0, 1}, d2.Pt{1, 1}),
+			EllipseArc: New(d2.Pt{0, 0}, d2.Pt{0, 0}, 1),
+			expected:   []float64{0},
+		},
 	}
 
 	for n, tc := range tt {
 		t.Run(n, func(t *testing.T) {
-			_ = n
-			is := tc.EllipseArc.LineIntersections(tc.Line)
+			li := line.Intersector(tc.EllipseArc)
+			is := li.LineIntersections(tc.Line, nil)
 			assert.Equal(t, len(tc.expected), len(is))
 			for idx, ti := range tc.expected {
 				assert.InDelta(t, ti, is[idx], 1e-5)
+			}
+
+			if len(tc.expected) > 0 {
+				one := li.LineIntersections(tc.Line, []float64{0})
+				assert.Len(t, one, 1)
+				assert.InDelta(t, tc.expected[0], one[0], 1e-5)
 			}
 		})
 	}

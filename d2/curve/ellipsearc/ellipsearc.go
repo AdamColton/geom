@@ -103,10 +103,9 @@ func (e *EllipseArc) BoundingBox() (min, max d2.Pt) {
 
 // LineIntersections fulfills line.LineIntersector. Returns the points on the
 // line that intersect the EllipseArc relative to the line.
-func (e *EllipseArc) LineIntersections(l line.Line) []float64 {
-	// TODO: this is not correct, works for horizontal or vertical lines
-	// but the further off from horizontal it is, the more error there is.
-	//
+func (e *EllipseArc) LineIntersections(l line.Line, buf []float64) []float64 {
+	max := len(buf)
+	buf = buf[:0]
 	// http://quickcalcbasic.com/ellipse%20line%20intersection.pdf
 	// Intersection of Rotated Ellipse with Sloping Line(s)
 	v, h := e.sma, e.sMa
@@ -133,10 +132,15 @@ func (e *EllipseArc) LineIntersections(l line.Line) []float64 {
 		sqrt = math.Sqrt(sqrt)
 
 		y0 := (-B + sqrt) / (2 * A)
-		y1 := (-B - sqrt) / (2 * A)
 		t0 := (y0 - l.T0.Y) / l.D.Y
-		t1 := (y1 - l.T0.Y) / l.D.Y
-		return []float64{t0, t1}
+		if max == 1 || sqrt == 0 {
+			buf = append(buf, t0)
+		} else {
+			y1 := (-B - sqrt) / (2 * A)
+			t1 := (y1 - l.T0.Y) / l.D.Y
+			buf = append(buf, t0, t1)
+		}
+		return buf
 	}
 	m := l.M()
 	m2 := m * m
@@ -152,14 +156,20 @@ func (e *EllipseArc) LineIntersections(l line.Line) []float64 {
 		return nil
 	}
 	sqrt = math.Sqrt(sqrt)
-	x1 := (-B + sqrt) / (2 * A)
-	x2 := (-B - sqrt) / (2 * A)
-	t1 := (x1 - l.T0.X) / l.D.X
-	t2 := (x2 - l.T0.X) / l.D.X
+	x0 := (-B + sqrt) / (2 * A)
+	t0 := (x0 - l.T0.X) / l.D.X
+
+	if max == 1 || sqrt == 0 {
+		buf = append(buf, t0)
+	} else {
+		x1 := (-B - sqrt) / (2 * A)
+		t1 := (x1 - l.T0.X) / l.D.X
+		buf = append(buf, t0, t1)
+	}
 
 	// Todo - check if this is inside start/end
 
-	return []float64{t1, t2}
+	return buf
 }
 
 // ABC returns the values so the A*x^2 + B*x + C = 0 is true for the ellipse at
