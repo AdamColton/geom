@@ -38,8 +38,8 @@ func TestLimits(t *testing.T) {
 }
 
 func TestV1(t *testing.T) {
-	geomtest.V1(t, Bezier{{0, 0}, {0.5, 1}, {1, 0}})
-	geomtest.V1(t, Bezier{{0, 0}, {0, 1}, {1, -1}, {1, 0}})
+	geomtest.Equal(t, d2.AssertV1{}, Bezier{{0, 0}, {0.5, 1}, {1, 0}})
+	geomtest.Equal(t, d2.AssertV1{}, Bezier{{0, 0}, {0, 1}, {1, -1}, {1, 0}})
 }
 
 func TestIntersection(t *testing.T) {
@@ -51,14 +51,30 @@ func TestIntersection(t *testing.T) {
 	}
 	l := line.New(d2.Pt{0, 200}, d2.Pt{500, 300})
 
-	li := b.LineIntersections(l)
 	bi := b.BezierIntersections(l)
-	assert.Len(t, li, 3)
-	for i, lt := range li {
-		ptl := l.Pt1(lt)
-		ptb := b.Pt1(bi[i])
-		geomtest.Equal(t, ptl, ptb)
+	fn := func(li []float64) {
+		for i, lt := range li {
+			ptl := l.Pt1(lt)
+			ptb := b.Pt1(bi[i])
+			geomtest.Equal(t, ptl, ptb)
+		}
 	}
+
+	li := b.LineIntersections(l, nil)
+	assert.Len(t, li, 3)
+	fn(li)
+
+	one := b.LineIntersections(l, []float64{0})
+	assert.Len(t, one, 1)
+	fn(one)
+
+	two := b.LineIntersections(l, []float64{0, 0})
+	assert.Len(t, two, 2)
+	fn(two)
+
+	four := b.LineIntersections(l, []float64{0, 0, 0, 0})
+	assert.Len(t, four, 3)
+	fn(four)
 }
 
 func TestCache(t *testing.T) {

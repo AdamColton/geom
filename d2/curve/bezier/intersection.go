@@ -33,11 +33,13 @@ func (b Bezier) SegmentBuf(start, end float64, ptBuf []d2.Pt, floatBuf []float64
 
 // LineIntersections fulfills line.LineIntersector returning the intersection
 // points relative to the line.
-func (b Bezier) LineIntersections(l line.Line) []float64 {
-	return b.newBuf(nil, nil).line(l)
+func (b Bezier) LineIntersections(l line.Line, buf []float64) []float64 {
+	max := len(buf)
+	buf = buf[:0]
+	return b.newBuf(nil, nil).line(l, max, buf)
 }
 
-const maxSize = 1e-10
+const maxSize = 1e-20
 
 // BezierIntersections returns the intersection points relative to the Bezier
 // curve.
@@ -48,6 +50,7 @@ func (b Bezier) BezierIntersections(l line.Line) []float64 {
 type buf struct {
 	fs  []float64
 	pts []d2.Pt
+	box []float64
 	Bezier
 }
 
@@ -103,30 +106,37 @@ func (b buf) segment(start, end float64) buf {
 }
 
 func (b buf) bezier(l line.Line, t0, t1 float64) []float64 {
-	m, M := d2.MinMax(b.Bezier...)
-	i := (&box.Box{m, M}).LineIntersections(l)
-	if len(i) == 0 {
+	bx := box.New(b.Bezier...)
+	b.box = bx.LineIntersections(l, b.box[:0])
+	if len(b.box) == 0 {
 		return nil
 	}
 	tc := (t0 + t1) / 2.0
-	if m.Distance(M) < maxSize {
+	if bx.V().Mag2() < maxSize {
 		return []float64{tc}
 	}
 	return append(b.segment(0, 0.5).bezier(l, t0, tc), b.segment(0.5, 1).bezier(l, tc, t1)...)
 }
 
-func (b buf) line(l line.Line) []float64 {
-	m, M := d2.MinMax(b.Bezier...)
-	i := (&box.Box{m, M}).LineIntersections(l)
-	if len(i) == 0 {
-		return nil
+func (b buf) line(l line.Line, max int, tBuf []float64) []float64 {
+	bx := box.New(b.Bezier...)
+	b.box = bx.LineIntersections(l, b.box[:0])
+	if len(b.box) == 0 {
+		return tBuf
 	}
-	if m.Distance(M) < maxSize {
-		if len(i) > 1 {
-			return []float64{(i[0] + i[1]) / 2}
+	if bx.V().Mag2() < maxSize {
+		if len(b.box) > 1 {
+			tBuf = append(tBuf, (b.box[0]+b.box[1])/2)
+		} else {
+			tBuf = append(tBuf, b.box[0])
 		}
-		return i
+		return tBuf
 	}
 
-	return append(b.segment(0, 0.5).line(l), b.segment(0.5, 1).line(l)...)
+	tBuf = b.segment(0, 0.5).line(l, max, tBuf)
+	if max == 0 || len(tBuf) < max {
+		tBuf = b.segment(0.5, 1).line(l, max, tBuf)
+	}
+
+	return tBuf
 }
