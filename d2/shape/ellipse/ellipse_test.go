@@ -38,7 +38,7 @@ func TestEllipse(t *testing.T) {
 	geomtest.Equal(t, d2.Pt{1, 0}, e.Centroid())
 
 	expectedIntersections := []float64{0.58333, 0.25}
-	gotIntersections := e.LineIntersections(line.New(d2.Pt{0, -2}, d2.Pt{4, 2}))
+	gotIntersections := e.LineIntersections(line.New(d2.Pt{0, -2}, d2.Pt{4, 2}), nil)
 	assert.InDeltaSlice(t, expectedIntersections, gotIntersections, 1e-5)
 
 	assert.Equal(t, e.perimeter, e.Arc())
