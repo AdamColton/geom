@@ -1,7 +1,6 @@
 package box
 
 import (
-	"sort"
 	"testing"
 
 	"github.com/adamcolton/geom/d2"
@@ -61,7 +60,7 @@ func TestLineIntersections(t *testing.T) {
 			},
 		},
 		"horizontal": {
-			expected: []d2.Pt{{0, 0.5}, {1, 0.5}},
+			expected: []d2.Pt{{1, 0.5}, {0, 0.5}},
 			Line: line.Line{
 				d2.Pt{0.5, 0.5},
 				d2.V{0.2, 0},
@@ -81,15 +80,27 @@ func TestLineIntersections(t *testing.T) {
 				d2.V{1, -1},
 			},
 		},
+		"single": {
+			expected: []d2.Pt{{1, 1}},
+			Line: line.Line{
+				d2.Pt{1, 1},
+				d2.V{1, -1},
+			},
+		},
 	}
 
+	li := line.Intersector(b)
 	for n, tc := range tt {
 		t.Run(n, func(t *testing.T) {
-			is := b.LineIntersections(tc.Line)
-			sort.Slice(is, func(i, j int) bool { return is[i] < is[j] })
+			is := li.LineIntersections(tc.Line, nil)
 			assert.Len(t, is, len(tc.expected))
 			for i, expected := range tc.expected {
 				geomtest.Equal(t, expected, tc.Line.Pt1(is[i]))
+			}
+
+			if len(tc.expected) > 0 {
+				one := li.LineIntersections(tc.Line, []float64{0})
+				geomtest.Equal(t, tc.expected[0], tc.Line.Pt1(one[0]))
 			}
 		})
 	}

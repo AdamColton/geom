@@ -55,15 +55,19 @@ func (b *Box) Sides() *[4]line.Line {
 
 // LineIntersections returning the sides of the box that are intersected.
 // Fulfills line.Intersector and shape.Shape.
-func (b *Box) LineIntersections(l line.Line) []float64 {
-	var out []float64
+func (b *Box) LineIntersections(l line.Line, buf []float64) []float64 {
+	max := len(buf)
+	buf = buf[:0]
 	for _, s := range b.Sides() {
 		t0, t1, ok := l.Intersection(s)
 		if ok && t0 >= 0 && t0 < 1 {
-			out = append(out, t1)
+			buf = append(buf, t1)
+			if max == 1 {
+				return buf
+			}
 		}
 	}
-	return out
+	return buf
 }
 
 // Centroid returns the center of the box, fulfilling shape.Centroid
