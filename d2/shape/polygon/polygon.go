@@ -213,18 +213,22 @@ func (p Polygon) Collision(lineSegment line.Line) (lineT float64, idx int, sideT
 }
 
 // LineIntersections fulfills line.LineIntersector
-func (p Polygon) LineIntersections(ln line.Line) []float64 {
-	var out []float64
+func (p Polygon) LineIntersections(ln line.Line, buf []float64) []float64 {
+	max := len(buf)
+	buf = buf[:0]
 	prev := p[len(p)-1]
 	for _, cur := range p {
 		side := line.New(prev, cur)
 		t0, t1, ok := ln.Intersection(side)
 		if ok && t0 >= 0 && t0 < 1 {
-			out = append(out, t1)
+			buf = append(buf, t1)
+			if max > 0 && len(buf) == max {
+				return buf
+			}
 		}
 		prev = cur
 	}
-	return out
+	return buf
 }
 
 // Sides converts the perimeter of the polygon to a slice of lines.
@@ -266,4 +270,9 @@ func (p Polygon) Reverse() Polygon {
 		out[i], out[l-i] = p[l-i], p[i]
 	}
 	return out
+}
+
+// BoundingBox fulfills BoundingBoxer returning a box that contains the polygon.
+func (p Polygon) BoundingBox() (min, max d2.Pt) {
+	return d2.MinMax(p...)
 }
