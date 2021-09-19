@@ -12,7 +12,7 @@ const epsilon float64 = 1e-8
 
 // Intersections returns the intersection as a []float64
 func (t *Triangle) Intersections(l line.Line) []float64 {
-	if f, b := t.Intersection(l); b {
+	if f, b := t.LineIntersection(l); b {
 		return []float64{f}
 	}
 	return nil
@@ -20,34 +20,24 @@ func (t *Triangle) Intersections(l line.Line) []float64 {
 
 var Small = 1e-6
 
+func (t *Triangle) Intersector() *TriangleIntersector {
+	return &TriangleIntersector{
+		T0: t[0],
+		V1: t[1].Subtract(t[0]),
+		V2: t[2].Subtract(t[0]),
+	}
+}
+
+// LineIntersection returns the intersection point if there is one and bool
+// indicating if there was an intersection.
+func (t *Triangle) LineIntersection(l line.Line) (float64, bool) {
+	return t.Intersector().LineIntersection(l)
+}
+
 // Intersection returns the intersection point if there is one and bool
 // indicating if there was an intersection.
-func (t *Triangle) Intersection(l line.Line) (float64, bool) {
-	// https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
-	v1 := t[1].Subtract(t[0])
-	v2 := t[2].Subtract(t[0])
-	h := l.D.Cross(v2)
-	a := v1.Dot(h)
-	if a > -epsilon && a < epsilon {
-		// line is parallel to triangle
-		return 0, false
-	}
-	f := 1.0 / a
-	s := l.T0.Subtract(t[0])
-
-	// u and v are Barycentric Coordinates
-	u := f * s.Dot(h)
-	if u < -Small || u > 1+Small {
-		// point on plane is outside triangle
-		return 0, false
-	}
-	q := s.Cross(v1)
-	v := f * l.D.Dot(q)
-	if v < -Small || u+v > 1+Small {
-		// point on plane is outside triangle
-		return 0, false
-	}
-	return f * v2.Dot(q), true
+func (t *Triangle) Intersection(l line.Line) Intersection {
+	return t.Intersector().Intersection(l)
 }
 
 // ErrCoincidentVerticies indicates that a Triangle has at least 2 identical
@@ -70,4 +60,93 @@ func (t *Triangle) Validate() error {
 // Normal returns a vector that is perpendicular to the plane of the triangle.
 func (t *Triangle) Normal() d3.V {
 	return t[1].Subtract(t[0]).Cross(t[2].Subtract(t[0]))
+}
+
+type TriangleIntersector struct {
+	T0     d3.Pt
+	V1, V2 d3.V
+}
+
+func (t *TriangleIntersector) LineIntersection(l line.Line) (float64, bool) {
+	i := t.RawIntersection(l)
+	return i.T, i.Does
+}
+
+type Intersection struct {
+	U, V, T float64
+	Does    bool
+}
+
+// Intersection checks if the given line intersects the triangle.
+func (t *TriangleIntersector) Intersection(l line.Line) Intersection {
+	var out Intersection
+	// https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
+	h := l.D.Cross(t.V2)
+	a := t.V1.Dot(h)
+	if a > -epsilon && a < epsilon {
+		// line is parallel to triangle
+		return out
+	}
+	f := 1.0 / a
+	s := l.T0.Subtract(t.T0)
+
+	// u and v are Barycentric Coordinates
+	out.U = f * s.Dot(h)
+	if out.U < -Small || out.U > 1+Small {
+		// point on plane is outside triangle
+		return out
+	}
+	q := s.Cross(t.V1)
+	out.V = f * l.D.Dot(q)
+	if out.V < -Small || out.V+out.U > 1+Small {
+		// point on plane is outside triangle
+		return out
+	}
+	out.T = f * t.V2.Dot(q)
+	out.Does = true
+	return out
+}
+
+// RawIntersection saves overhead by doing all the calculation in place rather
+// than calling functions. For raytracing it was shown to be a significant
+// improvement.
+func (t *TriangleIntersector) RawIntersection(l line.Line) Intersection {
+	var out Intersection
+	// https://en.wikipedia.org/wiki/M%C3%B6ller%E2%80%93Trumbore_intersection_algorithm
+	h := d3.V{
+		l.D.Y*t.V2.Z - l.D.Z*t.V2.Y,
+		l.D.Z*t.V2.X - l.D.X*t.V2.Z,
+		l.D.X*t.V2.Y - l.D.Y*t.V2.X,
+	}
+	a := t.V1.X*h.X + t.V1.Y*h.Y + t.V1.Z*h.Z
+	if a > -epsilon && a < epsilon {
+		// line is parallel to triangle
+		return out
+	}
+	f := 1.0 / a
+	s := d3.V{
+		l.T0.X - t.T0.X,
+		l.T0.Y - t.T0.Y,
+		l.T0.Z - t.T0.Z,
+	}
+
+	// u and v are Barycentric Coordinates
+	out.U = f * (s.X*h.X + s.Y*h.Y + s.Z*h.Z)
+	if out.U < -Small || out.U > 1+Small {
+		// point on plane is outside triangle
+		return out
+	}
+	q := d3.V{
+		s.Y*t.V1.Z - s.Z*t.V1.Y,
+		s.Z*t.V1.X - s.X*t.V1.Z,
+		s.X*t.V1.Y - s.Y*t.V1.X,
+	}
+	out.V = f * (l.D.X*q.X + l.D.Y*q.Y + l.D.Z*q.Z)
+	if out.V < -Small || out.V+out.U > 1+Small {
+		// point on plane is outside triangle
+		return out
+	}
+	out.T = f * (t.V2.X*q.X + t.V2.Y*q.Y + t.V2.Z*q.Z)
+	out.Does = true
+	return out
 }

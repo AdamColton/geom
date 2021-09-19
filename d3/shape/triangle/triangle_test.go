@@ -13,7 +13,7 @@ func TestTriangleIntersection(t *testing.T) {
 	tt := map[string]struct {
 		t        *Triangle
 		l        line.Line
-		expected []float64
+		expected Intersection
 	}{
 		"basic": {
 			t: &Triangle{
@@ -21,8 +21,13 @@ func TestTriangleIntersection(t *testing.T) {
 				{1, 0, 0},
 				{0, 1, 0},
 			},
-			l:        line.New(d3.Pt{0.25, 0.25, 2}, d3.Pt{0.25, 0.25, 1}),
-			expected: []float64{2},
+			l: line.New(d3.Pt{0.25, 0.25, 2}, d3.Pt{0.25, 0.25, 1}),
+			expected: Intersection{
+				U:    0.25,
+				V:    0.25,
+				T:    2,
+				Does: true,
+			},
 		},
 		"parallel": {
 			t: &Triangle{
@@ -30,8 +35,13 @@ func TestTriangleIntersection(t *testing.T) {
 				{1, 0, 0},
 				{0, 1, 0},
 			},
-			l:        line.New(d3.Pt{0, 0, 1}, d3.Pt{1, 1, 1}),
-			expected: nil,
+			l: line.New(d3.Pt{0, 0, 1}, d3.Pt{1, 1, 1}),
+			expected: Intersection{
+				U:    0,
+				V:    0,
+				T:    0,
+				Does: false,
+			},
 		},
 		"u-outside": {
 			t: &Triangle{
@@ -39,8 +49,13 @@ func TestTriangleIntersection(t *testing.T) {
 				{1, 0, 0},
 				{0, 1, 0},
 			},
-			l:        line.New(d3.Pt{2, 0.5, 0}, d3.Pt{2, 0.5, 1}),
-			expected: nil,
+			l: line.New(d3.Pt{2, 0.5, 0}, d3.Pt{2, 0.5, 1}),
+			expected: Intersection{
+				U:    2,
+				V:    0,
+				T:    0,
+				Does: false,
+			},
 		},
 		"v-outside": {
 			t: &Triangle{
@@ -48,14 +63,30 @@ func TestTriangleIntersection(t *testing.T) {
 				{1, 0, 0},
 				{0, 1, 0},
 			},
-			l:        line.New(d3.Pt{0.5, 2, 0}, d3.Pt{0.5, 2, 1}),
-			expected: nil,
+			l: line.New(d3.Pt{0.5, 2, 0}, d3.Pt{0.5, 2, 1}),
+			expected: Intersection{
+				U:    0.5,
+				V:    2,
+				T:    0,
+				Does: false,
+			},
 		},
 	}
 
 	for n, tc := range tt {
 		t.Run(n, func(t *testing.T) {
-			assert.Equal(t, tc.expected, tc.t.Intersections(tc.l))
+			ti := tc.t.Intersector()
+			assert.Equal(t, tc.expected, tc.t.Intersection(tc.l))
+			assert.Equal(t, tc.expected, ti.Intersection(tc.l))
+			assert.Equal(t, tc.expected, ti.RawIntersection(tc.l))
+			tHit, hit := tc.t.LineIntersection(tc.l)
+			assert.Equal(t, tc.expected.T, tHit)
+			assert.Equal(t, tc.expected.Does, hit)
+			if tc.expected.Does {
+				assert.Equal(t, []float64{tc.expected.T}, tc.t.Intersections(tc.l))
+			} else {
+				assert.Nil(t, tc.t.Intersections(tc.l))
+			}
 		})
 	}
 }
@@ -143,4 +174,13 @@ func TestInvalidBT(t *testing.T) {
 			assert.Nil(t, tri.BT(tc.o, tc.u))
 		})
 	}
+}
+
+func TestNormal(t *testing.T) {
+	tri := &Triangle{
+		{0, 0, 0},
+		{1, 0, 0},
+		{0, 1, 0},
+	}
+	assert.Equal(t, d3.V{0, 0, 1}, tri.Normal())
 }
