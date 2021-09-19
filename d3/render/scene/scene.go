@@ -3,6 +3,7 @@ package scene
 import (
 	"github.com/adamcolton/geom/d3"
 	"github.com/adamcolton/geom/d3/solid/mesh"
+	"github.com/adamcolton/geom/work"
 )
 
 type CameraFactory interface {
@@ -65,7 +66,7 @@ func (s *Scene) Frame(frameIdx int) *SceneFrame {
 	}
 	sf.Camera = s.GetCamera.Camera(frameIdx)
 
-	RunRange(ln, func(mIdx, _ int) {
+	work.RunRange(ln, func(mIdx, _ int) {
 		m := s.Meshes[mIdx]
 		fm := &FrameMesh{
 			Original: m.Original,
