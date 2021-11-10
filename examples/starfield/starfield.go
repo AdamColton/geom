@@ -2,15 +2,18 @@ package main
 
 import (
 	"image/color"
+	"image/png"
 	"math/rand"
 	"os"
 	"runtime/pprof"
 
-	"github.com/adamcolton/geom/d3/render/ffmpeg"
 	"github.com/adamcolton/geom/d3/render/material"
+	"github.com/adamcolton/geom/d3/render/raytrace"
 	"github.com/adamcolton/geom/d3/render/scene"
 	"github.com/adamcolton/geom/d3/render/zbuf"
 	"github.com/adamcolton/geom/d3/shape/plane"
+	"github.com/adamcolton/geom/ffmpeg"
+	"github.com/nfnt/resize"
 
 	"github.com/adamcolton/geom/angle"
 	"github.com/adamcolton/geom/d2"
@@ -19,13 +22,19 @@ import (
 	"github.com/adamcolton/geom/d3/solid/mesh"
 )
 
+// TODO
+// * Look at profiling - speed up raytrace rendering
+// * Add barycentric coordinates to raytrace.Ctx
+// * Use barycentric coordinates to draw edges
+// * set up shaders to look good.
+
 // For this to run, ffmpeg must be installed
 
 const (
 	// Frames of video to render
-	frames = 1000
+	frames = 100
 	// Number of stars to render
-	stars = 200
+	stars = 30
 
 	// width sets the size, the aspect ratio is always widescreen
 	width = 1000
@@ -48,16 +57,18 @@ func main() {
 			panic(err)
 		}
 		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
-		defer f.Close()
+		defer func() {
+			pprof.StopCPUProfile()
+			f.Close()
+		}()
 	}
 
 	proc := ffmpeg.NewWidescreen("stars", width)
 
 	s := &scene.Scene{
 		GetCamera: cameraFactory{
-			w:      proc.Width,
-			h:      proc.Height,
+			w:      proc.Size.X,
+			h:      proc.Size.Y,
 			frames: frames,
 		},
 	}
@@ -67,22 +78,37 @@ func main() {
 		s.AddMesh(starMesh, starTransform, starMaterial)
 	}
 
-	// sf := &raytrace.SceneFrame{
-	// 	SceneFrame: s.Frame(50),
-	// 	RayFrame: &raytrace.RayFrame{
-	// 		Background: (&raytrace.MaterialWrapper{backgroundMaterial}).RayShader,
-	// 		Depth:      3,
-	// 		RayMult:    2,
-	// 		ImageScale: 1.25,
-	// 	},
-	// }
-	// img := sf.Image(nil)
-	// f, _ := os.Create("test.png")
-	// png.Encode(f, resize.Resize(uint(sf.Camera.Width), 0, img, resize.Bilinear))
-	// f.Close()
+	sf := s.Frame(0)
+	ray := &raytrace.SceneFrame{
+		SceneFrame: sf,
+		RayFrame: &raytrace.RayFrame{
+			Background: raytrace.NewMaterialWrapper(backgroundMaterial).RayShader,
+			Depth:      3,
+			RayMult:    2,
+			ImageScale: 1.25,
+		},
+	}
+	img := ray.Image(nil)
+	f, _ := os.Create("ray.png")
+	png.Encode(f, resize.Resize(uint(ray.Camera.Width), 0, img, resize.Bilinear))
+	f.Close()
 
-	//return
+	zb := &zbuf.Framer{
+		Count:      frames,
+		Scene:      s,
+		ImageScale: imageScale,
+		ZBufFrame: &zbuf.ZBufFrame{
+			Near:       0.1,
+			Far:        200,
+			Background: color.RGBA{255, 255, 255, 255},
+		},
+	}
+	zimg, _ := zb.Frame(0, nil)
+	f, _ = os.Create("zbuf.png")
+	png.Encode(f, resize.Resize(uint(ray.Camera.Width), 0, zimg, resize.Bilinear))
+	f.Close()
 
+	proc.Name = "zbuf"
 	proc.Framer(
 		&zbuf.Framer{
 			Count:      frames,
@@ -94,18 +120,21 @@ func main() {
 				Background: color.RGBA{255, 255, 255, 255},
 			},
 		},
-		// &raytrace.Framer{
-		// 	Count: frames,
-		// 	Scene: s,
-		// 	RayFrame: &raytrace.RayFrame{
-		// 		ImageScale: imageScale,
-		// 		Depth:      3,
-		// 		RayMult:    2,
-		// 		Background: (&raytrace.MaterialWrapper{backgroundMaterial}).RayShader,
-		// 	},
-		// },
 	)
 
+	proc.Name = "ray"
+	proc.Framer(
+		&raytrace.Framer{
+			Count: frames,
+			Scene: s,
+			RayFrame: &raytrace.RayFrame{
+				ImageScale: imageScale,
+				Depth:      3,
+				RayMult:    2,
+				Background: raytrace.NewMaterialWrapper(backgroundMaterial).RayShader,
+			},
+		},
+	)
 }
 
 type cameraFactory struct {
@@ -212,6 +241,6 @@ var starMaterial = &material.Material{
 var backgroundMaterial = material.Material{
 	Specular:    angle.Deg(5),
 	Diffuse:     angle.Deg(1),
-	Color:       &material.Color{1, 1, 0},
-	BorderColor: &material.Color{0, 0, 0},
+	Color:       &material.Color{1, 1, 1},
+	BorderColor: &material.Color{1, 1, 1},
 }
