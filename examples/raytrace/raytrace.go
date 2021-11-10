@@ -45,13 +45,13 @@ func main() {
 
 func getArrow() *mesh.TriangleMesh {
 	f := []d3.Pt{
-		{0, 2, 10},
-		{1.5, 3.5, 10},
-		{3, 2, 10},
-		{2, 2, 10},
-		{2, 0, 10},
-		{1, 0, 10},
-		{1, 2, 10},
+		{0, 2, -10},
+		{1.5, 3.5, -10},
+		{3, 2, -10},
+		{2, 2, -10},
+		{2, 0, -10},
+		{1, 0, -10},
+		{1, 2, -10},
 	}
 	f = d3.Translate(d3.V{-1.5, -1.0, 0}).T().T(
 		d3.Rotation{
@@ -60,7 +60,7 @@ func getArrow() *mesh.TriangleMesh {
 		}.T(),
 	).Pts(f)
 	m, err := mesh.NewExtrusion(f).
-		Extrude(d3.Translate(d3.V{0, 0, 1}).T()).
+		Extrude(d3.Translate(d3.V{0, 0, -1}).T()).
 		Close().
 		TriangleMesh()
 	if err != nil {
