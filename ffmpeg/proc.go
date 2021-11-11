@@ -4,7 +4,6 @@ import (
 	"image"
 	"io"
 	"os"
-	"os/exec"
 
 	"golang.org/x/image/bmp"
 )
@@ -12,7 +11,7 @@ import (
 // Proc is a running instance of ffmpeg.
 type Proc struct {
 	Settings
-	cmd *exec.Cmd
+	cmd commander
 	in  io.WriteCloser
 }
 
@@ -22,14 +21,14 @@ func (s *Settings) NewProc() (*Proc, error) {
 		Settings: *s,
 	}
 
-	p.cmd = exec.Command("ffmpeg", p.Args()...)
+	p.cmd = newCommander("ffmpeg", p.Args()...)
 	var err error
 	p.in, err = p.cmd.StdinPipe()
 	if err != nil {
 		return nil, err
 	}
-	p.cmd.Stdout = os.Stdout
-	p.cmd.Stderr = os.Stdout
+	p.cmd.SetStdout(os.Stdout)
+	p.cmd.SetStderr(os.Stdout)
 	err = p.cmd.Start()
 	if err != nil {
 		return nil, err
