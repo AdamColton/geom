@@ -35,13 +35,13 @@ func TestTransform(t *testing.T) {
 		t.Run(tc.expected.String(), func(t *testing.T) {
 			p := tc.T.Pt(Pt{1, 1})
 			d := p.Distance(tc.expected)
-			assert.InDelta(t, 0, d, 1E-5, p.String())
+			assert.InDelta(t, 0, d, 1e-5, p.String())
 			pf, _ := tc.T.PtF(Pt{1, 1})
 			assert.Equal(t, p, pf)
 
 			v := tc.T.V(V{1, 1})
 			d = tc.expected.V().Subtract(v).Mag()
-			assert.InDelta(t, 0, d, 1E-5, v.String())
+			assert.InDelta(t, 0, d, 1e-5, v.String())
 			vf, _ := tc.T.VF(V{1, 1})
 			assert.Equal(t, v, vf)
 		})

@@ -1,9 +1,10 @@
 package solid
 
 import (
+	"testing"
+
 	"github.com/adamcolton/geom/d3"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestPointSet(t *testing.T) {
