@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/geomerr"
+	"github.com/adamcolton/geom/geomtest"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -18,26 +20,44 @@ func TestAdd(t *testing.T) {
 
 func TestPtBaseFuncs(t *testing.T) {
 	p := Pt{3, 4}
-	assert.Equal(t, p, p.Pt())
-	assert.Equal(t, V{3, 4}, p.V())
+	geomtest.Equal(t, p, p.Pt())
+	geomtest.Equal(t, V{3, 4}, p.V())
 	assert.Equal(t, Polar{5, p.Angle()}, p.Polar())
 	assert.Equal(t, 25.0, p.Mag2())
 	assert.Equal(t, 5.0, p.Mag())
-	assert.Equal(t, Pt{6, 8}, p.Multiply(2))
+	geomtest.Equal(t, Pt{6, 8}, p.Multiply(2))
+}
+
+func TestAssertEqualFailures(t *testing.T) {
+	err := Pt{1, 2}.AssertEqual(V{1, 2}, geomtest.Small)
+	expErr := geomerr.TypeMismatch(Pt{1, 2}, V{2, 1})
+	assert.Equal(t, expErr, err)
+
+	err = Pt{1, 2}.AssertEqual(Pt{2, 1}, geomtest.Small)
+	expErr = geomerr.NotEqual(Pt{1, 2}, Pt{2, 1})
+	assert.Equal(t, expErr, err)
+
+	err = V{1, 2}.AssertEqual(Pt{1, 2}, geomtest.Small)
+	expErr = geomerr.TypeMismatch(V{1, 2}, Pt{2, 1})
+	assert.Equal(t, expErr, err)
+
+	err = V{1, 2}.AssertEqual(V{2, 1}, geomtest.Small)
+	expErr = geomerr.NotEqual(V{1, 2}, V{2, 1})
+	assert.Equal(t, expErr, err)
 }
 
 func TestVBaseFuncs(t *testing.T) {
 	v := V{3, 4}
-	assert.Equal(t, v, v.V())
-	assert.Equal(t, Pt{3, 4}, v.Pt())
+	geomtest.Equal(t, v, v.V())
+	geomtest.Equal(t, Pt{3, 4}, v.Pt())
 	assert.Equal(t, Polar{5, v.Angle()}, v.Polar())
 	assert.Equal(t, 25.0, v.Mag2())
 	assert.Equal(t, 5.0, v.Mag())
-	assert.Equal(t, V{6, 8}, v.Multiply(2))
-	assert.Equal(t, V{6, 12}, v.Product(V{2, 3}))
-	assert.Equal(t, V{5, 7}, v.Add(V{2, 3}))
-	assert.Equal(t, V{1, 3}, v.Subtract(V{2, 1}))
-	assert.Equal(t, V{2, 1}, V{-2, -1}.Abs())
+	geomtest.Equal(t, V{6, 8}, v.Multiply(2))
+	geomtest.Equal(t, V{6, 12}, v.Product(V{2, 3}))
+	geomtest.Equal(t, V{5, 7}, v.Add(V{2, 3}))
+	geomtest.Equal(t, V{1, 3}, v.Subtract(V{2, 1}))
+	geomtest.Equal(t, V{2, 1}, V{-2, -1}.Abs())
 }
 
 func TestPolar(t *testing.T) {

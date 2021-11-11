@@ -112,7 +112,7 @@ func TestLineFulfillsX1(t *testing.T) {
 }
 
 func TestV1(t *testing.T) {
-	geomtest.V1(t, New(d2.Pt{0, 0}, d2.Pt{1, 3}))
+	geomtest.Equal(t, d2.AssertV1{}, New(d2.Pt{0, 0}, d2.Pt{1, 3}))
 }
 
 type mockPt1V1 struct{}
@@ -126,10 +126,9 @@ func (mockPt1V1) V1(t0 float64) d2.V {
 }
 
 func TestTangentLine(t *testing.T) {
-	geomtest.V1(t, mockPt1V1{}) // confirm that the mock is valid
+	geomtest.Equal(t, d2.AssertV1{}, mockPt1V1{}) // confirm that the mock is valid
 	l := TangentLine(mockPt1V1{}, .5)
-	geomtest.Equal(t, d2.Pt{1, .25}, l.T0)
-	geomtest.Equal(t, d2.V{2, 1}, l.D)
+	geomtest.Equal(t, Line{d2.Pt{1, .25}, d2.V{2, 1}}, l)
 }
 
 func TestLimits(t *testing.T) {

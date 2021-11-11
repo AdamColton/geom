@@ -1,5 +1,13 @@
 package d2
 
+import (
+	"fmt"
+	"strings"
+
+	"github.com/adamcolton/geom/calc/cmpr"
+	"github.com/adamcolton/geom/geomerr"
+)
+
 // Point can return a Pt
 type Point interface {
 	Pt() Pt
@@ -142,4 +150,53 @@ type TGen interface {
 	T() *T
 	TInv() *T
 	Pair() [2]*T
+}
+
+// AssertV1 checks that the derivative is close the derivative approximation. A
+// good base check that an algorithm isn't completely wrong.
+type AssertV1 struct{}
+
+// AssertEqual fulfils geomtest.AssertEqualizer.
+func (AssertV1) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
+	pv, ok := actual.(Pt1V1)
+	if !ok {
+		return geomerr.TypeMismatch(Pt1V1(nil), actual)
+	}
+
+	small := float64(t)
+	big := 1 / small
+	fn := make([]func(float64) V, 2, 3)
+	fn[0] = func(t0 float64) V {
+		return pv.Pt1(t0 + small).Subtract(pv.Pt1(t0)).Multiply(big)
+	}
+	fn[1] = pv.V1
+	if v1c0, ok := pv.(V1c0); ok {
+		fn = append(fn, v1c0.V1c0().V1)
+	}
+
+	var badPoints []string
+	v := make([]V, len(fn))
+	for i := 0.0; i <= 1.0; i += 0.01 {
+		for j, f := range fn {
+			v[j] = f(i)
+			if j > 0 {
+				vd := V{
+					X: v[0].X - v[j].X,
+					Y: v[0].Y - v[j].Y,
+				}.Abs()
+				if vd.X > 1e-4 || vd.Y > 1e-4 {
+					r := V{
+						X: v[0].X / v[j].X,
+						Y: v[0].Y / v[j].Y,
+					}
+					badPoints = append(badPoints, fmt.Sprintf("Bad derivative %0.2f %d %s %s %s", i, j, v[0], v[j], r))
+				}
+			}
+		}
+	}
+
+	if len(badPoints) == 0 {
+		return nil
+	}
+	return fmt.Errorf(strings.Join(badPoints, "\n"))
 }

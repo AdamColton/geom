@@ -3,7 +3,9 @@ package line
 import (
 	"strings"
 
+	"github.com/adamcolton/geom/calc/cmpr"
 	"github.com/adamcolton/geom/d2"
+	"github.com/adamcolton/geom/geomerr"
 )
 
 // Line in 2D space invoked parametrically
@@ -150,4 +152,16 @@ func (l Line) Centroid() d2.Pt {
 // Cross product of the vector of the line with the vector from T0 to pt
 func (l Line) Cross(pt d2.Pt) float64 {
 	return l.D.Cross(pt.Subtract(l.T0))
+}
+
+// AssertEqual fulfils geomtest.AssertEqualizer
+func (l Line) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
+	l2, ok := actual.(Line)
+	if !ok {
+		return geomerr.TypeMismatch(l, actual)
+	}
+	if l.T0.AssertEqual(l2.T0, t) != nil || l.D.AssertEqual(l2.D, t) != nil {
+		return geomerr.NotEqual(l, l2)
+	}
+	return nil
 }

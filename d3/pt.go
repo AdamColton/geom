@@ -4,6 +4,9 @@ import (
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/adamcolton/geom/calc/cmpr"
+	"github.com/adamcolton/geom/geomerr"
 )
 
 type Pt D3
@@ -66,4 +69,17 @@ func (pt Pt) String() string {
 		strconv.FormatFloat(pt.Z, 'f', Prec, 64),
 		")",
 	}, "")
+}
+
+// AssertEqual fulfils geomtest.AssertEqualizer
+func (pt Pt) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
+	pt2, ok := actual.(Pt)
+	if !ok {
+		return geomerr.TypeMismatch(pt, actual)
+	}
+	d := pt.Subtract(pt2)
+	if !t.Zero(d.X) || !t.Zero(d.Y) || !t.Zero(d.Z) {
+		return geomerr.NotEqual(pt, pt2)
+	}
+	return nil
 }
