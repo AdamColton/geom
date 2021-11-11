@@ -3,7 +3,6 @@ package ffmpeg
 import (
 	"image"
 	"io"
-	"os"
 
 	"golang.org/x/image/bmp"
 )
@@ -27,8 +26,8 @@ func (s *Settings) NewProc() (*Proc, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.cmd.SetStdout(os.Stdout)
-	p.cmd.SetStderr(os.Stdout)
+	p.cmd.SetStdout(s.Stdout)
+	p.cmd.SetStderr(s.Stderr)
 	err = p.cmd.Start()
 	if err != nil {
 		return nil, err

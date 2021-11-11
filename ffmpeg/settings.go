@@ -2,6 +2,7 @@ package ffmpeg
 
 import (
 	"fmt"
+	"io"
 	"strconv"
 
 	"github.com/adamcolton/geom/d2/grid"
@@ -13,6 +14,7 @@ type Settings struct {
 	Name               string
 	ConstantRateFactor byte
 	Size               grid.Pt
+	Stdout, Stderr     io.Writer
 }
 
 // Common aspect rations
@@ -68,6 +70,13 @@ func (s *Settings) Set(w, h int) *Settings {
 	}
 	s.Size.X = w
 	s.Size.Y = h
+	return s
+}
+
+// SetOut sets Stdout and Stderr to be used when creating a Proc.
+func (s *Settings) SetOut(out, err io.Writer) *Settings {
+	s.Stdout = out
+	s.Stderr = err
 	return s
 }
 

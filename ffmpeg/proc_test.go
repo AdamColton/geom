@@ -1,6 +1,7 @@
 package ffmpeg
 
 import (
+	"bytes"
 	"image"
 	"testing"
 
@@ -29,7 +30,9 @@ func TestBasicPipeline(t *testing.T) {
 		newCommander = newCommand
 	}()
 
-	s := NewSquare("BasicPipeline", 64)
+	o, e := bytes.NewBuffer(nil), bytes.NewBuffer(nil)
+	s := NewSquare("BasicPipeline", 64).
+		SetOut(o, e)
 
 	mf := mockFramer{
 		frames: 10,
@@ -47,4 +50,6 @@ func TestBasicPipeline(t *testing.T) {
 	header := 54
 	bytesPerPx := 3
 	assert.Equal(t, mf.frames*(bytesPerPx*s.Size.X*s.Size.Y+header), lastMockCommand.stdin.Len())
+	assert.Equal(t, o, lastMockCommand.stdout)
+	assert.Equal(t, e, lastMockCommand.stderr)
 }
