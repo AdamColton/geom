@@ -57,6 +57,11 @@ func (pt Pt) Multiply(scale float64) Pt {
 	return D2{pt.X * scale, pt.Y * scale}.Pt()
 }
 
+// Product of two points
+func (pt Pt) Product(pt2 Pt) Pt {
+	return D2{pt.X * pt2.X, pt.Y * pt2.Y}.Pt()
+}
+
 // Prec is the precision for the String method on F
 var Prec = 4
 
