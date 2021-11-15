@@ -78,3 +78,17 @@ type Scale struct {
 func (s Scale) T(pt Pt) (float64, float64) {
 	return float64(pt.X)*s.X + s.DX, float64(pt.Y)*s.Y + s.DY
 }
+
+func (s Scale) F(x, y float64) (float64, float64) {
+	return x*s.X + s.DX, y*s.Y + s.DY
+}
+
+// x*i = f -dx
+func (s Scale) Inv() Scale {
+	return Scale{
+		X:  1 / s.X,
+		Y:  1 / s.Y,
+		DX: -s.DX / s.X,
+		DY: -s.DY / s.Y,
+	}
+}
