@@ -1,9 +1,13 @@
 package bezier
 
 import (
+	"sort"
+
+	"github.com/adamcolton/geom/calc/cmpr"
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
 	"github.com/adamcolton/geom/d2/curve/poly"
+	"github.com/adamcolton/geom/d2/shape/box"
 )
 
 // Blossom point for the control points of a bezier curve
@@ -43,9 +47,12 @@ func (b Bezier) BezierIntersections(l line.Line) []float64 {
 	return poly.NewBezier(b).PolyLineIntersections(l, nil)
 }
 
+const maxSize = 1e-20
+
 type buf struct {
 	fs  []float64
 	pts []d2.Pt
+	box []float64
 	Bezier
 }
 
@@ -98,4 +105,55 @@ func (b buf) segment(start, end float64) buf {
 		pts:    b.pts,
 		Bezier: out,
 	}
+}
+
+func (b buf) bezier(l line.Line, t0, t1 float64) []float64 {
+	bx := box.New(b.Bezier...)
+	b.box = bx.LineIntersections(l, b.box[:0])
+	if len(b.box) == 0 {
+		return nil
+	}
+	tc := (t0 + t1) / 2.0
+	if bx.V().Mag2() < maxSize {
+		return []float64{tc}
+	}
+	return append(b.segment(0, 0.5).bezier(l, t0, tc), b.segment(0.5, 1).bezier(l, tc, t1)...)
+}
+
+func (b buf) line(l line.Line, max int, tBuf []float64) []float64 {
+	bx := box.New(b.Bezier...)
+	b.box = bx.LineIntersections(l, b.box[:0])
+	if len(b.box) == 0 {
+		return tBuf
+	}
+	if bx.V().Mag2() < maxSize {
+		if len(b.box) > 1 {
+			tBuf = append(tBuf, (b.box[0]+b.box[1])/2)
+		} else {
+			tBuf = append(tBuf, b.box[0])
+		}
+		return tBuf
+	}
+
+	tBuf = b.segment(0, 0.5).line(l, max, tBuf)
+	if max == 0 || len(tBuf) < max {
+		tBuf = b.segment(0.5, 1).line(l, max, tBuf)
+	}
+
+	return tBuf
+}
+
+const small cmpr.Tolerance = 1e-6
+
+func removeDups(s []float64) []float64 {
+	sort.Slice(s, func(i, j int) bool { return s[i] < s[j] })
+
+	prev := 0
+	for i := 1; i < len(s); i++ {
+		if !small.Zero(s[prev] - s[i]) {
+			prev++
+			s[prev] = s[i]
+		}
+	}
+	return s[:prev+1]
 }
