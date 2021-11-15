@@ -1,6 +1,9 @@
 package bezier
 
 import (
+	"sort"
+
+	"github.com/adamcolton/geom/calc/cmpr"
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
 	"github.com/adamcolton/geom/d2/shape/box"
@@ -36,7 +39,7 @@ func (b Bezier) SegmentBuf(start, end float64, ptBuf []d2.Pt, floatBuf []float64
 func (b Bezier) LineIntersections(l line.Line, buf []float64) []float64 {
 	max := len(buf)
 	buf = buf[:0]
-	return b.newBuf(nil, nil).line(l, max, buf)
+	return removeDups(b.newBuf(nil, nil).line(l, max, buf))
 }
 
 const maxSize = 1e-20
@@ -44,7 +47,7 @@ const maxSize = 1e-20
 // BezierIntersections returns the intersection points relative to the Bezier
 // curve.
 func (b Bezier) BezierIntersections(l line.Line) []float64 {
-	return b.newBuf(nil, nil).bezier(l, 0, 1)
+	return removeDups(b.newBuf(nil, nil).bezier(l, 0, 1))
 }
 
 type buf struct {
@@ -139,4 +142,19 @@ func (b buf) line(l line.Line, max int, tBuf []float64) []float64 {
 	}
 
 	return tBuf
+}
+
+const small cmpr.Tolerance = 1e-6
+
+func removeDups(s []float64) []float64 {
+	sort.Slice(s, func(i, j int) bool { return s[i] < s[j] })
+
+	prev := 0
+	for i := 1; i < len(s); i++ {
+		if !small.Zero(s[prev] - s[i]) {
+			prev++
+			s[prev] = s[i]
+		}
+	}
+	return s[:prev+1]
 }
