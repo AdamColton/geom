@@ -38,8 +38,18 @@ const (
 
 // Color is a helper for defining colors using percentages.
 func Color(r, g, b float64) color.Color {
-	r16 := uint16(r * max16As64)
-	g16 := uint16(g * max16As64)
-	b16 := uint16(b * max16As64)
+	r16 := uint16(bound(r) * max16As64)
+	g16 := uint16(bound(g) * max16As64)
+	b16 := uint16(bound(b) * max16As64)
 	return color.RGBA64{r16, g16, b16, max16}
+}
+
+func bound(f float64) float64 {
+	if f < 0 {
+		return 0
+	}
+	if f > 1 {
+		return 1
+	}
+	return f
 }
