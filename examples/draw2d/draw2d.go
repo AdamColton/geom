@@ -48,6 +48,7 @@ func main() {
 		Blossom,
 		BezierSegment,
 		PtNorm,
+		BezBezIntersection,
 	)
 }
 
@@ -192,6 +193,34 @@ func ConcaveFill(ctx *draw.Context) {
 	ctx.Pt1(p)
 	ctx.SetRGB(0, 0, 1)
 	ctx.Pt2(p, largeStep)
+}
+
+func BezBezIntersection(ctx *draw.Context) {
+	b1 := bezier.Bezier{
+		{0, 0},
+		{133, 1000},
+		{266, -500},
+		{450, 500},
+	}
+	b2 := bezier.Bezier{
+		{0, 500},
+		{300, -100},
+		{500, 500},
+	}
+	ctx.Pt1(b1)
+	ctx.Stroke()
+	ctx.SetRGB(0, 0, 1)
+	ctx.Pt1(b2)
+	ctx.Stroke()
+	ctx.SetRGB(0, 0.5, 0)
+	is := b1.Intersections(b2)
+	for _, t := range is {
+		pt1 := b1.Pt1(t[0])
+		pt2 := b2.Pt1(t[1])
+		ctx.DrawCircle(pt1.X, pt1.Y, 10)
+		ctx.DrawCircle(pt2.X, pt2.Y, 10)
+	}
+	ctx.Stroke()
 }
 
 func BezierIntersection(ctx *draw.Context) {

@@ -110,3 +110,28 @@ func (b *Box) Perimeter() float64 {
 func (b *Box) BoundingBox() (min, max d2.Pt) {
 	return b[0], b[1]
 }
+
+const s = 1e-3
+
+func (b *Box) Overlaps(b2 *Box) bool {
+	if b.Contains(b2.Centroid()) || b2.Contains(b.Centroid()) {
+		return true
+	}
+	for i := 0; i < 4; i++ {
+		s1 := b.Side(i)
+		for j := 0; j < 4; j++ {
+			if t0, t1, hit := b2.Side(j).Intersection(s1); hit && t0 >= 0 && t0 <= 1 && t1 >= 0 && t1 <= 1 {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// Perimeter of the box. Fulfills shape.Perimeter.
+func (b *Box) Pt2(t0, t1 float64) d2.Pt {
+	return d2.Pt{
+		b[0].X + (b[1].X-b[0].X)*t0,
+		b[0].Y + (b[1].Y-b[0].Y)*t0,
+	}
+}

@@ -144,17 +144,67 @@ func (b buf) line(l line.Line, max int, tBuf []float64) []float64 {
 	return tBuf
 }
 
-const small cmpr.Tolerance = 1e-6
+const small cmpr.Tolerance = 1e-10
+const smallish cmpr.Tolerance = 1e-5
 
 func removeDups(s []float64) []float64 {
 	sort.Slice(s, func(i, j int) bool { return s[i] < s[j] })
 
 	prev := 0
 	for i := 1; i < len(s); i++ {
-		if !small.Zero(s[prev] - s[i]) {
+		if !small.Equal(s[prev], s[i]) {
 			prev++
 			s[prev] = s[i]
 		}
 	}
 	return s[:prev+1]
+}
+
+// BezierIntersections returns the intersection points relative to the Bezier
+// curve.
+func (b Bezier) Intersections(b2 Bezier) [][2]float64 {
+	out := bez(b.newBuf(nil, nil), b2.newBuf(nil, nil), 0, 1, 0, 1)
+	if len(out) == 0 {
+		return out
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return out[i][0] < out[j][0] ||
+			(out[i][0] == out[j][0] && out[i][1] < out[j][1])
+	})
+	prev := 0
+	for i := 1; i < len(out); i++ {
+		if !smallish.Equal(out[prev][0], out[i][0]) || !smallish.Equal(out[prev][1], out[i][1]) {
+			prev++
+			out[prev] = out[i]
+		}
+	}
+
+	return out[:prev+1]
+}
+
+func bez(b0, b1 buf, t0_0, t0_1, t1_0, t1_1 float64) [][2]float64 {
+	bx0 := box.New(b0.Bezier...)
+	bx1 := box.New(b1.Bezier...)
+	if !bx0.Overlaps(bx1) {
+		return nil
+	}
+
+	t0_c := (t0_0 + t0_1) / 2
+	t1_c := (t1_0 + t1_1) / 2
+
+	if bx0.V().Mag2() < 1e-10 || bx1.V().Mag2() < 1e-10 {
+		return [][2]float64{{t0_c, t1_c}}
+	}
+
+	b0_0 := b0.segment(0, 0.5)
+	b0_1 := b0.segment(0.5, 1)
+	b1_0 := b1.segment(0, 0.5)
+	b1_1 := b1.segment(0.5, 1)
+
+	out := bez(b0_0, b1_0, t0_0, t0_c, t1_0, t1_c)
+	out = append(out, bez(b0_0, b1_1, t0_0, t0_c, t1_c, t1_1)...)
+	out = append(out, bez(b0_1, b1_0, t0_c, t0_1, t1_0, t1_c)...)
+	out = append(out, bez(b0_1, b1_1, t0_c, t0_1, t1_c, t1_1)...)
+
+	return out
 }
