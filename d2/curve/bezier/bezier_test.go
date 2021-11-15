@@ -98,3 +98,23 @@ func TestBlossomAndSegment(t *testing.T) {
 	geomtest.Equal(t, b.Pt1(0.5), s.Pt1(0.5))
 	geomtest.Equal(t, b.Pt1(0.75), s.Pt1(1))
 }
+
+func TestBezBezIntersect(t *testing.T) {
+	b1 := Bezier{
+		{0, 0},
+		{200, 500},
+		{500, 0},
+	}
+	b2 := Bezier{
+		{0, 500},
+		{300, -100},
+		{500, 500},
+	}
+
+	is := b1.Intersections(b2)
+	assert.Equal(t, 2, len(is))
+	for _, i := range is {
+		d := b1.Pt1(i[0]).Distance(b2.Pt1(i[1]))
+		assert.InDelta(t, 0, d, 1e-3)
+	}
+}
