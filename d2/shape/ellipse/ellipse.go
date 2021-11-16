@@ -169,6 +169,6 @@ func (e Ellipse) BoundingBox() (min d2.Pt, max d2.Pt) {
 }
 
 // LineIntersections fulfills line.LineIntersector.
-func (e Ellipse) LineIntersections(l line.Line) []float64 {
-	return e.perimeter.LineIntersections(l)
+func (e Ellipse) LineIntersections(l line.Line, buf []float64) []float64 {
+	return e.perimeter.LineIntersections(l, buf)
 }

@@ -198,35 +198,37 @@ func (p Polygon) Collision(lineSegment line.Line) (lineT float64, idx int, sideT
 	ln := len(p)
 	for i, f := range p {
 		side := line.New(f, p[(i+1)%ln])
-		t0, ok := side.Intersection(lineSegment)
-		if ok && t0 >= 0 && t0 < 1 {
-			t1, _ := lineSegment.Intersection(side)
-			if t1 >= 0 && t1 < 1 {
-				if idx == -1 || lineT > t0 {
-					lineT = t0
-					idx = i
-					sideT = t1
-				}
-			}
+		t0, t1, ok := side.Intersection(lineSegment)
+		if ok &&
+			t0 >= 0 && t0 < 1 &&
+			t1 >= 0 && t1 < 1 &&
+			(idx == -1 || lineT > t0) {
+
+			lineT = t0
+			idx = i
+			sideT = t1
 		}
 	}
 	return
 }
 
 // LineIntersections fulfills line.LineIntersector
-func (p Polygon) LineIntersections(ln line.Line) []float64 {
-	var out []float64
+func (p Polygon) LineIntersections(ln line.Line, buf []float64) []float64 {
+	max := len(buf)
+	buf = buf[:0]
 	prev := p[len(p)-1]
 	for _, cur := range p {
 		side := line.New(prev, cur)
-		t, ok := ln.Intersection(side)
-		if ok && t >= 0 && t < 1 {
-			t, _ = side.Intersection(ln)
-			out = append(out, t)
+		t0, t1, ok := ln.Intersection(side)
+		if ok && t0 >= 0 && t0 < 1 {
+			buf = append(buf, t1)
+			if max > 0 && len(buf) == max {
+				return buf
+			}
 		}
 		prev = cur
 	}
-	return out
+	return buf
 }
 
 // Sides converts the perimeter of the polygon to a slice of lines.
@@ -248,8 +250,10 @@ func (p Polygon) NonIntersecting() bool {
 	// index.
 	for i, si := range side[:len(side)-2] {
 		for _, sj := range side[i+2:] {
-			t, _ := si.Intersection(sj)
-			if !math.IsNaN(t) && t > 0 && t < 1.0 {
+			t0, t1, ok := si.Intersection(sj)
+			if ok &&
+				t0 > 0 && t0 < 1 &&
+				t1 > 0 && t1 < 1 {
 				return false
 			}
 		}
@@ -266,4 +270,9 @@ func (p Polygon) Reverse() Polygon {
 		out[i], out[l-i] = p[l-i], p[i]
 	}
 	return out
+}
+
+// BoundingBox fulfills BoundingBoxer returning a box that contains the polygon.
+func (p Polygon) BoundingBox() (min, max d2.Pt) {
+	return d2.MinMax(p...)
 }

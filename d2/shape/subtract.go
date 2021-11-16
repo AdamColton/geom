@@ -16,24 +16,38 @@ func (s Subtract) Contains(pt d2.Pt) bool {
 
 // LineIntersections fulfills line.LineIntersector returning the intesection
 // points on the perimeter of the Subtraction of the shapes.
-func (s Subtract) LineIntersections(l line.Line) []float64 {
-	i0, i1 := s[0].LineIntersections(l), s[1].LineIntersections(l)
-	out := make([]float64, 0, len(i0)+len(i1))
-	for _, t := range i0 {
+func (s Subtract) LineIntersections(l line.Line, buf []float64) []float64 {
+	max := len(buf)
+	buf = s[0].LineIntersections(l, buf[:0])
+	ln := len(buf)
+	for i := 0; i < ln; i++ {
+		t := buf[i]
 		pt := l.Pt1(t)
-		if !s[1].Contains(pt) {
-			out = append(out, t)
+		if s[1].Contains(pt) {
+			ln--
+			buf[i] = buf[ln]
+			i--
 		}
 	}
+	buf = buf[:ln]
+	if max > 0 && len(buf) >= max {
+		return buf[:max]
+	}
+
+	i1 := s[1].LineIntersections(l, buf[ln:])
 	for _, t := range i1 {
 		pt := l.Pt1(t)
 		if s[0].Contains(pt) {
-			out = append(out, t)
+			buf = append(buf, t)
 		}
 	}
-	return out
+	if max > 0 && len(buf) >= max {
+		return buf[:max]
+	}
+	return buf
 }
 
+// BoundingBox fulfills shape.Shape, it returns a box that contains the shape.
 func (s Subtract) BoundingBox() (d2.Pt, d2.Pt) {
 	// Bounding box may be tighter, but that's not easy to determine.
 	return s[0].BoundingBox()
