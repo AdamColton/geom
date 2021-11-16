@@ -3,14 +3,14 @@ package cmpr
 import (
 	"testing"
 
-	"github.com/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestEqualWithin(t *testing.T) {
-	assert.True(t, EqualWithin(1, 1.001, 0.01))
-	assert.True(t, EqualWithin(1.001, 1, 0.01))
-	assert.False(t, EqualWithin(1, 1.001, 0.0001))
-	assert.False(t, EqualWithin(1.001, 1, 0.0001))
+	assert.True(t, Tolerance(0.01).Equal(1, 1.001))
+	assert.True(t, Tolerance(0.01).Equal(1.001, 1))
+	assert.False(t, Tolerance(0.0001).Equal(1, 1.001))
+	assert.False(t, Tolerance(0.0001).Equal(1.001, 1))
 }
 
 func TestEqual(t *testing.T) {

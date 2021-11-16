@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/calc/cmpr"
+	"github.com/adamcolton/geom/geomerr"
 )
 
 /*
@@ -96,6 +98,24 @@ func (t *T) T(t2 *T) *T {
 			t[0][2]*t2[2][0] + t[1][2]*t2[2][1] + t[2][2]*t2[2][2],
 		},
 	}
+}
+
+// AssertEqual fulfils geomtest.AssertEqualizer
+func (t *T) AssertEqual(actual interface{}, tol cmpr.Tolerance) error {
+	t2, ok := actual.(*T)
+	if !ok {
+		return geomerr.TypeMismatch(t, actual)
+	}
+
+	for iy, row := range t {
+		for ix, val := range row {
+			if !tol.Zero(val - t2[iy][ix]) {
+				return geomerr.NotEqual(t, t2)
+			}
+		}
+	}
+
+	return nil
 }
 
 // Scale generates a scale transform

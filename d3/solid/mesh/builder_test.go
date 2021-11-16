@@ -2,9 +2,10 @@ package mesh
 
 import (
 	"bytes"
+	"testing"
+
 	"github.com/adamcolton/geom/d3"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestBuilder(t *testing.T) {

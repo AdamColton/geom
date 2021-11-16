@@ -11,7 +11,7 @@ import (
 	"github.com/adamcolton/geom/d3"
 	"github.com/adamcolton/geom/d3/curve/line"
 	"github.com/adamcolton/geom/d3/shape/triangle"
-	"github.com/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestReflect(t *testing.T) {

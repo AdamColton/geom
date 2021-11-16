@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/calc/cmpr"
+	"github.com/adamcolton/geom/geomerr"
 )
 
 // Pt represets a two dimensional point.
@@ -115,4 +117,17 @@ func MinMax(pts ...Pt) (Pt, Pt) {
 		min, max = Min(min, pt), Max(max, pt)
 	}
 	return min, max
+}
+
+// AssertEqual fulfils geomtest.AssertEqualizer
+func (pt Pt) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
+	pt2, ok := actual.(Pt)
+	if !ok {
+		return geomerr.TypeMismatch(pt, actual)
+	}
+	v := pt.Subtract(pt2)
+	if !t.Zero(v.X) || !t.Zero(v.Y) {
+		return geomerr.NotEqual(pt, pt2)
+	}
+	return nil
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d3"
 	"github.com/adamcolton/geom/geomtest"
-	"github.com/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestPlane(t *testing.T) {

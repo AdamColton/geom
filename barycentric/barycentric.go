@@ -3,6 +3,9 @@ package barycentric
 import (
 	"strconv"
 	"strings"
+
+	"github.com/adamcolton/geom/calc/cmpr"
+	"github.com/adamcolton/geom/geomerr"
 )
 
 // B is a barycentric coordinate
@@ -81,4 +84,16 @@ func (bs *BIterator) Start() (b B, done bool) {
 	bs.Reset = B{}
 	bs.Idx = 0
 	return bs.Cur, false
+}
+
+// AssertEqual fulfils geomtest.AssertEqualizer
+func (b B) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
+	b2, ok := actual.(B)
+	if !ok {
+		return geomerr.TypeMismatch(b, actual)
+	}
+	if !t.Zero(b.U-b2.U) || !t.Zero(b.V-b2.V) {
+		return geomerr.NotEqual(b, b2)
+	}
+	return nil
 }

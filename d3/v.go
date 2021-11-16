@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/calc/cmpr"
+	"github.com/adamcolton/geom/geomerr"
 )
 
 // V is a 3D vector.
@@ -117,4 +119,17 @@ func (v V) String() string {
 		strconv.FormatFloat(v.Z, 'f', Prec, 64),
 		")",
 	}, "")
+}
+
+// AssertEqual fulfils geomtest.AssertEqualizer
+func (v V) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
+	v2, ok := actual.(V)
+	if !ok {
+		return geomerr.TypeMismatch(v, actual)
+	}
+	d := v.Subtract(v2)
+	if !t.Zero(d.X) || !t.Zero(d.Y) || !t.Zero(d.Z) {
+		return geomerr.NotEqual(v, v2)
+	}
+	return nil
 }

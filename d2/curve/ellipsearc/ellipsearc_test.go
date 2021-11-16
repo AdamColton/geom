@@ -18,7 +18,7 @@ func TestEllipseArc(t *testing.T) {
 
 	e := New(f1, f2, r)
 	assert.Equal(t, r, e.Pt1(0.25).Distance(e.c))
-	assert.InDelta(t, 0.0, e.Pt1(0).Y, 1e-10)
+	geomtest.Equal(t, 0.0, e.Pt1(0).Y)
 
 	// Test by definition of ellipse
 	p0 := e.Pt1(0)
@@ -26,24 +26,24 @@ func TestEllipseArc(t *testing.T) {
 	for i := 0.0; i <= 1.0; i += 0.2 {
 		p := e.Pt1(i)
 		d := f1.Distance(p) + f2.Distance(p)
-		assert.InDelta(t, d0, d, 1e-10)
+		geomtest.Equal(t, d0, d)
 	}
 
 	// Get correct foci
 	tf1, tf2 := e.Foci()
-	assert.InDelta(t, 0, f1.Distance(tf1), 1e-10)
-	assert.InDelta(t, 0, f2.Distance(tf2), 1e-10)
+	geomtest.Equal(t, 0.0, f1.Distance(tf1))
+	geomtest.Equal(t, 0.0, f2.Distance(tf2))
 
 	geomtest.Equal(t, d2.Pt{1, 0}, e.Centroid())
 
 	M, m := e.Axis()
-	assert.InDelta(t, math.Sqrt(2), M, 1e-5)
-	assert.InDelta(t, 1, m, 1e-5)
+	geomtest.Equal(t, math.Sqrt(2), M)
+	geomtest.Equal(t, 1.0, m)
 
 	a, s, c := e.Angle()
-	assert.InDelta(t, 0, a.Rad(), 1e-5)
-	assert.InDelta(t, 0, s, 1e-5)
-	assert.InDelta(t, 1, c, 1e-5)
+	geomtest.Equal(t, 0.0, a.Rad())
+	geomtest.Equal(t, 0.0, s)
+	geomtest.Equal(t, 1.0, c)
 }
 
 func TestEllipseStandard(t *testing.T) {
@@ -57,7 +57,7 @@ func TestEllipseStandard(t *testing.T) {
 	assert.Equal(t, d2.Pt{math.Sqrt2, 0}, e.Pt1(0))
 
 	// 1/4 rotation should be +Y
-	assert.InDelta(t, 0.0, e.Pt1(0.25).Distance(d2.Pt{0, 1}), 1e-10)
+	geomtest.Equal(t, 0.0, e.Pt1(0.25).Distance(d2.Pt{0, 1}))
 }
 
 func TestBoundingBox(t *testing.T) {
@@ -90,7 +90,7 @@ func TestCartesianArc(t *testing.T) {
 		x2 := e.c.X + (-b-math.Sqrt(b*b-4*a*c))/(2*a)
 		d1 := math.Abs(pt.X - x1)
 		d2 := math.Abs(pt.X - x2)
-		assert.InDelta(t, 0, math.Min(d1, d2), 1e-10)
+		geomtest.Equal(t, 0.0, math.Min(d1, d2))
 	}
 }
 
@@ -100,7 +100,7 @@ func TestV1(t *testing.T) {
 	r := 1.0
 
 	e := New(f1, f2, r)
-	geomtest.V1(t, e)
+	geomtest.Equal(t, d2.AssertV1{}, e)
 }
 
 func TestLineIntersections(t *testing.T) {

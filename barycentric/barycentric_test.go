@@ -5,7 +5,7 @@ import (
 
 	"github.com/adamcolton/geom/barycentric"
 	"github.com/adamcolton/geom/geomtest"
-	"github.com/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBIterator(t *testing.T) {

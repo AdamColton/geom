@@ -1,21 +1,27 @@
 package cmpr
 
-// Tolerance adjusts how close values must be to be considered equal
-var Tolerance float64 = 1e-5
+type Tolerance float64
 
-// EqualWithin returns true if a and b are within the specified distance of
-// eachother.
-func EqualWithin(a, b, within float64) bool {
-	d := a - b
-	return d < within && d > -within
+// DefaultTolerance adjusts how close values must be to be considered equal
+var DefaultTolerance Tolerance = 1e-5
+
+// Equal returns true if a and b are within Tolerance t of eachother.
+func (t Tolerance) Equal(a, b float64) bool {
+	return t.Zero(a - b)
 }
 
-// Equal returns true if a and b are within the Tolerance value of eachother.
+// Zero returns true if x is within Tolerance t of value of 0.
+func (t Tolerance) Zero(x float64) bool {
+	z := Tolerance(x)
+	return z < t && z > -t
+}
+
+// Equal returns true if a and b are within the DefaultTolerance of eachother.
 func Equal(a, b float64) bool {
-	return EqualWithin(a, b, Tolerance)
+	return DefaultTolerance.Equal(a, b)
 }
 
-// Zero returns true if x is within the Tolerance value of 0.
+// Zero returns true if x is within the DefaultTolerance of 0.
 func Zero(x float64) bool {
-	return EqualWithin(x, 0, Tolerance)
+	return DefaultTolerance.Zero(x)
 }
