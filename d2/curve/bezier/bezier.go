@@ -31,7 +31,7 @@ func (b Bezier) Pt1(t float64) d2.Pt {
 	ti := 1 - t
 	s := math.Pow(ti, l64)
 	sd := t / ti
-	w := &affine.Weighted{}
+	w := affine.NewWeighted(len(b))
 	for i, p := range b {
 		b := float64(comb.Binomial(l, i))
 		w.Weight(p, s*b)
