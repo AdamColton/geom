@@ -39,6 +39,12 @@ var (
 	fn = func(t0, t1 float64) float64 {
 		return b.Pt1(t0).Distance(l.Pt1(t1))
 	}
+	fnd0 = func(t0, t1 float64) float64 {
+		// (b(t0)^2 * l(t1)^2)^0.5
+		// f(b) = b^2
+		// df/db * db/dt0 = df/dt0
+		return b.Pt1(t0).Distance(l.Pt1(t1))
+	}
 )
 
 func Descent(ctx *draw.Context) {
@@ -57,7 +63,8 @@ func Descent(ctx *draw.Context) {
 	}{
 		{
 			Pt: grid.Pt{10, 10},
-		}, {
+		},
+		{
 			Pt: grid.Pt{365, 365},
 		}, {
 			Pt: grid.Pt{363, 363},

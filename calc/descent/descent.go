@@ -1,7 +1,11 @@
 package descent
 
 import (
+	"fmt"
+	"math"
+
 	"github.com/adamcolton/geom/calc/cmpr"
+	"github.com/adamcolton/geom/d2"
 )
 
 type Fn func([]float64) float64
@@ -109,6 +113,10 @@ func (fn SFn) D(x float64) float64 {
 func (fn SFn) G() float64 {
 	return fn.ReduceG(fn.ExpandG())
 }
+
+// this may have an issue
+// if we step over the min, but still to a lower point
+// and then the next step is higher, we return a range that doesn't contain the min
 func (fn SFn) ExpandG() (g0, g1 float64) {
 	step := 1.0
 	g1 = 1.0
@@ -130,14 +138,17 @@ func (fn SFn) ExpandG() (g0, g1 float64) {
 // improvements.
 func (fn SFn) ReduceG(g0, g1 float64) float64 {
 	f0, f1 := fn(g0), fn(g1)
-	f := f0
+	prevInc := 0.0
 	for i := 0; i < 30; i++ {
 		if f1 > f0 {
 			f0, f1, g0, g1 = f1, f0, g1, g0
 		}
-		if f/f0 > 10 {
+		inc := f0 - f1
+		if d := inc / prevInc; d < 1 && d > .90 {
+			fmt.Println(d, i)
 			return g1
 		}
+		prevInc = inc
 		g0 = (g0 + g1) / 2
 		f0 = fn(g0)
 	}
@@ -156,4 +167,42 @@ func (fn SFn) Step(g float64) (float64, float64, bool) {
 	}
 	step := f / df_dg
 	return step, f, false
+}
+
+func Distance2(a, b d2.Pt1) (Fn, []Fn) {
+	var (
+		fn Fn = func(t []float64) float64 {
+			return a.Pt1(t[0]).Distance(b.Pt1(t[1]))
+		}
+		da      = d2.GetV1(a)
+		dfn0 Fn = func(t []float64) float64 {
+			// chain rule h(x) = f(g(x)) --> h'(x) = f'(g(x))*g'(x)
+
+			// d = ( (bx-lx)^2 + (by-ly)^2 )^0.5
+			// f(g) = g^0.5 :. f'(g) = ((g^-0.5)/2) * g'
+			// g(h,i) = h^2 + i^2 :. g'(h,i) = 2h*h' + 2i*i'
+			// h(bx) = bx-lx :. h' = bx'
+			// i(by) = by-ly :. i' = by'
+			// dbx/dt0 = db(t0).x
+			// dby/dt0 = db(t0).y
+			// d = f(g(h(bx(t0)),i(by(t0))))
+
+			da_t0 := da.V1(t[0])
+			hi := a.Pt1(t[0]).Subtract(b.Pt1(t[1]))
+			dg_t0 := 2*hi.X*da_t0.X + 2*hi.Y*da_t0.Y
+			g := hi.X*hi.X + hi.Y*hi.Y
+			return (math.Pow(g, -0.5) / 2) * dg_t0
+		}
+		db      = d2.GetV1(b)
+		dfn1 Fn = func(t []float64) float64 {
+
+			db_t1 := db.V1(t[0])
+			hi := a.Pt1(t[0]).Subtract(b.Pt1(t[1]))
+			dg_t0 := -2*hi.X*db_t1.X - 2*hi.Y*db_t1.Y
+			g := hi.X*hi.X + hi.Y*hi.Y
+			return (math.Pow(g, -0.5) / 2) * dg_t0
+		}
+	)
+
+	return fn, []Fn{dfn0, dfn1}
 }

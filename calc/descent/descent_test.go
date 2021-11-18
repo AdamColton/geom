@@ -6,6 +6,8 @@ import (
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/bezier"
 	"github.com/adamcolton/geom/d2/curve/line"
+	"github.com/adamcolton/geom/d2/grid"
+	"github.com/stretchr/testify/assert"
 )
 
 func BenchmarkDescent(b *testing.B) {
@@ -37,5 +39,32 @@ func BenchmarkDescent(b *testing.B) {
 		for i := 0; i < steps; i++ {
 			solver.Step(p, buf1, buf2)
 		}
+	}
+}
+
+func TestPartialDerivative(t *testing.T) {
+	bez := bezier.Bezier{
+		{0, 0},
+		{166, 1000},
+		{333, -500},
+		{500, 500},
+	}
+	l := line.New(d2.Pt{0, 200}, d2.Pt{500, 300})
+	fn, exact := Distance2(bez, l)
+
+	estimate := []Fn{
+		fn.CurryPartialDerivative(0),
+		fn.CurryPartialDerivative(1),
+	}
+
+	s := grid.Scale{
+		X: 1.0 / 10.0,
+		Y: 1.0 / 10.0,
+	}
+	for pt := range (grid.Pt{10, 10}).Iter().Chan() {
+		t0, t1 := s.T(pt)
+		x := []float64{t0, t1}
+		assert.InDelta(t, exact[0](x), estimate[0](x), 4e-4)
+		assert.InDelta(t, exact[1](x), estimate[1](x), 4e-4)
 	}
 }
