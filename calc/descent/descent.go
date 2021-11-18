@@ -1,7 +1,6 @@
 package descent
 
 import (
-	"fmt"
 	"math"
 
 	"github.com/adamcolton/geom/calc/cmpr"
@@ -9,43 +8,44 @@ import (
 )
 
 type Fn func([]float64) float64
+type DFn func(x, buf []float64) []float64
 
 type Solver struct {
 	Ln  int
 	Fn  Fn
-	DFn []Fn
+	DFn DFn
 }
 
-func (s *Solver) SetDFn() {
-	if len(s.DFn) < s.Ln {
+func (s *Solver) SetDFn(partials []Fn) {
+	if len(partials) < s.Ln {
 		cp := make([]Fn, s.Ln)
-		copy(cp, s.DFn)
-		s.DFn = cp
+		copy(cp, partials)
+		partials = cp
 	}
-	for i := 0; i < s.Ln; i++ {
-		if s.DFn[i] == nil {
-			s.DFn[i] = s.Fn.CurryPartialDerivative(i)
+	for i, p := range partials {
+		if p == nil {
+			partials[i] = s.Fn.CurryPartialDerivative(i)
 		}
 	}
-}
+	s.DFn = func(x, buf []float64) []float64 {
+		var out []float64
+		if len(buf) < s.Ln {
+			out = make([]float64, s.Ln)
+		} else {
+			out = buf[:s.Ln]
+		}
 
-func (s *Solver) Derivative(x, buf []float64) []float64 {
-	var out []float64
-	if len(buf) < s.Ln {
-		out = make([]float64, s.Ln)
-	} else {
-		out = buf[:s.Ln]
-	}
+		for i, p := range partials {
+			out[i] = p(x)
+		}
 
-	for i, df := range s.DFn {
-		out[i] = df(x)
+		return out
 	}
-	return out
 }
 
 // m is momentum
 func (s *Solver) Step(x, buf1, buf2 []float64) []float64 {
-	d := s.Derivative(x, buf1)
+	d := s.DFn(x, buf1)
 	for i := range d {
 		d[i] *= -1
 	}
@@ -145,7 +145,6 @@ func (fn SFn) ReduceG(g0, g1 float64) float64 {
 		}
 		inc := f0 - f1
 		if d := inc / prevInc; d < 1 && d > .90 {
-			fmt.Println(d, i)
 			return g1
 		}
 		prevInc = inc
@@ -169,13 +168,21 @@ func (fn SFn) Step(g float64) (float64, float64, bool) {
 	return step, f, false
 }
 
-func Distance2(a, b d2.Pt1) (Fn, []Fn) {
+// this should probably get moved to curve
+func Distance2(a, b d2.Pt1) (Fn, DFn) {
 	var (
 		fn Fn = func(t []float64) float64 {
 			return a.Pt1(t[0]).Distance(b.Pt1(t[1]))
 		}
 		da      = d2.GetV1(a)
-		dfn0 Fn = func(t []float64) float64 {
+		db      = d2.GetV1(b)
+		dfn DFn = func(t, buf []float64) []float64 {
+			var out []float64
+			if len(buf) < 2 {
+				out = make([]float64, 2)
+			} else {
+				out = buf[:2]
+			}
 			// chain rule h(x) = f(g(x)) --> h'(x) = f'(g(x))*g'(x)
 
 			// d = ( (bx-lx)^2 + (by-ly)^2 )^0.5
@@ -189,20 +196,18 @@ func Distance2(a, b d2.Pt1) (Fn, []Fn) {
 
 			da_t0 := da.V1(t[0])
 			hi := a.Pt1(t[0]).Subtract(b.Pt1(t[1]))
-			dg_t0 := 2*hi.X*da_t0.X + 2*hi.Y*da_t0.Y
+			hi2 := hi.Multiply(2)
+			dg_t0 := hi2.X*da_t0.X + hi2.Y*da_t0.Y
 			g := hi.X*hi.X + hi.Y*hi.Y
-			return (math.Pow(g, -0.5) / 2) * dg_t0
-		}
-		db      = d2.GetV1(b)
-		dfn1 Fn = func(t []float64) float64 {
+			g = (math.Pow(g, -0.5) / 2)
+			out[0] = g * dg_t0
 
-			db_t1 := db.V1(t[0])
-			hi := a.Pt1(t[0]).Subtract(b.Pt1(t[1]))
-			dg_t0 := -2*hi.X*db_t1.X - 2*hi.Y*db_t1.Y
-			g := hi.X*hi.X + hi.Y*hi.Y
-			return (math.Pow(g, -0.5) / 2) * dg_t0
+			db_t1 := db.V1(t[1])
+			dg_t1 := -hi2.X*db_t1.X - hi2.Y*db_t1.Y
+			out[1] = g * dg_t1
+			return out
 		}
 	)
 
-	return fn, []Fn{dfn0, dfn1}
+	return fn, dfn
 }

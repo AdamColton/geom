@@ -84,7 +84,7 @@ func Descent(ctx *draw.Context) {
 			return fn(v[0], v[1])
 		},
 	}
-	solver.SetDFn()
+	solver.SetDFn(nil)
 	// x*t + dx
 	// x1*500/10 = x2
 	sf := 500.0 / 10.0
@@ -118,7 +118,7 @@ func drawArrows(solver *descent.Solver, s grid.Scale, ctx *draw.Context) {
 	x := make([]float64, 2)
 	for i := range (grid.Pt{10, 10}).Iter().Chan() {
 		x[0], x[1] = s.T(i)
-		vs := solver.Derivative(x, buf)
+		vs := solver.DFn(x, buf)
 		v := (d2.V{vs[0], vs[1]}).Multiply(0.06)
 		mm.Update(v.Mag())
 		ctx.Arrow(i.D2().Pt().Multiply(50), v)

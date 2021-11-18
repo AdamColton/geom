@@ -27,7 +27,7 @@ func BenchmarkDescent(b *testing.B) {
 			return fn(v[0], v[1])
 		},
 	}
-	solver.SetDFn()
+	solver.SetDFn(nil)
 	buf1 := make([]float64, 2)
 	buf2 := make([]float64, 2)
 
@@ -52,19 +52,25 @@ func TestPartialDerivative(t *testing.T) {
 	l := line.New(d2.Pt{0, 200}, d2.Pt{500, 300})
 	fn, exact := Distance2(bez, l)
 
-	estimate := []Fn{
-		fn.CurryPartialDerivative(0),
-		fn.CurryPartialDerivative(1),
+	s := Solver{
+		Ln: 2,
+		Fn: fn,
 	}
+	s.SetDFn(nil)
 
-	s := grid.Scale{
+	scale := (grid.Scale{
 		X: 1.0 / 10.0,
 		Y: 1.0 / 10.0,
-	}
+	}).T
+	buf0 := make([]float64, 2)
+	buf1 := make([]float64, 2)
 	for pt := range (grid.Pt{10, 10}).Iter().Chan() {
-		t0, t1 := s.T(pt)
+		t0, t1 := scale(pt)
 		x := []float64{t0, t1}
-		assert.InDelta(t, exact[0](x), estimate[0](x), 4e-4)
-		assert.InDelta(t, exact[1](x), estimate[1](x), 4e-4)
+		expected := exact(x, buf0)
+		got := s.DFn(x, buf1)
+		for i, g := range got {
+			assert.InDelta(t, expected[i], g, 4e-4)
+		}
 	}
 }
