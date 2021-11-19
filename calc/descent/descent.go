@@ -1,10 +1,7 @@
 package descent
 
 import (
-	"math"
-
 	"github.com/adamcolton/geom/calc/cmpr"
-	"github.com/adamcolton/geom/d2"
 )
 
 type Fn func([]float64) float64
@@ -43,7 +40,6 @@ func (s *Solver) SetDFn(partials []Fn) {
 	}
 }
 
-// m is momentum
 func (s *Solver) Step(x, buf1, buf2 []float64) []float64 {
 	d := s.DFn(x, buf1)
 	for i := range d {
@@ -139,22 +135,26 @@ func (fn SFn) ExpandG() (g0, g1 float64) {
 func (fn SFn) ReduceG(g0, g1 float64) float64 {
 	f0, f1 := fn(g0), fn(g1)
 	prevInc := 0.0
+	belowThresh := false
+	// so I think I need to track d and not break while it is decreasing
 	for i := 0; i < 30; i++ {
 		if f1 > f0 {
 			f0, f1, g0, g1 = f1, f0, g1, g0
 		}
 		inc := f0 - f1
-		if d := inc / prevInc; d < 1 && d > .90 {
+		d := inc / prevInc
+		if belowThresh && d < 1 && d > 0.90 {
 			return g1
 		}
+		belowThresh = belowThresh || d < 0.90
 		prevInc = inc
 		g0 = (g0 + g1) / 2
 		f0 = fn(g0)
 	}
-	if g1 > 0.0 {
-		return g1
+	if g0 > 0.0 {
+		return g0
 	}
-	return g0
+	return g1
 }
 
 func (fn SFn) Step(g float64) (float64, float64, bool) {
@@ -166,48 +166,4 @@ func (fn SFn) Step(g float64) (float64, float64, bool) {
 	}
 	step := f / df_dg
 	return step, f, false
-}
-
-// this should probably get moved to curve
-func Distance2(a, b d2.Pt1) (Fn, DFn) {
-	var (
-		fn Fn = func(t []float64) float64 {
-			return a.Pt1(t[0]).Distance(b.Pt1(t[1]))
-		}
-		da      = d2.GetV1(a)
-		db      = d2.GetV1(b)
-		dfn DFn = func(t, buf []float64) []float64 {
-			var out []float64
-			if len(buf) < 2 {
-				out = make([]float64, 2)
-			} else {
-				out = buf[:2]
-			}
-			// chain rule h(x) = f(g(x)) --> h'(x) = f'(g(x))*g'(x)
-
-			// d = ( (bx-lx)^2 + (by-ly)^2 )^0.5
-			// f(g) = g^0.5 :. f'(g) = ((g^-0.5)/2) * g'
-			// g(h,i) = h^2 + i^2 :. g'(h,i) = 2h*h' + 2i*i'
-			// h(bx) = bx-lx :. h' = bx'
-			// i(by) = by-ly :. i' = by'
-			// dbx/dt0 = db(t0).x
-			// dby/dt0 = db(t0).y
-			// d = f(g(h(bx(t0)),i(by(t0))))
-
-			da_t0 := da.V1(t[0])
-			hi := a.Pt1(t[0]).Subtract(b.Pt1(t[1]))
-			hi2 := hi.Multiply(2)
-			dg_t0 := hi2.X*da_t0.X + hi2.Y*da_t0.Y
-			g := hi.X*hi.X + hi.Y*hi.Y
-			g = (math.Pow(g, -0.5) / 2)
-			out[0] = g * dg_t0
-
-			db_t1 := db.V1(t[1])
-			dg_t1 := -hi2.X*db_t1.X - hi2.Y*db_t1.Y
-			out[1] = g * dg_t1
-			return out
-		}
-	)
-
-	return fn, dfn
 }
