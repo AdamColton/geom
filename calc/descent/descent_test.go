@@ -1,6 +1,7 @@
 package descent
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/adamcolton/geom/d2"
@@ -111,4 +112,60 @@ func TestPartialDerivative2(t *testing.T) {
 			assert.InDelta(t, expected[i], g, 0.1)
 		}
 	}
+}
+
+func TestDescent(t *testing.T) {
+	bez := bezier.Bezier{
+		{0, 0},
+		{166, 1000},
+		{333, -500},
+		{500, 500},
+	}
+	l := line.New(d2.Pt{0, 200}, d2.Pt{500, 300})
+	fn, dfn := distance.New(bez, l)
+
+	s := &Solver{
+		Ln: 2,
+		Fn: func(x []float64) float64 {
+			return fn(x[0], x[1])
+		},
+		DFn: func(x, buf []float64) []float64 {
+			buf[0], buf[1] = dfn(x[0], x[1])
+			return buf
+		},
+	}
+	s.SetDFn(nil)
+
+	x := []float64{0, 0}
+	buf1 := []float64{0, 0}
+	buf2 := []float64{0, 0}
+	for i := 0; i < 30; i++ {
+		s.Step(x, buf1, buf2)
+	}
+
+	assert.InDelta(t, 0.0, s.Fn(x), 3e-3)
+}
+
+func TestSecant(t *testing.T) {
+	bez := bezier.Bezier{
+		{0, 0},
+		{166, 1000},
+		{333, -500},
+		{500, 500},
+	}
+	l := line.New(d2.Pt{0, 200}, d2.Pt{500, 300})
+	var fn Fn = func(x []float64) float64 {
+		return bez.Pt1(x[0]).Distance(l.Pt1(x[1]))
+	}
+
+	x0, x1 := []float64{0, 0}, []float64{0.01, 0.01}
+	for i := 0; i < 100; i++ {
+		x0, x1 = fn.SecantStep(x0, x1), x0
+		fmt.Println(x0, x1, fn(x0))
+	}
+
+	assert.InDelta(t, 0.0, fn(x0), 3e-3)
+
+	assert.Equal(t, x0, fn.D(x0, x1))
+	assert.Equal(t, x0, fn.D(x1, x0))
 }

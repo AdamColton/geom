@@ -40,7 +40,7 @@ func (s *Solver) SetDFn(partials []Fn) {
 	}
 }
 
-func (s *Solver) Step(x, buf1, buf2 []float64) []float64 {
+func (s *Solver) Step(x, buf1, buf2 []float64) {
 	d := s.DFn(x, buf1)
 	for i := range d {
 		d[i] *= -1
@@ -50,7 +50,6 @@ func (s *Solver) Step(x, buf1, buf2 []float64) []float64 {
 		d[i] = d[i] * g
 		x[i] += d[i]
 	}
-	return d
 }
 
 func (s *Solver) G(x, d, buf []float64) float64 {
@@ -67,6 +66,45 @@ func (s *Solver) G(x, d, buf []float64) float64 {
 		return s.Fn(dx)
 	}
 	return fn.G()
+}
+
+func (fn Fn) SecantStep(x0, x1 []float64) []float64 {
+	dfx0 := fn.D(x0, x1)
+	dfx1 := fn.D(x1, x0)
+	out := make([]float64, len(x0))
+	for i := range out {
+		out[i] = (x0[i] - x1[i]) / (dfx1[i] - dfx0[i])
+	}
+	return out
+}
+
+func (fn Fn) D(x0, x1 []float64) []float64 {
+	// f(x0+x1[i]) - f(x0)/d
+	out := make([]float64, len(x0))
+	fx0 := fn(x0)
+	for i, x := range x0 {
+		x0[i] = x1[i]
+		out[i] = (fn(x0) - fx0) / (x1[i] - x)
+		x0[i] = x
+	}
+	return out
+}
+
+func (fn Fn) SecantStep2(x0, x1 []float64) []float64 {
+	// dx = x1-x0
+	// df[i] --> x=x0; x[i]=x1[i] f(x)-f(x0) --- I think
+	// dx[i]
+	// x2[x] = x1
+
+	x2 := make([]float64, len(x1))
+	f0, f1 := fn(x0), fn(x1)
+	df := f1 - f0
+	for i := range x2 {
+		m := df / (x1[i] - x0[i])
+		b := f0 - m*x0[i]
+		x2[i] = -b / m
+	}
+	return x2
 }
 
 func (fn Fn) PartialDerivative(x []float64, idx int) float64 {
