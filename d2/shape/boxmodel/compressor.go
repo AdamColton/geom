@@ -2,33 +2,22 @@ package boxmodel
 
 import (
 	"errors"
-	"hash/crc32"
 )
 
-type cblock struct {
-	idx uint32
-	children
-}
-
-func (c *cursor) compressionMap(nextIdx uint32, m map[uint32]cblock, b []byte) (uint32, uint32) {
+func (c *cursor) compressionMap(nextIdx uint32, m map[children]uint32) (uint32, uint32) {
 	if c.idx < firstParent {
 		return nextIdx, c.idx
 	}
 	var cs children
 	for _, child := range cIter {
 		c.moveTo(child)
-		nextIdx, cs[child] = c.compressionMap(nextIdx, m, b)
+		nextIdx, cs[child] = c.compressionMap(nextIdx, m)
 		c.pop()
 	}
-	cs.bytes(b)
-	hash := crc32.ChecksumIEEE(b)
-	if cb, found := m[hash]; found {
-		return nextIdx, cb.idx + firstParent
+	if idx, found := m[cs]; found {
+		return nextIdx, idx + firstParent
 	}
-	m[hash] = cblock{
-		idx:      nextIdx,
-		children: cs,
-	}
+	m[cs] = nextIdx
 	return nextIdx + 1, nextIdx + firstParent
 }
 
@@ -44,7 +33,7 @@ type Compressor interface {
 type compressor struct {
 	nodes   []children
 	trees   map[string]*tree
-	cblocks map[uint32]cblock
+	cblocks map[children]uint32
 	nextIdx uint32
 	sum     int
 }
@@ -55,7 +44,7 @@ func (c *compressor) private() {}
 func NewCompressor() Compressor {
 	return &compressor{
 		trees:   make(map[string]*tree),
-		cblocks: make(map[uint32]cblock),
+		cblocks: make(map[children]uint32),
 	}
 }
 
@@ -69,8 +58,8 @@ func (c *compressor) Stats() (int, int) {
 func (c *compressor) updateNodes() {
 	if ln := len(c.cblocks); len(c.nodes) <= ln {
 		c.nodes = make([]children, ln)
-		for _, cb := range c.cblocks {
-			c.nodes[cb.idx] = cb.children
+		for cs, cb := range c.cblocks {
+			c.nodes[cb] = cs
 		}
 	}
 	for _, t := range c.trees {
@@ -86,8 +75,7 @@ func (c *compressor) Add(name string, model BoxModel) (BoxModel, error) {
 	t := model.tree()
 	c.sum += t.inside + t.outside + t.perimeter
 	var start uint32
-	b := make([]byte, 16)
-	c.nextIdx, start = t.root().compressionMap(c.nextIdx, c.cblocks, b)
+	c.nextIdx, start = t.root().compressionMap(c.nextIdx, c.cblocks)
 
 	out := &tree{
 		start:       start,
