@@ -1,6 +1,7 @@
 package poly
 
 import (
+	"github.com/adamcolton/geom/calc/comb"
 	poly1d "github.com/adamcolton/geom/calc/poly"
 	"github.com/adamcolton/geom/d2"
 )
@@ -48,6 +49,19 @@ func (y Y) Len() int {
 
 // Slice fulfills Coefficients using a Slice.
 type Slice []d2.V
+
+// Buf returns and instance of Slice. It will use the provided buffer if
+// possible.
+func Buf(ln int, buf []d2.V) Slice {
+	if cap(buf) >= ln {
+		buf = buf[:ln]
+		for i := range buf {
+			buf[i].X, buf[i].Y = 0, 0
+		}
+		return buf
+	}
+	return make(Slice, ln)
+}
 
 // Coefficient returns the d2.V at the given index if it is in range, otherwise
 // it returns d2.V{0,0}.
@@ -110,4 +124,38 @@ func (d Derivative) Coefficient(idx int) d2.V {
 // Len is one less than the underlying Coefficients.
 func (d Derivative) Len() int {
 	return d.Coefficients.Len() - 1
+}
+
+// Bezier fulfills Coefficients representing a Bezier as a polynomial.
+type Bezier []d2.Pt
+
+// NewBezier creates a Polynomial from the points used to define a Bezier curve.
+func NewBezier(pts []d2.Pt) Poly {
+	return Poly{Bezier(pts)}
+}
+
+// Len of the underlying slice
+func (b Bezier) Len() int {
+	return len(b)
+}
+
+var signTab = [2]float64{1, -1}
+
+// Coefficient at the given index of the polynomial representation of the Bezier
+// curve.
+func (b Bezier) Coefficient(idx int) d2.V {
+	// B(t) = ∑ binomialCo(l,i) * (1-t)^(l-i) * t^(i) * points[i]
+	l := len(b) - 1
+	var sum d2.V
+
+	for i, pt := range b {
+		term := idx - i
+		if term < 0 {
+			break
+		}
+		v := pt.V().Multiply(float64(comb.Binomial(l, i)))
+		s := signTab[term&1] * float64(comb.Binomial(l-i, term))
+		sum = sum.Add(v.Multiply(s))
+	}
+	return sum
 }

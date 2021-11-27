@@ -15,6 +15,17 @@ func New(pts ...d2.V) Poly {
 	return Poly{Slice(pts)}
 }
 
+// Copy the coefficients into an instance of Slice. The provided buffer will
+// be used if it has sufficient capacity.
+func (p Poly) Copy(buf []d2.V) Poly {
+	ln := p.Len()
+	out := Buf(ln, buf)
+	for i := range out {
+		out[i] = p.Coefficient(i)
+	}
+	return Poly{out}
+}
+
 // Pt1 returns the point on the curve at t0.
 func (p Poly) Pt1(t0 float64) d2.Pt {
 	return d2.Pt{
@@ -49,6 +60,12 @@ type V struct {
 	Poly
 }
 
+// Copy the coefficients into an instance of Slice. The provided buffer will
+// be used if it has sufficient capacity.
+func (v V) Copy(buf []d2.V) V {
+	return V{v.Poly.Copy(buf)}
+}
+
 // V returns and instace of V that holds the derivative of p.
 func (p Poly) V() V {
 	return V{Poly{Derivative{p}}}
@@ -60,6 +77,8 @@ func (v V) V1(t0 float64) d2.V {
 }
 
 // V1c0 returns and instance of V fulfilling d2.V1 and caching the derivative.
+// Note that this is still not buffered, so for repeated calls, make a copy to
+// reduce duplicated work.
 func (p Poly) V1c0() d2.V1 {
 	return p.V()
 }

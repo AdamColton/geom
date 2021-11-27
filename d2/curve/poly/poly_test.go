@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/adamcolton/geom/d2"
+	"github.com/adamcolton/geom/d2/curve/bezier"
 	"github.com/adamcolton/geom/d2/curve/line"
 	"github.com/adamcolton/geom/d2/curve/poly"
 	"github.com/adamcolton/geom/geomtest"
@@ -63,12 +64,30 @@ func TestMultiply(t *testing.T) {
 func TestDerivative(t *testing.T) {
 	p := poly.New(d2.V{0.0000, 0.0000}, d2.V{1.0000, 2.0000}, d2.V{0.0000, -2.0000})
 	v1 := p.V1c0()
-	vCp := p.V()
+	vCp := p.V().Copy(nil)
 
 	geomtest.EqualInDelta(t, d2.AssertV1{}, p, 1e-4)
 	for i := 0.0; i <= 1.0; i += 0.05 {
 		v := p.V1(i)
 		geomtest.EqualInDelta(t, v, v1.V1(i), 1e-4)
 		geomtest.EqualInDelta(t, v, vCp.V1(i), 1e-4)
+	}
+}
+
+func TestBezier(t *testing.T) {
+	bb := bezier.Bezier([]d2.Pt{{0, 0}, {0.5, 1}, {1, 0}})
+	bp := poly.NewBezier(bb).Copy(nil)
+	bc := poly.Poly{poly.Bezier(bb)}
+
+	for i := 0.0; i < 1.0; i += 0.05 {
+		pt := bb.Pt1(i)
+		geomtest.Equal(t, pt, bp.Pt1(i))
+		geomtest.Equal(t, pt, bc.Pt1(i))
+	}
+
+	buf := make([]d2.V, 3)
+	bp = poly.NewBezier(bb).Copy(buf)
+	for i, b := range buf {
+		geomtest.Equal(t, bc.Coefficient(i), b)
 	}
 }
