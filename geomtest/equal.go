@@ -3,22 +3,35 @@ package geomtest
 import (
 	"fmt"
 	"reflect"
-	"testing"
 
 	"github.com/adamcolton/geom/calc/cmpr"
 	"github.com/adamcolton/geom/geomerr"
 )
 
+type TestingT interface {
+	Error(args ...interface{})
+}
+
+type tHelper interface {
+	Helper()
+}
+
 // Equal calls AssertEqual with the default value of Small. If there is an error
 // it is passed into t.Error. The return bool will be true if the values were
 // equal.
-func Equal(t *testing.T, expected, actual interface{}) bool {
+func Equal(t TestingT, expected, actual interface{}) bool {
+	if h, ok := t.(tHelper); ok {
+		h.Helper()
+	}
 	return EqualInDelta(t, expected, actual, Small)
 }
 
 // EqualInDelta calls AssertEqual. If there is an error it is passed into
 // t.Error. The return bool will be true if the values were equal.
-func EqualInDelta(t *testing.T, expected, actual interface{}, delta cmpr.Tolerance) bool {
+func EqualInDelta(t TestingT, expected, actual interface{}, delta cmpr.Tolerance) bool {
+	if h, ok := t.(tHelper); ok {
+		h.Helper()
+	}
 	err := AssertEqual(expected, actual, delta)
 	if err == nil {
 		return true
