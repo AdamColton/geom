@@ -3,6 +3,7 @@ package poly
 import (
 	poly1d "github.com/adamcolton/geom/calc/poly"
 	"github.com/adamcolton/geom/d2"
+	"github.com/adamcolton/geom/d2/curve/line"
 )
 
 // Poly is a 2D polynomial curve.
@@ -86,4 +87,45 @@ func (p Poly) V1c0() d2.V1 {
 // V1 takes the derivate of p at t0.
 func (p Poly) V1(t0 float64) d2.V {
 	return p.V1c0().V1(t0)
+}
+
+// PolyLineIntersections returns the intersection points relative to the
+// Polynomial curve.
+func (p Poly) PolyLineIntersections(l line.Line, buf []float64) []float64 {
+	if l.D.X == 0 {
+		d0 := poly1d.New(-l.T0.X)
+		return p.X().Add(d0).Roots(buf)
+	}
+	if l.D.Y == 0 {
+		d0 := poly1d.New(-l.T0.Y)
+		return p.Y().Add(d0).Roots(buf)
+	}
+	m := l.M()
+	p2 := p.Y().Add(p.X().Scale(-m))
+	d0 := poly1d.New(m*l.T0.X - l.T0.Y)
+	p2 = p2.Add(d0)
+
+	return p2.Roots(buf)
+}
+
+// LineIntersections fulfills line.Intersector and returns the intersections
+// relative to the line.
+func (p Poly) LineIntersections(l line.Line, buf []float64) []float64 {
+	ln := len(buf)
+	ts := p.PolyLineIntersections(l, buf)
+	if lnTs := len(ts); lnTs > 0 {
+		if ln == 0 || lnTs < ln {
+			ln = lnTs
+		}
+		var toCoord, atCoord func(float64) float64
+		if l.D.X == 0 {
+			toCoord, atCoord = p.Y().F, l.AtY
+		} else {
+			toCoord, atCoord = p.X().F, l.AtX
+		}
+		for i, t := range ts[:ln] {
+			ts[i] = atCoord(toCoord(t))
+		}
+	}
+	return ts
 }

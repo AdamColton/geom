@@ -91,3 +91,40 @@ func TestBezier(t *testing.T) {
 		geomtest.Equal(t, bc.Coefficient(i), b)
 	}
 }
+
+func TestLineIntersections(t *testing.T) {
+	bp := poly.NewBezier([]d2.Pt{
+		{0, 0},
+		{166, 1000},
+		{333, -500},
+		{500, 500},
+	})
+	tt := map[string]struct {
+		line.Line
+		Points int
+	}{
+		"horizontal": {
+			Line:   line.New(d2.Pt{0, 200}, d2.Pt{500, 200}),
+			Points: 3,
+		},
+		"vertical": {
+			Line:   line.New(d2.Pt{500, 200}, d2.Pt{500, 300}),
+			Points: 3,
+		},
+		"diagonal": {
+			Line:   line.New(d2.Pt{0, 200}, d2.Pt{500, 300}),
+			Points: 3,
+		},
+	}
+
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			li := bp.LineIntersections(tc.Line, nil)
+			assert.Len(t, li, tc.Points)
+			pi := bp.PolyLineIntersections(tc.Line, nil)
+			for i, t0 := range li {
+				geomtest.Equal(t, tc.Pt1(t0), bp.Pt1(pi[i]))
+			}
+		})
+	}
+}
