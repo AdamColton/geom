@@ -198,7 +198,7 @@ func (p Poly) IntegralAt(x, y float64) Poly {
 
 // Roots finds the real roots of the polynomial. If an algebraic solution
 // exists, that will be used. Otherwise it will use Halley's method to get it
-// down to an order 4 solution. Because Halley's method is an approximation,
+// down to an order 5 solution. Because Halley's method is an approximation,
 // errors tend to compound and this seems to become unreliable above a degree 10
 // polynomial. It is not safe to use p as the buffer. If the order of p>5 then
 // the optimal buffer size is 5*p.Len()-6. The number of roots returned is set
@@ -221,6 +221,9 @@ func (p Poly) Roots(buf []float64) []float64 {
 	}
 	if ln == 4 {
 		return Cubic(p.Coefficient(0), p.Coefficient(1), p.Coefficient(2), p.Coefficient(3), buf)
+	}
+	if ln == 5 {
+		return Quartic(p.Coefficient(0), p.Coefficient(1), p.Coefficient(2), p.Coefficient(3), p.Coefficient(4), buf)
 	}
 
 	outLn := len(buf)
@@ -253,7 +256,7 @@ func (p Poly) Roots(buf []float64) []float64 {
 	// approach, errors will accumulate. So cur is used to get close to a root
 	// and then that value is passed into Halley on the original p to find the
 	// actual root.
-	for cur.Len() > 4 && len(roots) < outLn {
+	for cur.Len() > 5 && len(roots) < outLn {
 		dCur := cur.D().Copy(dbuf)
 		ddCur := dCur.D().Copy(ddbuf)
 		r, y := cur.Halley(0, need, 50, dCur, ddCur)
@@ -472,4 +475,110 @@ func powThird(x float64) float64 {
 		return math.Pow(x, third)
 	}
 	return -math.Pow(-x, third)
+}
+
+// Quartic finds the real roots of a Quartic equation. The number of roots to
+// return is set by the length of the buffer. If the length is zero then the max
+// number of roots will be found.
+func Quartic(e, d, c, b, a float64, buf []float64) []float64 {
+	// https://stackoverflow.com/a/50747781
+	if a == 0 {
+		return Cubic(e, d, c, b, buf)
+	}
+	outLn := len(buf)
+	if outLn == 0 {
+		outLn = 4
+	}
+
+	b /= a
+	c /= a
+	d /= a
+	e /= a
+
+	var out []float64
+	b2 := b * b
+	p := c - 0.375*b2
+	b3 := b2 * b
+	q := 0.125*b3 - 0.5*b*c + d
+	m := quarticM(p, 0.25*p*p+0.01171875*b3*b-e+0.25*b*d-0.0625*b2*c, -0.125*q*q)
+	if q == 0.0 {
+		if m < 0.0 {
+			return nil
+		}
+		sqrt_2m := math.Sqrt(2.0 * m)
+		if -m-p > 0.0 {
+			delta := math.Sqrt(2.0 * (-m - p))
+			out = quarticAppend(out, outLn, -0.25*b+0.5*(sqrt_2m-delta))
+			out = quarticAppend(out, outLn, -0.25*b-0.5*(sqrt_2m-delta))
+			out = quarticAppend(out, outLn, -0.25*b+0.5*(sqrt_2m+delta))
+			out = quarticAppend(out, outLn, -0.25*b-0.5*(sqrt_2m+delta))
+		} else if -m-p == 0.0 {
+			out = quarticAppend(out, outLn, -0.25*b-0.5*sqrt_2m)
+			out = quarticAppend(out, outLn, -0.25*b+0.5*sqrt_2m)
+		}
+		return out
+	}
+
+	if m < 0.0 {
+		return nil
+	}
+	sqrt_2m := math.Sqrt(2.0 * m)
+	if -m-p+q/sqrt_2m >= 0.0 {
+		delta := math.Sqrt(2.0 * (-m - p + q/sqrt_2m))
+		out = quarticAppend(out, outLn, 0.5*(-sqrt_2m+delta)-0.25*b)
+		out = quarticAppend(out, outLn, 0.5*(-sqrt_2m-delta)-0.25*b)
+	}
+
+	if -m-p-q/sqrt_2m >= 0.0 {
+		delta := math.Sqrt(2.0 * (-m - p - q/sqrt_2m))
+		out = quarticAppend(out, outLn, 0.5*(sqrt_2m+delta)-0.25*b)
+		out = quarticAppend(out, outLn, 0.5*(sqrt_2m-delta)-0.25*b)
+
+	}
+
+	return out
+}
+
+func quarticAppend(out []float64, outLn int, r float64) []float64 {
+	const zero cmpr.Tolerance = 1e-10
+	ln := len(out)
+	if ln == outLn {
+		return out
+	}
+	if ln > 2 && zero.Equal(r, out[2]) {
+		return out
+	}
+	if ln > 1 && zero.Equal(r, out[1]) {
+		return out
+	}
+	if ln > 0 && zero.Equal(r, out[0]) {
+		return out
+	}
+	return append(out, r)
+}
+
+func quarticM(b, c, d float64) float64 {
+	p := c - b*b/3.0
+	q := 2.0*b*b*b/27.0 - b*c/3.0 + d
+
+	if p == 0.0 {
+		return math.Pow(math.Abs(q), third)
+	}
+	if q == 0.0 {
+		return 0.0
+	}
+
+	t := math.Sqrt(math.Abs(p) / 3.0)
+	g := 1.5 * q / (p * t)
+	if p > 0.0 {
+		return -2.0*t*math.Sinh(math.Asinh(g)/3.0) - b/3.0
+	}
+
+	if 4.0*p*p*p+27.0*q*q < 0.0 {
+		return 2.0*t*math.Cos(math.Acos(g)/3.0) - b/3.0
+	}
+	if q > 0.0 {
+		return -2.0*t*math.Cosh(math.Acosh(-g)/3.0) - b/3.0
+	}
+	return 2.0*t*math.Cosh(math.Acosh(g)/3.0) - b/3.0
 }

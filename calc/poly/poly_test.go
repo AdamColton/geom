@@ -437,7 +437,6 @@ func TestQuad(t *testing.T) {
 		})
 	}
 }
-
 func TestCubic(t *testing.T) {
 	tt := map[string]struct {
 		a, b, c, d float64
@@ -485,6 +484,51 @@ func TestCubic(t *testing.T) {
 			}
 			for i := 1; i < len(tc.expected); i++ {
 				got = poly.Cubic(tc.d, tc.c, tc.b, tc.a, buf[:i])
+				assert.Len(t, got, i)
+			}
+		})
+	}
+}
+
+func TestQuartic(t *testing.T) {
+	tt := map[string]struct {
+		a, b, c, d, e float64
+		expected      []float64
+	}{
+		"4-intercepts": {
+			a: 1, b: -10, c: 35, d: -50, e: 24,
+			expected: []float64{1, 2, 3, 4},
+		},
+		"3-intercepts": {
+			a: 1, b: -2, c: -8,
+			expected: []float64{-2, 0, 4},
+		},
+		"2-intercepts": {
+			a: 1, d: -8,
+			expected: []float64{0, 2},
+		},
+		"1-intercepts": {
+			a: 1, d: -4, e: 3,
+			expected: []float64{1},
+		},
+		"a=0": {
+			b: 1, c: -9, d: 26, e: -24,
+			expected: []float64{2, 3, 4},
+		},
+	}
+
+	buf := make([]float64, 4)
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			got := poly.Quartic(tc.e, tc.d, tc.c, tc.b, tc.a, buf[:0])
+			sortFloats(got)
+			geomtest.Equal(t, tc.expected, got)
+			p := poly.New(tc.e, tc.d, tc.c, tc.b, tc.a)
+			for _, r := range got {
+				geomtest.Equal(t, 0.0, p.F(r))
+			}
+			for i := 1; i < len(tc.expected); i++ {
+				got = poly.Quartic(tc.e, tc.d, tc.c, tc.b, tc.a, buf[:i])
 				assert.Len(t, got, i)
 			}
 		})
