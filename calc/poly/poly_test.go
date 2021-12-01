@@ -1,13 +1,20 @@
 package poly_test
 
 import (
+	"math"
+	"sort"
 	"testing"
 
+	"github.com/adamcolton/geom/calc/cmpr"
 	"github.com/adamcolton/geom/calc/poly"
 	"github.com/adamcolton/geom/geomerr"
 	"github.com/adamcolton/geom/geomtest"
 	"github.com/stretchr/testify/assert"
 )
+
+func sortFloats(fs []float64) {
+	sort.Slice(fs, func(i, j int) bool { return fs[i] < fs[j] })
+}
 
 func TestCoefficient(t *testing.T) {
 	p := poly.New(1, 2, 3)
@@ -119,6 +126,7 @@ func TestSum(t *testing.T) {
 
 	assert.Equal(t, 3, p2.Add(p1).Len())
 }
+
 func TestScale(t *testing.T) {
 	got := poly.New(1, 2, 3).Scale(2)
 	expected := poly.New(2, 4, 6)
@@ -267,4 +275,120 @@ func TestIntegral(t *testing.T) {
 	geomtest.Equal(t, 1.0, i.F(1.0))
 	i = p.IntegralAt(1, 2)
 	geomtest.Equal(t, 2.0, i.F(1.0))
+}
+
+func TestNewton(t *testing.T) {
+	want := cmpr.Tolerance(1e-10)
+	req := cmpr.Tolerance(1e-5)
+	buf := make([]float64, 11)
+	p := poly.Poly{poly.Buf(12, nil)}
+	dbuf := poly.Buf(11, nil)
+
+	for i := 2.0; i < 12; i++ {
+		buf = p.MultSwap(poly.New(-i, 1), buf)
+		d := p.D().Copy(dbuf).Coefficients
+		for j := 1.9; j < i; j++ {
+			for variants := 0; variants < 2; variants++ {
+				if variants == 1 {
+					d = nil
+				}
+				r, y := p.Newton(j, want, 100, d)
+				geomtest.EqualInDelta(t, 0.0, y, req)
+				geomtest.EqualInDelta(t, 0.0, p.F(r), req)
+				geomtest.EqualInDelta(t, j+0.1, r, req)
+			}
+		}
+	}
+}
+
+func TestHalley(t *testing.T) {
+	want := cmpr.Tolerance(1e-10)
+	req := cmpr.Tolerance(1e-5)
+	buf := make([]float64, 11)
+	p := poly.Poly{poly.Buf(12, nil)}
+	dBuf, ddBuf := poly.Buf(11, nil), poly.Buf(10, nil)
+
+	for i := 2.0; i < 12; i++ {
+		buf = p.MultSwap(poly.New(-i, 1), buf)
+		for j := 1.9; j < i; j++ {
+			d := p.D().Copy(dBuf).Coefficients
+			dd := poly.Poly{d}.D().Copy(ddBuf).Coefficients
+			for variants := 0; variants < 2; variants++ {
+				if variants == 1 {
+					d, dd = nil, nil
+				}
+				r, y := p.Halley(j, want, 50, d, dd)
+				geomtest.EqualInDelta(t, 0.0, y, req)
+				geomtest.EqualInDelta(t, 0.0, p.F(r), req)
+				geomtest.EqualInDelta(t, j+0.1, r, req)
+			}
+		}
+	}
+
+	// Start at a point that will cycle
+	p = poly.New(0, 0, -8, 0, 1)
+	r, y := p.Halley(2, want, 50, nil, nil)
+	geomtest.EqualInDelta(t, 0.0, y, req)
+	geomtest.EqualInDelta(t, 0.0, p.F(r), req)
+	geomtest.EqualInDelta(t, math.Sqrt(8), r, req)
+
+	// Start at a point that will have a denominator of 0
+	// setup a case where 2*dp*dp - p*d2p = 0 but
+	// p, dp and d2p are not 0
+	x := 1.1
+	d2p := poly.New(-6, 6)
+	d2px := d2p.F(x)
+
+	dp := d2p.IntegralAt(x, math.Sqrt(d2px))
+	dpx := dp.F(x)
+	geomtest.Equal(t, math.Pow(dpx, 2), d2px)
+
+	p = dp.IntegralAt(x, 2)
+	px := p.F(x)
+	geomtest.Equal(t, 2.0, px)
+	geomtest.Equal(t, 0.0, 2*dpx*dpx-px*d2px)
+	r, y = p.Halley(x, want, 50, dp, d2p)
+	geomtest.EqualInDelta(t, 0.0, y, req)
+	geomtest.EqualInDelta(t, 0.0, p.F(r), req)
+
+}
+
+func TestRoots(t *testing.T) {
+	ln := 10.0
+	bufLn := 5*int(ln) - 6
+	p := poly.Poly{poly.Buf(bufLn, nil)}
+	buf := poly.Slice(make([]float64, bufLn))
+	for i := 2.0; i < ln; i++ {
+		buf = p.MultSwap(poly.New(-i, 1), buf)
+
+		for variants := 0; variants < 4; variants++ {
+			var roots []float64
+			if variants == 0 {
+				roots = p.Roots(buf)
+			} else if variants == 1 {
+				p0 := poly.Poly{append(p.Coefficients.(poly.Slice), 0)}
+				roots = p0.Roots(buf)
+			} else if variants == 2 {
+				roots = p.Roots(nil)
+			} else {
+				for j := 1; j < int(i)-1; j++ {
+					roots = p.Roots(buf[:j])
+					assert.Len(t, roots, j)
+				}
+				continue
+			}
+			assert.Len(t, roots, int(i)-1)
+			sortFloats(roots)
+			expected := 2.0
+			for _, r := range roots {
+				assert.InDelta(t, expected, r, 6e-3)
+				expected++
+			}
+		}
+	}
+
+	assert.Nil(t, poly.New(1).Roots(nil))
+
+	p = poly.New(-2, 1, 0, 0, 0, 0, 0, 1)
+	assert.Equal(t, []float64{1}, p.Roots(nil))
 }
