@@ -354,7 +354,7 @@ func TestHalley(t *testing.T) {
 }
 
 func TestRoots(t *testing.T) {
-	ln := 10.0
+	ln := 17.0
 	bufLn := 5*int(ln) - 6
 	p := poly.Poly{poly.Buf(bufLn, nil)}
 	buf := poly.Slice(make([]float64, bufLn))
@@ -391,4 +391,49 @@ func TestRoots(t *testing.T) {
 
 	p = poly.New(-2, 1, 0, 0, 0, 0, 0, 1)
 	assert.Equal(t, []float64{1}, p.Roots(nil))
+}
+
+func TestQuad(t *testing.T) {
+	tt := map[string]struct {
+		expected []float64
+		a, b, c  float64
+	}{
+		"2-intercepts": {
+			a: 1, b: -8, c: 12,
+			expected: []float64{2, 6},
+		},
+		"1-intercept": {
+			a: 1, b: -8, c: 16,
+			expected: []float64{4},
+		},
+		"0-intercepts": {
+			a: 1, b: -8, c: 17,
+			expected: nil,
+		},
+		"a=0": {
+			b: -8, c: 16,
+			expected: []float64{2},
+		},
+		"a=0&b=0": {
+			c:        16,
+			expected: nil,
+		},
+	}
+
+	buf := make([]float64, 2)
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			got := poly.Quad(tc.c, tc.b, tc.a, buf)
+			sortFloats(got)
+			geomtest.Equal(t, tc.expected, got)
+			p := poly.New(tc.c, tc.b, tc.a)
+			for _, r := range got {
+				geomtest.Equal(t, 0.0, p.F(r))
+			}
+			if len(tc.expected) > 1 {
+				got = poly.Quad(tc.c, tc.b, tc.a, buf[:1])
+				assert.Len(t, got, 1)
+			}
+		})
+	}
 }

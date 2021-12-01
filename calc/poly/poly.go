@@ -198,7 +198,7 @@ func (p Poly) IntegralAt(x, y float64) Poly {
 
 // Roots finds the real roots of the polynomial. If an algebraic solution
 // exists, that will be used. Otherwise it will use Halley's method to get it
-// down to an order 2 solution. Because Halley's method is an approximation,
+// down to an order 3 solution. Because Halley's method is an approximation,
 // errors tend to compound and this seems to become unreliable above a degree 10
 // polynomial. It is not safe to use p as the buffer. If the order of p>5 then
 // the optimal buffer size is 5*p.Len()-6. The number of roots returned is set
@@ -215,6 +215,9 @@ func (p Poly) Roots(buf []float64) []float64 {
 	}
 	if ln == 2 {
 		return append(buf[:0], -p.Coefficient(0)/p.Coefficient(1))
+	}
+	if ln == 3 {
+		return Quad(p.Coefficient(0), p.Coefficient(1), p.Coefficient(2), buf)
 	}
 
 	outLn := len(buf)
@@ -247,7 +250,7 @@ func (p Poly) Roots(buf []float64) []float64 {
 	// approach, errors will accumulate. So cur is used to get close to a root
 	// and then that value is passed into Halley on the original p to find the
 	// actual root.
-	for cur.Len() > 2 && len(roots) < outLn {
+	for cur.Len() > 3 && len(roots) < outLn {
 		dCur := cur.D().Copy(dbuf)
 		ddCur := dCur.D().Copy(ddbuf)
 		r, y := cur.Halley(0, need, 50, dCur, ddCur)
@@ -258,7 +261,6 @@ func (p Poly) Roots(buf []float64) []float64 {
 		cur, _ = cur.Divide(r, cur.Buf()[1:])
 		roots = append(roots, r)
 	}
-
 	if ln := len(roots); ln < outLn {
 		roots = append(roots, cur.Roots(roots[ln:outLn])...)
 	}
@@ -348,4 +350,32 @@ func (p Poly) Halley(x float64, min cmpr.Tolerance, steps int, d, d2 Coefficient
 		}
 	}
 	return bestX, bestY
+}
+
+// Quad finds the real roots of a quadratic equation. The number of roots to
+// return is set by the length of the buffer. If the length is zero then the max
+// number of roots will be found.
+func Quad(c, b, a float64, buf []float64) []float64 {
+	outLn := len(buf)
+	if a == 0 {
+		if b == 0 {
+			return nil
+		}
+		return append(buf[:0], -c/b)
+	}
+
+	s := b*b - 4*a*c
+	if s < 0 {
+		return nil
+	}
+	if s == 0 {
+		return append(buf[:0], -b/(2*a))
+	}
+	s = math.Sqrt(s)
+	a *= 2
+	buf = append(buf[:0], (-b+s)/(a))
+	if outLn != 1 {
+		buf = append(buf, (-b-s)/(a))
+	}
+	return buf
 }
