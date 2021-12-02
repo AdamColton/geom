@@ -119,3 +119,11 @@ func TestSum(t *testing.T) {
 
 	assert.Equal(t, 3, p2.Add(p1).Len())
 }
+func TestScale(t *testing.T) {
+	got := poly.New(1, 2, 3).Scale(2)
+	expected := poly.New(2, 4, 6)
+	geomtest.Equal(t, expected, got)
+
+	got = poly.New(1, 2, 3).Scale(2)
+	geomtest.Equal(t, expected, got)
+}
