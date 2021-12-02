@@ -109,3 +109,13 @@ func TestDivide(t *testing.T) {
 	geomtest.Equal(t, 0.0, p.F(-3))
 	geomtest.Equal(t, 2.0, p.F(-5))
 }
+
+func TestSum(t *testing.T) {
+	p1 := poly.New(1, 2)
+	p2 := poly.New(3, 4, 5)
+
+	expected := poly.New(4, 6, 5)
+	geomtest.Equal(t, expected, p1.Add(p2))
+
+	assert.Equal(t, 3, p2.Add(p1).Len())
+}
