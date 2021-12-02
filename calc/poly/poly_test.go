@@ -238,3 +238,20 @@ func TestExp(t *testing.T) {
 	assert.Equal(t, poly.Poly{poly.Slice{}}, poly.New(4, 2, -3, 1).Exp(-1, []float64{1, 2, 3}))
 	assert.Equal(t, poly.Poly{poly.Slice{1}}, poly.New(4, 2, -3, 1).Exp(0, []float64{5, 2, 3}))
 }
+
+func TestD(t *testing.T) {
+	geomtest.Equal(t, poly.New(1, 8), poly.New(3, 1, 4).D())
+	geomtest.Equal(t, poly.New(1, 8, 3), poly.New(3, 1, 4, 1).D())
+
+	p := poly.New(3, 1, 4, 1)
+	d := p.D()
+	geomtest.Equal(t, poly.New(1, 8, 3), d)
+
+	dc := poly.Poly{poly.Derivative{p}}
+
+	for x := -10.0; x < 10.0; x += 0.1 {
+		df := d.F(x)
+		assert.Equal(t, df, p.Df(x))
+		assert.Equal(t, df, dc.F(x))
+	}
+}
