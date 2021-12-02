@@ -109,3 +109,28 @@ type Scale struct {
 func (s Scale) Coefficient(idx int) float64 {
 	return s.Coefficients.Coefficient(idx) * s.By
 }
+
+// Product of two Coefficients
+type Product [2]Coefficients
+
+// Coefficient at idx is the sum of all p[i]*p2[j] where i+j == idx
+func (p Product) Coefficient(idx int) float64 {
+	l0 := p[0].Len()
+	l1 := p[1].Len()
+
+	var sum float64
+	i := idx - l1
+	if i < 0 {
+		i = 0
+	}
+	for j := 0; i < l0 && i <= idx; i++ {
+		j = idx - i
+		sum += p[0].Coefficient(i) * p[1].Coefficient(j)
+	}
+	return sum
+}
+
+// Len is one less than the sum of the lengths.
+func (p Product) Len() int {
+	return p[0].Len() + p[1].Len() - 1
+}

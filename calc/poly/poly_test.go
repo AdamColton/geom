@@ -127,3 +127,114 @@ func TestScale(t *testing.T) {
 	got = poly.New(1, 2, 3).Scale(2)
 	geomtest.Equal(t, expected, got)
 }
+
+func TestMultiply(t *testing.T) {
+	p1 := poly.New(-1, 1)
+	p2 := poly.New(1, 1)
+
+	geomtest.Equal(t, poly.New(-1, 0, 1), p1.Multiply(p2))
+
+	p := poly.New(1)
+	p2 = poly.New(1)
+
+	for i := 2.0; i < 6; i++ {
+		x := poly.New(-i, 1)
+		p = p.Multiply(x).Copy(nil)
+		p2 = p2.Multiply(x)
+	}
+	expected := poly.New(120, -154, 71, -14, 1)
+	geomtest.Equal(t, expected, p)
+	geomtest.Equal(t, expected, p2)
+}
+
+func TestMultSwap(t *testing.T) {
+	buf, bufa, bufb := make([]float64, 10), make([]float64, 10), make([]float64, 10)
+	expa := poly.New(1, 1)
+	expb := poly.New(-1, 1)
+	a := expa.Copy(bufa)
+	b := expb.Copy(bufb)
+	swap := buf
+
+	// buf --> a
+	// bufa --> swap
+	swap = a.MultSwap(b, swap)
+	expa = expa.Multiply(expb)
+	geomtest.Equal(t, expa, a)
+	geomtest.Equal(t, a.Buf(), buf[:3]) // a should now be in buf
+	assert.Equal(t, swap, bufa[:2])     // swap will have the old value of a
+
+	// bufa --> b
+	// bufb --> swap
+	swap = b.MultSwap(a, swap)
+	expb = expb.Multiply(expa)
+	geomtest.Equal(t, expb, b)
+	geomtest.Equal(t, b.Buf(), bufa[:4]) // a should now be in buf
+	assert.Equal(t, swap, bufb[:2])      // swap will have the old value of a
+
+	// bufb --> a
+	// buf --> swap
+	swap = a.MultSwap(b, swap)
+	expa = expa.Multiply(expb)
+	geomtest.Equal(t, expa, a)
+	geomtest.Equal(t, a.Buf(), bufb[:6]) // a should now be in buf
+	assert.Equal(t, swap, buf[:3])       // swap will have the old value of a
+}
+
+func TestExp(t *testing.T) {
+	tt := map[string]struct {
+		p   poly.Poly
+		pow int
+	}{
+		"(x2+c)^5": {
+			p:   poly.New(2, -3),
+			pow: 5,
+		},
+		"(x3+x2+c)^4": {
+			p:   poly.New(1, 1, 1),
+			pow: 4,
+		},
+		"(x4+x3+x2+c)^3": {
+			p:   poly.New(4, 2, -3, 1),
+			pow: 3,
+		},
+		"(x4+x3+x2+c)^1": {
+			p:   poly.New(4, 2, -3, 1),
+			pow: 1,
+		},
+		"(x4+x3+x2+c)^2": {
+			p:   poly.New(4, 2, -3, 1),
+			pow: 2,
+		},
+		"(x4+x3+x2+c)^0": {
+			p:   poly.New(4, 2, -3, 1),
+			pow: 0,
+		},
+	}
+
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			ln := tc.p.Len()*tc.pow - tc.pow + 1
+			prod := poly.Poly{poly.Buf(ln, nil)}
+			buf := make([]float64, ln)
+			for i := 0; i < tc.pow; i++ {
+				buf = prod.MultSwap(tc.p, buf)
+			}
+			buf = make([]float64, ln*3)
+			geomtest.Equal(t, prod, tc.p.Exp(tc.pow, buf))
+			buf = make([]float64, ln*2+1)
+			geomtest.Equal(t, prod, tc.p.Exp(tc.pow, buf))
+			buf = make([]float64, ln+1)
+			geomtest.Equal(t, prod, tc.p.Exp(tc.pow, buf))
+			geomtest.Equal(t, prod, tc.p.Exp(tc.pow, nil))
+
+		})
+	}
+
+	// when no buffer is provided the returned value is equal to Poly{Empty{}}
+	assert.Equal(t, poly.Poly{poly.Empty{}}, poly.New(4, 2, -3, 1).Exp(-1, nil))
+	assert.Equal(t, poly.Poly{poly.D0(1)}, poly.New(4, 2, -3, 1).Exp(0, nil))
+
+	// when a buffer is provided, it is used
+	assert.Equal(t, poly.Poly{poly.Slice{}}, poly.New(4, 2, -3, 1).Exp(-1, []float64{1, 2, 3}))
+	assert.Equal(t, poly.Poly{poly.Slice{1}}, poly.New(4, 2, -3, 1).Exp(0, []float64{5, 2, 3}))
+}
