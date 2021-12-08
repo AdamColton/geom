@@ -1,6 +1,7 @@
 package poly
 
 import (
+	poly1d "github.com/adamcolton/geom/calc/poly"
 	"github.com/adamcolton/geom/d2"
 )
 
@@ -77,4 +78,20 @@ func (s Sum) Len() int {
 		return ln1
 	}
 	return ln0
+}
+
+// Produce of two Coefficients.
+type Product [2]Coefficients
+
+// Coefficient of the product at the given index.
+func (p Product) Coefficient(idx int) d2.V {
+	return d2.V{
+		X: poly1d.Product{X{p[0]}, X{p[1]}}.Coefficient(idx),
+		Y: poly1d.Product{Y{p[0]}, Y{p[1]}}.Coefficient(idx),
+	}
+}
+
+// Len of the product of the Coefficients.
+func (p Product) Len() int {
+	return p[0].Len() + p[1].Len() - 1
 }

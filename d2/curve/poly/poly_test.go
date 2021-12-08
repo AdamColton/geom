@@ -43,3 +43,19 @@ func TestAdd(t *testing.T) {
 	assert.Equal(t, 2, p1.Add(p2).Len())
 	assert.Equal(t, 2, p2.Add(p1).Len())
 }
+
+func TestMultiply(t *testing.T) {
+	l1 := line.New(d2.Pt{1, 2}, d2.Pt{7, 4})
+	l2 := line.New(d2.Pt{3, 1}, d2.Pt{4, 5})
+
+	p1 := poly.New(l1.T0.V(), l1.D)
+	p2 := poly.New(l2.T0.V(), l2.D)
+
+	m := p1.Multiply(p2)
+
+	for i := 0.0; i < 1.0; i += 0.05 {
+		pt1, pt2 := l1.Pt1(i), l2.Pt1(i)
+		expected := d2.Pt{pt1.X * pt2.X, pt1.Y * pt2.Y}
+		geomtest.Equal(t, expected, m.Pt1(i))
+	}
+}

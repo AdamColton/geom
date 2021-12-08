@@ -37,3 +37,8 @@ func (p Poly) Y() poly1d.Poly {
 func (p Poly) Add(p2 Poly) Poly {
 	return Poly{Sum{p, p2}}
 }
+
+// Multiply creates a new polynomial by taking the produce of p with p2.
+func (p Poly) Multiply(p2 Poly) Poly {
+	return Poly{Product{p, p2}}
+}
