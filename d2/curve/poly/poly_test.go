@@ -7,6 +7,7 @@ import (
 	"github.com/adamcolton/geom/d2/curve/line"
 	"github.com/adamcolton/geom/d2/curve/poly"
 	"github.com/adamcolton/geom/geomtest"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLine(t *testing.T) {
@@ -25,4 +26,20 @@ func TestLine(t *testing.T) {
 		geomtest.Equal(t, pt.X, x.F(i))
 		geomtest.Equal(t, pt.Y, y.F(i))
 	}
+}
+
+func TestAdd(t *testing.T) {
+	p1 := poly.New(d2.V{1, 2}, d2.V{3, 4})
+	p2 := poly.New(d2.V{5, 6}, d2.V{7, 8})
+	s := p1.Add(p2)
+
+	for i := 0.0; i < 1.0; i += 0.05 {
+		geomtest.Equal(t, s.Pt1(i), p1.Pt1(i).Add(d2.V(p2.Pt1(i))))
+	}
+
+	p1 = poly.New(d2.V{1, 2}, d2.V{3, 4})
+	p2 = poly.New(d2.V{5, 6})
+
+	assert.Equal(t, 2, p1.Add(p2).Len())
+	assert.Equal(t, 2, p2.Add(p1).Len())
 }

@@ -32,3 +32,8 @@ func (p Poly) X() poly1d.Poly {
 func (p Poly) Y() poly1d.Poly {
 	return poly1d.Poly{Y(p)}
 }
+
+// Add creates a new polynomial by summinging p with p2.
+func (p Poly) Add(p2 Poly) Poly {
+	return Poly{Sum{p, p2}}
+}

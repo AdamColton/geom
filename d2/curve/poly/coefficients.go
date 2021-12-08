@@ -61,3 +61,20 @@ func (s Slice) Coefficient(idx int) d2.V {
 func (s Slice) Len() int {
 	return len(s)
 }
+
+// Sum fulfills Coefficients by adding the two underlying Coefficients together.
+type Sum [2]Coefficients
+
+// Coefficient returns the sum of both Coefficients at the given index.
+func (s Sum) Coefficient(idx int) d2.V {
+	return s[0].Coefficient(idx).Add(s[1].Coefficient(idx))
+}
+
+// Len returns the longer of the two underlying Coefficients.
+func (s Sum) Len() int {
+	ln0 := s[0].Len()
+	if ln1 := s[1].Len(); ln1 > ln0 {
+		return ln1
+	}
+	return ln0
+}
