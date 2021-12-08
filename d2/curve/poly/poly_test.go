@@ -59,3 +59,16 @@ func TestMultiply(t *testing.T) {
 		geomtest.Equal(t, expected, m.Pt1(i))
 	}
 }
+
+func TestDerivative(t *testing.T) {
+	p := poly.New(d2.V{0.0000, 0.0000}, d2.V{1.0000, 2.0000}, d2.V{0.0000, -2.0000})
+	v1 := p.V1c0()
+	vCp := p.V()
+
+	geomtest.EqualInDelta(t, d2.AssertV1{}, p, 1e-4)
+	for i := 0.0; i <= 1.0; i += 0.05 {
+		v := p.V1(i)
+		geomtest.EqualInDelta(t, v, v1.V1(i), 1e-4)
+		geomtest.EqualInDelta(t, v, vCp.V1(i), 1e-4)
+	}
+}

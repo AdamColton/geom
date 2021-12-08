@@ -95,3 +95,19 @@ func (p Product) Coefficient(idx int) d2.V {
 func (p Product) Len() int {
 	return p[0].Len() + p[1].Len() - 1
 }
+
+// Derivative of the underlying Coefficients.
+type Derivative struct {
+	Coefficients
+}
+
+// Coefficient at idx is (idx+1)*Coefficient(idx+1).
+func (d Derivative) Coefficient(idx int) d2.V {
+	idx++
+	return d.Coefficients.Coefficient(idx).Multiply(float64(idx))
+}
+
+// Len is one less than the underlying Coefficients.
+func (d Derivative) Len() int {
+	return d.Coefficients.Len() - 1
+}
