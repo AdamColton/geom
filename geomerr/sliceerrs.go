@@ -38,3 +38,11 @@ func (e SliceErrs) Error() string {
 
 	return strings.Join(out, "\n")
 }
+
+// Append a SliceErrRecord to SliceErrs using fmt.Errorf.
+func (e SliceErrs) Append(idx int, format string, args ...interface{}) SliceErrs {
+	return append(e, SliceErrRecord{
+		Index: idx,
+		Err:   fmt.Errorf(format, args...),
+	})
+}
