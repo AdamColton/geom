@@ -150,3 +150,22 @@ func (d Derivative) Coefficient(idx int) float64 {
 func (d Derivative) Len() int {
 	return d.Coefficients.Len() - 1
 }
+
+// Integral of the underlying  Coefficients.
+type Integral struct {
+	Coefficients
+	C float64
+}
+
+// Coefficient at idx is Coefficient(idx-1)/idx. Except at 0 where it is C.
+func (i Integral) Coefficient(idx int) float64 {
+	if idx == 0 {
+		return i.C
+	}
+	return i.Coefficients.Coefficient(idx-1) / float64(idx)
+}
+
+// Len is always one more than the underlying Coefficients.
+func (i Integral) Len() int {
+	return i.Coefficients.Len() + 1
+}

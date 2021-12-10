@@ -255,3 +255,16 @@ func TestD(t *testing.T) {
 		assert.Equal(t, df, dc.F(x))
 	}
 }
+
+func TestIntegral(t *testing.T) {
+	p := poly.New(1, 2)
+	i := p.Integral(-1)
+	d := i.D()
+	geomtest.Equal(t, d, p)
+	geomtest.Equal(t, -1.0, i.F(0))
+
+	i = p.IntegralAt(1, 1)
+	geomtest.Equal(t, 1.0, i.F(1.0))
+	i = p.IntegralAt(1, 2)
+	geomtest.Equal(t, 2.0, i.F(1.0))
+}
