@@ -14,8 +14,7 @@ func (mockPt1) Pt1(t0 float64) Pt {
 }
 
 func TestV1Wrapper(t *testing.T) {
-	var w Pt1V1
-	w = V1Wrapper{mockPt1{}}
+	var w Pt1V1 = V1Wrapper{mockPt1{}, 0}
 
 	vApproxEqual(t, V{2, 0}, w.V1(0))
 	vApproxEqual(t, V{2, 0.2}, w.V1(0.1))

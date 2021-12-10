@@ -1,8 +1,7 @@
 package d2
 
 import (
-	"fmt"
-	"strings"
+	"math"
 
 	"github.com/adamcolton/geom/calc/cmpr"
 	"github.com/adamcolton/geom/geomerr"
@@ -84,18 +83,23 @@ type VLimiter interface {
 }
 
 const (
-	small = 1e-5
+	small = 1e-7
 	big   = 1.0 / small
 )
 
 // V1Wrapper takes any Pt1 and approximates V1
 type V1Wrapper struct {
-	P Pt1
+	P     Pt1
+	Small float64
 }
 
 // V1 approximates V1 from two points close together
 func (v1 V1Wrapper) V1(t0 float64) V {
-	return v1.P.Pt1(t0 + small).Subtract(v1.P.Pt1(t0)).Multiply(big)
+	if v1.Small == 0 {
+		v1.Small = small
+	}
+	big := 1 / v1.Small
+	return v1.P.Pt1(t0 + v1.Small).Subtract(v1.P.Pt1(t0)).Multiply(big)
 }
 
 // Pt1 calls underlying Pt1 to fulfill Pt1V1 interface
@@ -111,7 +115,7 @@ func GetV1(of Pt1) V1 {
 	if v1, ok := of.(V1); ok {
 		return v1
 	}
-	return V1Wrapper{of}
+	return V1Wrapper{of, 0}
 }
 
 // Pt2c1Wrapper wraps any Pt2 to convert it to a Pt2c1
@@ -158,38 +162,36 @@ type AssertV1 struct{}
 
 // AssertEqual fulfils geomtest.AssertEqualizer.
 func (AssertV1) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
+	// V1Wrapper is not very accurate, so we reduce the required tolerance.
+	t = cmpr.Tolerance(math.Sqrt(float64(t)))
+
 	pv, ok := actual.(Pt1V1)
 	if !ok {
 		return geomerr.TypeMismatch(Pt1V1(nil), actual)
 	}
-
-	small := float64(t)
-	big := 1 / small
 	fn := make([]func(float64) V, 2, 3)
-	fn[0] = func(t0 float64) V {
-		return pv.Pt1(t0 + small).Subtract(pv.Pt1(t0)).Multiply(big)
-	}
+	fn[0] = V1Wrapper{pv, 0}.V1
 	fn[1] = pv.V1
 	if v1c0, ok := pv.(V1c0); ok {
 		fn = append(fn, v1c0.V1c0().V1)
 	}
 
-	var badPoints []string
+	var badPoints geomerr.SliceErrs
 	v := make([]V, len(fn))
 	for i := 0.0; i <= 1.0; i += 0.01 {
 		for j, f := range fn {
 			v[j] = f(i)
 			if j > 0 {
-				vd := V{
-					X: v[0].X - v[j].X,
-					Y: v[0].Y - v[j].Y,
-				}.Abs()
-				if vd.X > 1e-4 || vd.Y > 1e-4 {
+				if v[0].AssertEqual(v[j], t) != nil {
 					r := V{
 						X: v[0].X / v[j].X,
 						Y: v[0].Y / v[j].Y,
 					}
-					badPoints = append(badPoints, fmt.Sprintf("Bad derivative %0.2f %d %s %s %s", i, j, v[0], v[j], r))
+					str := "V1"
+					if j == 2 {
+						str = "V1c0"
+					}
+					badPoints = badPoints.Append(int(i/0.01), "Bad derivative at %s(%0.2f) Expected: %s Got:%s Ratio:%s", str, i, v[0], v[j], r)
 				}
 			}
 		}
@@ -198,5 +200,5 @@ func (AssertV1) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
 	if len(badPoints) == 0 {
 		return nil
 	}
-	return fmt.Errorf(strings.Join(badPoints, "\n"))
+	return badPoints
 }
