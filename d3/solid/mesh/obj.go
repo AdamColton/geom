@@ -27,14 +27,14 @@ type ww struct {
 	err error
 }
 
-func (w ww) write(b []byte) {
+func (w *ww) write(b []byte) {
 	if w.err != nil {
 		return
 	}
 	_, w.err = w.w.Write(b)
 }
 
-func (w ww) writeStr(str string) {
+func (w *ww) writeStr(str string) {
 	if w.err != nil {
 		return
 	}
@@ -43,7 +43,7 @@ func (w ww) writeStr(str string) {
 
 // WriteObj writes the mesh in .obj format to the writer
 func (m *Mesh) WriteObj(writer io.Writer) error {
-	w := ww{w: writer}
+	w := &ww{w: writer}
 	for _, pt := range m.Pts {
 		w.write(hdr_v)
 		w.writeStr(strconv.FormatFloat(pt.X, 'g', Prec, 64))

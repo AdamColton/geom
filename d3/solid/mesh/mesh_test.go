@@ -2,6 +2,7 @@ package mesh
 
 import (
 	"bytes"
+	"fmt"
 	"math"
 	"sort"
 	"testing"
@@ -87,6 +88,25 @@ f 2 3 6 5
 	assert.Equal(t, expected, m.String())
 }
 
+type ErrWriter struct{}
+
+func (e ErrWriter) Write(p []byte) (n int, err error) {
+	return 0, fmt.Errorf("Test: Err Writer")
+}
+
+func TestWriterErr(t *testing.T) {
+	f := []d3.Pt{
+		{0, 0, 0},
+		{0, 1, 0},
+		{1, 0, 0},
+	}
+
+	m := Extrude(f, d3.V{0, 0, 1})
+
+	err := m.WriteObj(ErrWriter{})
+	assert.Error(t, err)
+}
+
 func TestMeshEdges(t *testing.T) {
 	f := []d3.Pt{
 		{0, 0, 0},
@@ -145,19 +165,20 @@ func TestTriangleMeshTransform(t *testing.T) {
 	sq2 := math.Sqrt2
 	expected := [][3]d3.Pt{
 		{
-			{sq2, sq2, 0},
 			{-sq2, sq2, 0},
 			{-sq2, -sq2, 0},
-		}, {
-			{sq2, sq2, 0},
-			{-sq2, -sq2, 0},
 			{sq2, -sq2, 0},
+		}, {
+			{sq2, -sq2, 0},
+			{sq2, sq2, 0},
+			{-sq2, sq2, 0},
 		},
 	}
 	got := tm.Face(0)
 	assert.Len(t, got, 2)
 	geomtest.Equal(t, expected[0][:], got[0][:])
 	geomtest.Equal(t, expected[1][:], got[1][:])
+	assert.Equal(t, 12, tm.GetTriangleCount())
 }
 
 func TestReadObj(t *testing.T) {

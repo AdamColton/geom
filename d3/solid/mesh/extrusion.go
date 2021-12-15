@@ -7,7 +7,7 @@ import (
 	"github.com/adamcolton/geom/d3/solid"
 )
 
-// Extrusion creates a mesh by extruding the perimeter by transormations
+// Extrusion creates a mesh by extruding the perimeter by transormations.
 type Extrusion struct {
 	cur    []uint32
 	points *solid.PointSet
@@ -40,7 +40,7 @@ func (e *Extrusion) applyTRelativeToCenter(t *d3.T) *d3.T {
 		Get()
 }
 
-// Extrude the current perimeter via a set of transformations
+// Extrude the current perimeter via a set of transformations.
 func (e *Extrusion) Extrude(ts ...*d3.T) *Extrusion {
 	ln := len(e.cur)
 	for _, t := range ts {
