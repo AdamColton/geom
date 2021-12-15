@@ -132,3 +132,15 @@ func (l Line) Closest(l2 Line) (float64, float64) {
 	t1 := (t0*d1 + c2) / d2
 	return t0, t1
 }
+
+func (l Line) AtX(x float64) float64 {
+	return (x - l.T0.X) / l.D.X
+}
+
+func (l Line) AtY(x float64) float64 {
+	return (x - l.T0.Y) / l.D.Y
+}
+
+func (l Line) AtZ(x float64) float64 {
+	return (x - l.T0.Z) / l.D.Z
+}
