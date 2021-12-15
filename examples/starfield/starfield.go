@@ -2,15 +2,18 @@ package main
 
 import (
 	"image/color"
+	"image/png"
 	"math/rand"
 	"os"
 	"runtime/pprof"
 
 	"github.com/adamcolton/geom/d3/render/material"
+	"github.com/adamcolton/geom/d3/render/raytrace"
 	"github.com/adamcolton/geom/d3/render/scene"
 	"github.com/adamcolton/geom/d3/render/zbuf"
 	"github.com/adamcolton/geom/d3/shape/plane"
 	"github.com/adamcolton/geom/ffmpeg"
+	"github.com/nfnt/resize"
 
 	"github.com/adamcolton/geom/angle"
 	"github.com/adamcolton/geom/d2"
@@ -21,20 +24,16 @@ import (
 
 // TODO
 // * Look at profiling - speed up raytrace rendering
-// * * creating all the intersectors is slowing things down and creating garbage
-//	   create them before and cache them
-// * * try putting each triangle in a box and check the intersection with that
-//	   first. Again, with a pre-compute. I could also probably put each mesh in
-//	   a box and check that.
 // * set up shaders to look good.
+// * pass out into sceneframe.intersect - this is a lot of allocation and gc
 
 // For this to run, ffmpeg must be installed
 
 const (
 	// Frames of video to render
-	frames = 1000
+	frames = 500
 	// Number of stars to render
-	stars = 200
+	stars = 50
 
 	// width sets the size, the aspect ratio is always widescreen
 	width = 1000
@@ -42,13 +41,14 @@ const (
 	// Set to between 1.0 and 2.0
 	// 1.0 is low quality
 	// 2.0 is high quality
-	imageScale = 1.25
+	imageScale = 2.0
 
 	// enable the profiler
-	profile = true
-)
+	profile = false
 
-var cr = string([]byte{13})
+	doRay  = false
+	doZbuf = true
+)
 
 func main() {
 	if profile {
@@ -57,18 +57,21 @@ func main() {
 			panic(err)
 		}
 		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
-		defer f.Close()
+		defer func() {
+			pprof.StopCPUProfile()
+			f.Close()
+		}()
 	}
 
-	proc := ffmpeg.NewWidescreen("stars", width)
+	proc := ffmpeg.New("stars")
 
 	s := &scene.Scene{
-		GetCamera: cameraFactory{
-			w:      proc.Width,
-			h:      proc.Height,
+		CameraFactory: cameraFactory{
+			w:      proc.Size.X,
+			h:      proc.Size.Y,
 			frames: frames,
 		},
+		FrameCount: frames,
 	}
 
 	starMesh := getStarMesh()
@@ -76,45 +79,68 @@ func main() {
 		s.AddMesh(starMesh, starTransform, starMaterial)
 	}
 
-	// sf := &raytrace.SceneFrame{
-	// 	SceneFrame: s.Frame(50),
-	// 	RayFrame: &raytrace.RayFrame{
-	// 		Background: (&raytrace.MaterialWrapper{backgroundMaterial}).RayShader,
-	// 		Depth:      3,
-	// 		RayMult:    2,
-	// 		ImageScale: 1.25,
-	// 	},
-	// }
-	// img := sf.Image(nil)
-	// f, _ := os.Create("test.png")
-	// png.Encode(f, resize.Resize(uint(sf.Camera.Width), 0, img, resize.Bilinear))
-	// f.Close()
-
-	//return
-
-	proc.Framer(
-		&zbuf.Framer{
-			Count:      frames,
-			Scene:      s,
-			ImageScale: imageScale,
-			ZBufFrame: &zbuf.ZBufFrame{
-				Near:       0.1,
-				Far:        200,
-				Background: color.RGBA{255, 255, 255, 255},
-			},
+	sf := s.Frame(0)
+	ray := &raytrace.Frame{
+		Frame: sf,
+		RayFrame: &raytrace.RayFrame{
+			Background: raytrace.NewMaterialWrapper(backgroundMaterial).RayShader,
+			Depth:      3,
+			RayMult:    2,
+			ImageScale: 1.25,
 		},
-		// &raytrace.Framer{
-		// 	Count: frames,
-		// 	Scene: s,
-		// 	RayFrame: &raytrace.RayFrame{
-		// 		ImageScale: imageScale,
-		// 		Depth:      3,
-		// 		RayMult:    2,
-		// 		Background: (&raytrace.MaterialWrapper{backgroundMaterial}).RayShader,
-		// 	},
-		// },
-	)
+	}
+	if doRay {
+		img := ray.Image(nil)
+		f, _ := os.Create("ray.png")
+		png.Encode(f, resize.Resize(uint(ray.Camera.Size.X), 0, img, resize.Bilinear))
+		f.Close()
+	}
 
+	zb := &zbuf.Scene{
+		Scene:      s,
+		ImageScale: imageScale,
+		ZBufFrame: &zbuf.ZBufFrame{
+			Near:       0.1,
+			Far:        200,
+			Background: color.RGBA{255, 255, 255, 255},
+		},
+	}
+	if doZbuf {
+		zimg, _ := zb.Frame(0, nil)
+		f, _ := os.Create("zbuf.png")
+		png.Encode(f, resize.Resize(uint(ray.Camera.Size.X), 0, zimg, resize.Bilinear))
+		f.Close()
+	}
+
+	if doZbuf {
+		proc.Name = "zbuf"
+		proc.Framer(
+			&zbuf.Scene{
+				Scene:      s,
+				ImageScale: imageScale,
+				ZBufFrame: &zbuf.ZBufFrame{
+					Near:       0.1,
+					Far:        200,
+					Background: color.RGBA{255, 255, 255, 255},
+				},
+			},
+		)
+	}
+
+	if doRay {
+		proc.Name = "ray"
+		proc.Framer(
+			&raytrace.Scene{
+				Scene: s,
+				RayFrame: &raytrace.RayFrame{
+					ImageScale: imageScale,
+					Depth:      3,
+					RayMult:    2,
+					Background: raytrace.NewMaterialWrapper(backgroundMaterial).RayShader,
+				},
+			},
+		)
+	}
 }
 
 type cameraFactory struct {
@@ -124,15 +150,13 @@ type cameraFactory struct {
 
 func (cf cameraFactory) Camera(frameIdx int) *scene.Camera {
 	d := float64(frameIdx) / float64(frames)
-	c := &scene.Camera{
-		Width:  cf.w,
-		Height: cf.h,
-		Angle:  angle.Deg(45),
-	}
-	c.Pt.Z = d * -150.0
 	rot := angle.Rot(d)
-	c.Q.A, c.Q.D = rot.Sincos()
-	return c
+	var q d3.Q
+	q.A, q.D = rot.Sincos()
+
+	return scene.NewCamera(d3.Pt{0, 0, d * -150.0}, angle.Deg(45)).
+		SetSize(cf.w, cf.h).
+		SetRot(q)
 }
 
 func getStarMesh() *mesh.TriangleMesh {
@@ -221,6 +245,6 @@ var starMaterial = &material.Material{
 var backgroundMaterial = material.Material{
 	Specular:    angle.Deg(5),
 	Diffuse:     angle.Deg(1),
-	Color:       &material.Color{1, 1, 0},
-	BorderColor: &material.Color{0, 0, 0},
+	Color:       &material.Color{1, 1, 1},
+	BorderColor: &material.Color{1, 1, 1},
 }
