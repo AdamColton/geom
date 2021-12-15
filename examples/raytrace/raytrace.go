@@ -17,17 +17,14 @@ import (
 func main() {
 	s := &raytrace.SceneFrame{
 		SceneFrame: &scene.SceneFrame{
-			Camera: &scene.Camera{
-				Q:      d3.Q{1, 0, 0, 0},
-				Angle:  angle.Deg(30),
-				Width:  1000 / 2,
-				Height: 560 / 2,
-			},
+			Camera: scene.NewCamera(d3.Pt{0, 0, 0}, angle.Deg(30)).
+				SetRot(d3.Q{1, 0, 0, 0}).
+				Widescreen(500),
 			Meshes: make([]*scene.FrameMesh, 0, 3),
 		},
 		RayFrame: &raytrace.RayFrame{
 			Background: backgroundShader{}.RayShader,
-			Depth:      3,
+			Depth:      4,
 			RayMult:    2,
 			ImageScale: 1.25,
 		},
@@ -39,19 +36,19 @@ func main() {
 	img := s.Image(nil)
 
 	f, _ := os.Create("test.png")
-	png.Encode(f, resize.Resize(uint(s.Camera.Width), 0, img, resize.Bilinear))
+	png.Encode(f, resize.Resize(uint(s.Camera.Size.X), 0, img, resize.Bilinear))
 	f.Close()
 }
 
 func getArrow() *mesh.TriangleMesh {
 	f := []d3.Pt{
-		{0, 2, 10},
-		{1.5, 3.5, 10},
-		{3, 2, 10},
-		{2, 2, 10},
-		{2, 0, 10},
-		{1, 0, 10},
-		{1, 2, 10},
+		{0, 2, -10},
+		{1.5, 3.5, -10},
+		{3, 2, -10},
+		{2, 2, -10},
+		{2, 0, -10},
+		{1, 0, -10},
+		{1, 2, -10},
 	}
 	f = d3.Translate(d3.V{-1.5, -1.0, 0}).T().T(
 		d3.Rotation{
@@ -60,7 +57,7 @@ func getArrow() *mesh.TriangleMesh {
 		}.T(),
 	).Pts(f)
 	m, err := mesh.NewExtrusion(f).
-		Extrude(d3.Translate(d3.V{0, 0, 1}).T()).
+		Extrude(d3.Translate(d3.V{0, 0, -1}).T()).
 		Close().
 		TriangleMesh()
 	if err != nil {
