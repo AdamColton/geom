@@ -8,6 +8,8 @@ import (
 	"github.com/adamcolton/geom/geomerr"
 )
 
+// TestingT is meant to represent the testing.T type, but it allows anything
+// that fulfills the interface to be passed into Equal or EqualInDelta.
 type TestingT interface {
 	Error(args ...interface{})
 }
@@ -25,6 +27,8 @@ func Equal(t TestingT, expected, actual interface{}) bool {
 	}
 	return EqualInDelta(t, expected, actual, Small)
 }
+
+var equalType = reflect.TypeOf((*AssertEqualizer)(nil)).Elem()
 
 // EqualInDelta calls AssertEqual. If there is an error it is passed into
 // t.Error. The return bool will be true if the values were equal.
@@ -49,39 +53,32 @@ func AssertEqual(expected, actual interface{}, delta cmpr.Tolerance) error {
 	ev := reflect.ValueOf(expected)
 	if ev.Kind() == reflect.Slice {
 		av := reflect.ValueOf(actual)
-		if av.Kind() != reflect.Slice || av.Type().Elem() != ev.Type().Elem() {
+		if av.Kind() != reflect.Slice {
 			return geomerr.TypeMismatch(expected, actual)
 		}
-		ln := ev.Len()
-		if aln := av.Len(); ln != aln {
-			return geomerr.LenMismatch(ln, aln)
-		}
-		var errs geomerr.SliceErrs
-		for i := 0; i < ln; i++ {
-			err := AssertEqual(ev.Index(i).Interface(), av.Index(i).Interface(), delta)
-			if err != nil {
-				errs = append(errs, geomerr.SliceErrRecord{
-					Err:   err,
-					Index: i,
-				})
-			}
-		}
-		if len(errs) == 0 {
-			return nil
-		}
-		return errs
+		return geomerr.NewSliceErrs(ev.Len(), av.Len(), func(i int) error {
+			return AssertEqual(ev.Index(i).Interface(), av.Index(i).Interface(), delta)
+		})
 	}
 
 	if eq, ok := expected.(AssertEqualizer); ok {
 		return eq.AssertEqual(actual, delta)
-	} else if f0, ok := expected.(float64); ok {
-		if f1, ok := actual.(float64); ok {
-			if delta.Equal(f0, f1) {
+	} else if ef, ok := expected.(float64); ok {
+		if af, ok := actual.(float64); ok {
+			if delta.Equal(ef, af) {
 				return nil
 			}
-			return geomerr.NotEqual(f0, f1)
+			return geomerr.NotEqual(ef, af)
 		}
 	}
 
-	return fmt.Errorf("unsupported_type")
+	format := "unsupported_type: %s"
+	t := ev.Type()
+	if t.Kind() != reflect.Ptr {
+		if p := reflect.PtrTo(t); p.Implements(equalType) {
+			format = fmt.Sprintf("%s (%s fulfills AssertEqualizer)", format, p.String())
+		}
+	}
+
+	return fmt.Errorf(format, t.String())
 }
