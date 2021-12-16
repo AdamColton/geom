@@ -12,7 +12,7 @@ type ErrTypeMismatch struct {
 }
 
 // TypeMismatch creates an instance of ErrTypeMismatch.
-func TypeMismatch(expected, actual interface{}) error {
+func TypeMismatch(expected, actual interface{}) ErrTypeMismatch {
 	return ErrTypeMismatch{
 		Expected: reflect.TypeOf(expected),
 		Actual:   reflect.TypeOf(actual),
@@ -21,5 +21,18 @@ func TypeMismatch(expected, actual interface{}) error {
 
 // Error fulfills the error interface.
 func (e ErrTypeMismatch) Error() string {
-	return fmt.Sprintf(`Types do not match: expected "%v", got "%v"`, e.Expected, e.Actual)
+	return fmt.Sprintf(`Types do not match: expected "%s", got "%s"`, e.Expected.String(), e.Actual.String())
+}
+
+// NewTypeMismatch will return nil if the given types are the same and returns
+// ErrTypeMismatch if they do not.
+func NewTypeMismatch(expected, actual interface{}) error {
+	te, ta := reflect.TypeOf(expected), reflect.TypeOf(actual)
+	if te == ta {
+		return nil
+	}
+	return ErrTypeMismatch{
+		Expected: te,
+		Actual:   ta,
+	}
 }
