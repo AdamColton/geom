@@ -61,22 +61,19 @@ func (p Poly) F(x float64) float64 {
 // AssertEqual allows Polynomials to be compared. This fulfills
 // geomtest.AssertEqualizer.
 func (p Poly) AssertEqual(to interface{}, t cmpr.Tolerance) error {
-	p2, ok := to.(Poly)
-	if !ok {
-		return geomerr.TypeMismatch(p, to)
+	if err := geomerr.NewTypeMismatch(p, to); err != nil {
+		return err
 	}
+	p2 := to.(Poly)
 
 	ln := p.Len()
 	if ln2 := p2.Len(); ln2 > ln {
 		ln = ln2
 	}
-	for i := 0; i < ln; i++ {
-		if p.Coefficient(i) != p2.Coefficient(i) {
-			return geomerr.NotEqual(p, p2)
-		}
-	}
-
-	return nil
+	return geomerr.NewSliceErrs(ln, ln, func(i int) error {
+		c0, c1 := p.Coefficient(i), p2.Coefficient(i)
+		return geomerr.NewNotEqual(c0 == c1, c0, c1)
+	})
 }
 
 // Divide creates a new polynomial by dividing p by (x-n). The float64 returned

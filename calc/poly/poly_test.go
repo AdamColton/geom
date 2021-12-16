@@ -89,7 +89,7 @@ func TestAssertEqual(t *testing.T) {
 
 	p = poly.New(1, 5)
 	err = p.AssertEqual(d1, 1e-10)
-	assert.IsType(t, geomerr.ErrNotEqual{}, err)
+	assert.Equal(t, "\t0: Expected 1 got 5\n\t1: Expected 5 got 1", err.Error())
 
 	err = p.AssertEqual(1.0, 1e-10)
 	assert.IsType(t, geomerr.ErrTypeMismatch{}, err)
