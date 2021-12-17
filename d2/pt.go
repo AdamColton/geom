@@ -121,10 +121,10 @@ func MinMax(pts ...Pt) (Pt, Pt) {
 
 // AssertEqual fulfils geomtest.AssertEqualizer
 func (pt Pt) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
-	pt2, ok := actual.(Pt)
-	if !ok {
-		return geomerr.TypeMismatch(pt, actual)
+	if err := geomerr.NewTypeMismatch(pt, actual); err != nil {
+		return err
 	}
+	pt2 := actual.(Pt)
 	v := pt.Subtract(pt2)
 	if !t.Zero(v.X) || !t.Zero(v.Y) {
 		return geomerr.NotEqual(pt, pt2)

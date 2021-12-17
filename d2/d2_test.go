@@ -30,20 +30,20 @@ func TestPtBaseFuncs(t *testing.T) {
 
 func TestAssertEqualFailures(t *testing.T) {
 	err := Pt{1, 2}.AssertEqual(V{1, 2}, geomtest.Small)
-	expErr := geomerr.TypeMismatch(Pt{1, 2}, V{2, 1})
-	assert.Equal(t, expErr, err)
+	tm := geomerr.TypeMismatch(Pt{1, 2}, V{2, 1})
+	assert.Equal(t, tm, err)
 
 	err = Pt{1, 2}.AssertEqual(Pt{2, 1}, geomtest.Small)
-	expErr = geomerr.NotEqual(Pt{1, 2}, Pt{2, 1})
-	assert.Equal(t, expErr, err)
+	ne := geomerr.NotEqual(Pt{1, 2}, Pt{2, 1})
+	assert.Equal(t, ne, err)
 
 	err = V{1, 2}.AssertEqual(Pt{1, 2}, geomtest.Small)
-	expErr = geomerr.TypeMismatch(V{1, 2}, Pt{2, 1})
-	assert.Equal(t, expErr, err)
+	tm = geomerr.TypeMismatch(V{1, 2}, Pt{2, 1})
+	assert.Equal(t, tm, err)
 
 	err = V{1, 2}.AssertEqual(V{2, 1}, geomtest.Small)
-	expErr = geomerr.NotEqual(V{1, 2}, V{2, 1})
-	assert.Equal(t, expErr, err)
+	ne = geomerr.NotEqual(V{1, 2}, V{2, 1})
+	assert.Equal(t, ne, err)
 }
 
 func TestVBaseFuncs(t *testing.T) {
