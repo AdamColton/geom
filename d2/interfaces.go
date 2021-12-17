@@ -191,7 +191,7 @@ func (AssertV1) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
 					if j == 2 {
 						str = "V1c0"
 					}
-					badPoints = badPoints.Append(int(i/0.01), "Bad derivative at %s(%0.2f) Expected: %s Got:%s Ratio:%s", str, i, v[0], v[j], r)
+					badPoints = badPoints.AppendF(int(i/0.01), "Bad derivative at %s(%0.2f) Expected: %s Got:%s Ratio:%s", str, i, v[0], v[j], r)
 				}
 			}
 		}
