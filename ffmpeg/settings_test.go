@@ -12,7 +12,7 @@ func TestSettings(t *testing.T) {
 		expected []string
 	}{
 		"New": {
-			Settings: New("New", 99, 199),
+			Settings: New("New", 101, 201),
 			expected: []string{"-y", "-f", "image2pipe", "-vcodec", "bmp", "-r", "24", "-i", "-", "-vf", "scale=100x200", "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p", "New.mp4"},
 		},
 		"NewByAspect": {
@@ -31,14 +31,14 @@ func TestSettings(t *testing.T) {
 			Settings: (&Settings{
 				Framerate: 26,
 				Name:      "Framerate",
-			}).Set(123, 456),
+			}).Set(125, 456),
 			expected: []string{"-y", "-f", "image2pipe", "-vcodec", "bmp", "-r", "26", "-i", "-", "-vf", "scale=124x456", "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p", "Framerate.mp4"},
 		},
 		"ConstantRateFactor": {
 			Settings: (&Settings{
 				ConstantRateFactor: 30,
 				Name:               "ConstantRateFactor",
-			}).Set(123, 456),
+			}).Set(125, 456),
 			expected: []string{"-y", "-f", "image2pipe", "-vcodec", "bmp", "-r", "24", "-i", "-", "-vf", "scale=124x456", "-vcodec", "libx264", "-crf", "30", "-pix_fmt", "yuv420p", "ConstantRateFactor.mp4"},
 		},
 	}
