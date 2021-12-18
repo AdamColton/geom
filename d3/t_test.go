@@ -150,9 +150,15 @@ func TestTGen(t *testing.T) {
 	for n, tc := range tt {
 		t.Run(n, func(t *testing.T) {
 			p := GetTPair(tc)
+<<<<<<< HEAD
 			geomtest.Equal(t, p[0], tc.T())
 			geomtest.Equal(t, p[1], GetTInv(tc))
 			geomtest.Equal(t, id, p[0].T(p[1]))
+=======
+			TEqual(t, p[0], tc.T())
+			TEqual(t, p[1], tc.TInv())
+			TEqual(t, id, p[0].T(p[1]))
+>>>>>>> Pair should not be part of TGen interface
 		})
 	}
 }
