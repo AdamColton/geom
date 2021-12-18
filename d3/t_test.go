@@ -145,9 +145,9 @@ func TestTGen(t *testing.T) {
 	id := Identity()
 	for n, tc := range tt {
 		t.Run(n, func(t *testing.T) {
-			p := tc.Pair()
+			p := GetTPair(tc)
 			TEqual(t, p[0], tc.T())
-			TEqual(t, p[1], tc.TInv())
+			TEqual(t, p[1], GetTInv(tc))
 			TEqual(t, id, p[0].T(p[1]))
 		})
 	}

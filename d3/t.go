@@ -363,6 +363,11 @@ func (t T) String() string {
 	}, "")
 }
 
+func (t *T) TInv() *T {
+	inv, _ := t.Inversion()
+	return inv
+}
+
 func (t *T) Inversion() (*T, bool) {
 	//https://stackoverflow.com/questions/1148309/inverting-a-4x4-matrix
 	out := &T{}
