@@ -106,3 +106,12 @@ func (pt Pt) Mask(and int) Pt {
 		Y: (pt.Y) & and,
 	}
 }
+
+// Index returns the point reached at idx when incrementing by X and wrapping Y.
+func (pt Pt) Index(idx int) Pt {
+	idx = idx % pt.Area()
+	return Pt{
+		X: idx % pt.X,
+		Y: idx / pt.X,
+	}
+}
