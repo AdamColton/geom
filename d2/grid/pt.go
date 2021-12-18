@@ -53,10 +53,10 @@ func (pt Pt) Subtract(pt2 Pt) Pt {
 }
 
 // Multiply a Pt by a scale value
-func (pt Pt) Multiply(scale int) Pt {
+func (pt Pt) Multiply(scale float64) Pt {
 	return Pt{
-		X: pt.X * scale,
-		Y: pt.Y * scale,
+		X: int(float64(pt.X) * scale),
+		Y: int(float64(pt.Y) * scale),
 	}
 }
 
