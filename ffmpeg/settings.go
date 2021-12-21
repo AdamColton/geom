@@ -17,12 +17,6 @@ type Settings struct {
 	Stdout, Stderr     io.Writer
 }
 
-// Common aspect rations
-const (
-	Widescreen = 9.0 / 16.0
-	Square     = 1.0
-)
-
 // Default Settings values
 const (
 	Framerate          = 24
@@ -32,44 +26,41 @@ const (
 
 // NewWidescreen creates Settings with a Widescreen aspect ratio.
 func NewWidescreen(name string, width int) *Settings {
-	return NewByAspect(name, width, Widescreen)
+	return NewByAspect(name, width, grid.Widescreen)
 }
 
 // NewSquare creates Settings with a square aspect ratio.
 func NewSquare(name string, width int) *Settings {
-	return NewByAspect(name, width, Square)
+	return NewByAspect(name, width, grid.Square)
 }
 
 // NewByAspect creates Settings with the provided aspect ratio.
-func NewByAspect(name string, width int, aspect float64) *Settings {
+func NewByAspect(name string, width int, aspect grid.Aspect) *Settings {
 	return (&Settings{
 		Name: name,
 	}).ByAspect(width, aspect)
 }
 
 // New creates Settings with the defined width and height/
-func New(name string, w, h int) *Settings {
+func New(name string, width, height int) *Settings {
 	return (&Settings{
 		Name: name,
-	}).Set(w, h)
+	}).Set(width, height)
 }
 
 // ByAspect update the width and height of the settings using the provided
 // aspect ratio.
-func (s *Settings) ByAspect(width int, aspect float64) *Settings {
-	return s.Set(width, int(float64(width)*aspect))
+func (s *Settings) ByAspect(width int, aspect grid.Aspect) *Settings {
+	return s.SetSize(aspect.Pt(width))
 }
 
 // Set the width and height, which must both be multiples of 2.
-func (s *Settings) Set(w, h int) *Settings {
-	if w%2 == 1 {
-		w++
-	}
-	if h%2 == 1 {
-		h++
-	}
-	s.Size.X = w
-	s.Size.Y = h
+func (s *Settings) Set(width, height int) *Settings {
+	return s.SetSize(grid.Pt{width, height})
+}
+
+func (s *Settings) SetSize(size grid.Pt) *Settings {
+	s.Size = size.Abs().Mask(grid.TwoMask)
 	return s
 }
 

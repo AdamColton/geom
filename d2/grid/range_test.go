@@ -3,6 +3,7 @@ package grid
 import (
 	"testing"
 
+	"github.com/adamcolton/geom/geomtest"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -53,6 +54,14 @@ func TestRange(t *testing.T) {
 	}
 	assert.False(t, r.Contains(Pt{0, 0}))
 
+	r = Range{
+		{0, 0},
+		{3, 3},
+	}
+	rc := r.Iter().Chan()
+	for i, done := r.Start(); !done; done = i.Next() {
+		geomtest.Equal(t, <-rc, i.Pt())
+	}
 }
 
 func TestRangeScale(t *testing.T) {

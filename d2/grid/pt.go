@@ -1,7 +1,9 @@
 package grid
 
 import (
+	"github.com/adamcolton/geom/calc/cmpr"
 	"github.com/adamcolton/geom/d2"
+	"github.com/adamcolton/geom/geomerr"
 )
 
 // Pt is a cell in a grid
@@ -51,10 +53,10 @@ func (pt Pt) Subtract(pt2 Pt) Pt {
 }
 
 // Multiply a Pt by a scale value
-func (pt Pt) Multiply(scale int) Pt {
+func (pt Pt) Multiply(scale float64) Pt {
 	return Pt{
-		X: pt.X * scale,
-		Y: pt.Y * scale,
+		X: int(float64(pt.X) * scale),
+		Y: int(float64(pt.Y) * scale),
 	}
 }
 
@@ -77,4 +79,39 @@ type Scale struct {
 // used as parametric values.
 func (s Scale) T(pt Pt) (float64, float64) {
 	return float64(pt.X)*s.X + s.DX, float64(pt.Y)*s.Y + s.DY
+}
+
+// AssertEqual fulfils geomtest.AssertEqualizer
+func (pt Pt) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
+	if err := geomerr.NewTypeMismatch(pt, actual); err != nil {
+		return err
+	}
+	pt2 := actual.(Pt)
+	if pt.X != pt2.X || pt.Y != pt2.Y {
+		return geomerr.NotEqual(pt, pt2)
+	}
+	return nil
+}
+
+const (
+	// TwoMask sets the one bit to zero, the result is always divisible by 2.
+	TwoMask int = (^int(0)) ^ 1
+)
+
+// Mask performs and AND operation with the mask on the X and Y value of the
+// given point.
+func (pt Pt) Mask(and int) Pt {
+	return Pt{
+		X: (pt.X) & and,
+		Y: (pt.Y) & and,
+	}
+}
+
+// Index returns the point reached at idx when incrementing by X and wrapping Y.
+func (pt Pt) Index(idx int) Pt {
+	idx = idx % pt.Area()
+	return Pt{
+		X: idx % pt.X,
+		Y: idx / pt.X,
+	}
 }
