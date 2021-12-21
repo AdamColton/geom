@@ -12,16 +12,22 @@ type BT struct {
 }
 
 // BT translates a Triangle into a Barycentric representation of a triangle
-func (t Triangle) BT(origin, u int) *BT {
+func (t Triangle) BT(origin, u int, buf *BT) *BT {
 	if origin < 0 || origin > 2 || u < 0 || u > 2 || origin == u {
 		return nil
 	}
 	v := 3 - (origin ^ u)
-	return &BT{
-		Pt: t[origin],
-		U:  t[u].Subtract(t[origin]),
-		V:  t[v].Subtract(t[origin]),
+	if buf == nil {
+		return &BT{
+			Pt: t[origin],
+			U:  t[u].Subtract(t[origin]),
+			V:  t[v].Subtract(t[origin]),
+		}
 	}
+	buf.Pt = t[origin]
+	buf.U = t[u].Subtract(t[origin])
+	buf.V = t[v].Subtract(t[origin])
+	return buf
 }
 
 // PtB translates a barycentric coordinate to a d3 Pt

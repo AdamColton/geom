@@ -41,7 +41,7 @@ const (
 	// Set to between 1.0 and 2.0
 	// 1.0 is low quality
 	// 2.0 is high quality
-	imageScale = 2.0
+	imageScale = 3.0
 
 	// enable the profiler
 	profile = false
