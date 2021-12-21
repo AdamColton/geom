@@ -31,9 +31,9 @@ import (
 
 const (
 	// Frames of video to render
-	frames = 100
+	frames = 500
 	// Number of stars to render
-	stars = 30
+	stars = 50
 
 	// width sets the size, the aspect ratio is always widescreen
 	width = 1000
@@ -41,13 +41,14 @@ const (
 	// Set to between 1.0 and 2.0
 	// 1.0 is low quality
 	// 2.0 is high quality
-	imageScale = 1.25
+	imageScale = 2.0
 
 	// enable the profiler
-	profile = true
-)
+	profile = false
 
-var cr = string([]byte{13})
+	doRay  = false
+	doZbuf = true
+)
 
 func main() {
 	if profile {
@@ -87,10 +88,12 @@ func main() {
 			ImageScale: 1.25,
 		},
 	}
-	img := ray.Image(nil)
-	f, _ := os.Create("ray.png")
-	png.Encode(f, resize.Resize(uint(ray.Camera.Size.X), 0, img, resize.Bilinear))
-	f.Close()
+	if doRay {
+		img := ray.Image(nil)
+		f, _ := os.Create("ray.png")
+		png.Encode(f, resize.Resize(uint(ray.Camera.Size.X), 0, img, resize.Bilinear))
+		f.Close()
+	}
 
 	zb := &zbuf.Framer{
 		Count:      frames,
@@ -102,38 +105,44 @@ func main() {
 			Background: color.RGBA{255, 255, 255, 255},
 		},
 	}
-	zimg, _ := zb.Frame(0, nil)
-	f, _ = os.Create("zbuf.png")
-	png.Encode(f, resize.Resize(uint(ray.Camera.Size.X), 0, zimg, resize.Bilinear))
-	f.Close()
+	if doZbuf {
+		zimg, _ := zb.Frame(0, nil)
+		f, _ := os.Create("zbuf.png")
+		png.Encode(f, resize.Resize(uint(ray.Camera.Size.X), 0, zimg, resize.Bilinear))
+		f.Close()
+	}
 
-	proc.Name = "zbuf"
-	proc.Framer(
-		&zbuf.Framer{
-			Count:      frames,
-			Scene:      s,
-			ImageScale: imageScale,
-			ZBufFrame: &zbuf.ZBufFrame{
-				Near:       0.1,
-				Far:        200,
-				Background: color.RGBA{255, 255, 255, 255},
-			},
-		},
-	)
-
-	proc.Name = "ray"
-	proc.Framer(
-		&raytrace.Framer{
-			Count: frames,
-			Scene: s,
-			RayFrame: &raytrace.RayFrame{
+	if doZbuf {
+		proc.Name = "zbuf"
+		proc.Framer(
+			&zbuf.Framer{
+				Count:      frames,
+				Scene:      s,
 				ImageScale: imageScale,
-				Depth:      3,
-				RayMult:    2,
-				Background: raytrace.NewMaterialWrapper(backgroundMaterial).RayShader,
+				ZBufFrame: &zbuf.ZBufFrame{
+					Near:       0.1,
+					Far:        200,
+					Background: color.RGBA{255, 255, 255, 255},
+				},
 			},
-		},
-	)
+		)
+	}
+
+	if doRay {
+		proc.Name = "ray"
+		proc.Framer(
+			&raytrace.Framer{
+				Count: frames,
+				Scene: s,
+				RayFrame: &raytrace.RayFrame{
+					ImageScale: imageScale,
+					Depth:      3,
+					RayMult:    2,
+					Background: raytrace.NewMaterialWrapper(backgroundMaterial).RayShader,
+				},
+			},
+		)
+	}
 }
 
 type cameraFactory struct {

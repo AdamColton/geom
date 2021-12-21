@@ -26,7 +26,7 @@ func main() {
 			Background: backgroundShader{}.RayShader,
 			Depth:      4,
 			RayMult:    2,
-			ImageScale: 1.25,
+			ImageScale: 5,
 		},
 	}
 	s.AddMesh(getArrow(), d3.Identity(), arrowShader{})
