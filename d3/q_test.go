@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/geomtest"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -93,7 +94,7 @@ func TestQInv(t *testing.T) {
 	for n, tc := range tt {
 		t.Run(n, func(t *testing.T) {
 			inv, _ := tc.T().Inversion()
-			TEqual(t, inv, tc.TInv())
+			geomtest.Equal(t, inv, tc.TInv())
 		})
 	}
 }

@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/calc/cmpr"
+	"github.com/adamcolton/geom/geomerr"
 )
 
 type T [4][4]float64
@@ -112,6 +114,20 @@ func (t *T) T(t2 *T) *T {
 			t[0][3]*t2[3][0] + t[1][3]*t2[3][1] + t[2][3]*t2[3][2] + t[3][3]*t2[3][3],
 		},
 	}
+}
+
+// AssertEqual fulfils geomtest.AssertEqualizer
+func (t *T) AssertEqual(to interface{}, tol cmpr.Tolerance) error {
+	if err := geomerr.NewTypeMismatch(t, to); err != nil {
+		return err
+	}
+	t2 := to.(*T)
+	return geomerr.NewSliceErrs(4, 4, func(x int) error {
+		return geomerr.NewSliceErrs(4, 4, func(y int) error {
+			a, b := t[y][x], t2[y][x]
+			return geomerr.NewNotEqual(tol.Equal(a, b), a, b)
+		})
+	})
 }
 
 func TProd(ts ...*T) *T {
@@ -361,6 +377,11 @@ func (t T) String() string {
 		strconv.FormatFloat(t[3][3], 'f', Prec, 64),
 		") ]",
 	}, "")
+}
+
+func (t *T) TInv() *T {
+	inv, _ := t.Inversion()
+	return inv
 }
 
 func (t *T) Inversion() (*T, bool) {

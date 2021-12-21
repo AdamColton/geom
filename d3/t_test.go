@@ -1,24 +1,28 @@
 package d3
 
 import (
-	"math"
 	"math/rand"
 	"testing"
 
 	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/geomerr"
+	"github.com/adamcolton/geom/geomtest"
 	"github.com/stretchr/testify/assert"
 )
 
-func TEqual(t *testing.T, t1, t2 *T) {
-	small := 1e-5
-	for i, row := range t1 {
-		for j, f := range row {
-			if math.Abs(f-t2[i][j]) > small {
-				t.Error("Expected: ", t1.String(), " got: ", t2.String())
-				return
-			}
-		}
-	}
+func TestTAssertEqual(t *testing.T) {
+	t1 := &T{}
+	t2 := &T{}
+
+	err := t1.AssertEqual(t2, 1e-10)
+	assert.NoError(t, err)
+
+	t2[2][2] = 1
+	err = t1.AssertEqual(t2, 1e-10)
+	assert.Equal(t, "\t2: \t2: Expected 0 got 1", err.Error())
+
+	err = t1.AssertEqual(1.0, 1e-10)
+	assert.IsType(t, geomerr.ErrTypeMismatch{}, err)
 }
 
 func TestInverse(t *testing.T) {
@@ -65,17 +69,17 @@ func TestRotate(t *testing.T) {
 
 	for r := (Rotation{angle.Rot(0), XY}); r.Angle.Rot() < 1.0; r.Angle += angle.Rot(0.01) {
 		p := r.Pair()
-		TEqual(t, Identity(), p[0].T(p[1]))
+		geomtest.Equal(t, Identity(), p[0].T(p[1]))
 	}
 
 	for r := (Rotation{angle.Rot(0), XZ}); r.Angle.Rot() < 1.0; r.Angle += angle.Rot(0.01) {
 		p := r.Pair()
-		TEqual(t, Identity(), p[0].T(p[1]))
+		geomtest.Equal(t, Identity(), p[0].T(p[1]))
 	}
 
 	for r := (Rotation{angle.Rot(0), YZ}); r.Angle.Rot() < 1.0; r.Angle += angle.Rot(0.01) {
 		p := r.Pair()
-		TEqual(t, Identity(), p[0].T(p[1]))
+		geomtest.Equal(t, Identity(), p[0].T(p[1]))
 	}
 }
 
@@ -145,10 +149,10 @@ func TestTGen(t *testing.T) {
 	id := Identity()
 	for n, tc := range tt {
 		t.Run(n, func(t *testing.T) {
-			p := tc.Pair()
-			TEqual(t, p[0], tc.T())
-			TEqual(t, p[1], tc.TInv())
-			TEqual(t, id, p[0].T(p[1]))
+			p := GetTPair(tc)
+			geomtest.Equal(t, p[0], tc.T())
+			geomtest.Equal(t, p[1], GetTInv(tc))
+			geomtest.Equal(t, id, p[0].T(p[1]))
 		})
 	}
 }
