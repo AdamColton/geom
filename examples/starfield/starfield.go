@@ -31,7 +31,7 @@ import (
 
 const (
 	// Frames of video to render
-	frames = 500
+	frames = 50
 	// Number of stars to render
 	stars = 50
 
@@ -44,7 +44,7 @@ const (
 	imageScale = 3.0
 
 	// enable the profiler
-	profile = false
+	profile = true
 
 	doRay  = false
 	doZbuf = true

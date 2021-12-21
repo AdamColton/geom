@@ -173,20 +173,23 @@ func getIdx(w int, pt *d3.Pt) int {
 }
 
 func (buf *ZBuffer) draw(sf *SceneFrame, img *image.RGBA) {
-	work.RunRange(len(buf.buf), func(idx, _ int) {
+	work.RunRange(buf.h, func(y, _ int) {
+		idx := y * buf.w
 		var c *color.RGBA
-		x, y := idx%buf.w, idx/buf.w
-		be := &buf.buf[idx]
-		if be.set {
-			c = sf.Shaders[be.MeshIdx](&Context{
-				SceneFrame:  sf,
-				TriangleRef: be.TriangleRef,
-				B:           be.B,
-			})
-			be.set = false
-		} else {
-			c = &sf.Background
+		ctx := &Context{}
+		for x := 0; x < buf.w; x++ {
+			be := &buf.buf[idx]
+			if be.set {
+				ctx.SceneFrame = sf
+				ctx.TriangleRef = be.TriangleRef
+				ctx.B = be.B
+				c = sf.Shaders[be.MeshIdx](ctx)
+				be.set = false
+			} else {
+				c = &sf.Background
+			}
+			img.SetRGBA(x, buf.h-y-1, *c)
+			idx++
 		}
-		img.SetRGBA(x, buf.h-y-1, *c)
 	})
 }
