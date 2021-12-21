@@ -75,6 +75,12 @@ func getTriRefs(sf *SceneFrame) []TriangleRef {
 	return out
 }
 
+type cacheRecord struct {
+	*barycentric.BIterator
+	*triangle.BT
+	Space *triangle.BT
+}
+
 func (buf *ZBuffer) scanScene(sf *SceneFrame) {
 	trs := getTriRefs(sf)
 	ln := len(trs)
@@ -82,7 +88,17 @@ func (buf *ZBuffer) scanScene(sf *SceneFrame) {
 	dx := 0.8 / buf.w64
 	dy := 0.8 / buf.h64
 
-	work.RunRange(ln, func(idx, _ int) {
+	cache := make([]*cacheRecord, runtime.NumCPU())
+	for i := range cache {
+		cache[i] = &cacheRecord{
+			BIterator: &barycentric.BIterator{},
+			BT:        &triangle.BT{},
+			Space:     &triangle.BT{},
+		}
+	}
+
+	work.RunRange(ln, func(idx, threadIdx int) {
+		csh := cache[threadIdx]
 		tr := &trs[idx]
 		m := sf.Meshes[tr.MeshIdx]
 		cm := sf.CameraMeshes[tr.MeshIdx]
@@ -106,9 +122,9 @@ func (buf *ZBuffer) scanScene(sf *SceneFrame) {
 		tr.NSpace = tr.Space.Normal().Normal()
 		tr.NCamera = tr.Camera.Normal().Normal()
 
-		bi, bCam := Scan(tr.Camera, dx, dy)
+		bi, bCam := Scan(tr.Camera, dx, dy, csh.BIterator, csh.BT)
 		tr.BCamera = bCam
-		tr.BSpace = tr.Space.BT(bi.Origin, bi.U)
+		tr.BSpace = tr.Space.BT(bi.Origin, bi.U, csh.Space)
 		for b, done := bi.Start(); !done; b, done = bi.Next() {
 			buf.insert(bCam.PtB(b), b, tr)
 		}

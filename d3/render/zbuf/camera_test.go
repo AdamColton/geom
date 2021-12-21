@@ -220,7 +220,7 @@ func TestCameraWH(t *testing.T) {
 
 func TestScan(t *testing.T) {
 	tr := &triangle.Triangle{{10, 10, 0}, {100, 50, 0}, {50, 100, 0}}
-	bi, bt := Scan(tr, 0.5, 0.7)
+	bi, bt := Scan(tr, 0.5, 0.7, nil, nil)
 	assert.NotNil(t, bi)
 	assert.Equal(t, bt.Pt, d3.Pt{10, 10, 0})
 
@@ -250,7 +250,7 @@ func TestScanU(t *testing.T) {
 
 	for name, tc := range tt {
 		t.Run(name, func(t *testing.T) {
-			bt := scanU(&(tc.t))
+			bt := scanU(&(tc.t), nil)
 			assert.Equal(t, tc.origin, bt.Origin)
 			assert.Equal(t, tc.u, bt.U)
 		})

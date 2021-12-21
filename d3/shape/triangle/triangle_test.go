@@ -116,7 +116,7 @@ func TestBT(t *testing.T) {
 
 	for name, tc := range tt {
 		t.Run(name, func(t *testing.T) {
-			bt := tc.t.BT(tc.o, tc.u)
+			bt := tc.t.BT(tc.o, tc.u, nil)
 			assert.Equal(t, tc.expected, bt.PtB(tc.b))
 			assert.Equal(t, tc.t, bt.Triangle())
 		})
@@ -171,7 +171,7 @@ func TestInvalidBT(t *testing.T) {
 	}
 	for n, tc := range tt {
 		t.Run(n, func(t *testing.T) {
-			assert.Nil(t, tri.BT(tc.o, tc.u))
+			assert.Nil(t, tri.BT(tc.o, tc.u, nil))
 		})
 	}
 }
