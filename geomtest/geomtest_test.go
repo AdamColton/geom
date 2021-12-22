@@ -53,9 +53,10 @@ func (m *mockT) Errorf(format string, args ...interface{}) {
 	fmt.Fprintf(m.buf, format, args...)
 }
 
-func TestWithMessage(t *testing.T) {
+func TestWithMessage(tt *testing.T) {
+	t := assert.New(tt)
 	m := newMock()
 	b := Equal(m, 1, 1.0, "Type-Mismatch")
-	assert.False(t, b)
-	assert.Equal(t, "unsupported_type: int: Type-Mismatch", m.buf.String())
+	t.False(b)
+	t.Equal("unsupported_type: int: Type-Mismatch", m.buf.String())
 }

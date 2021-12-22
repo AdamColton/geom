@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/adamcolton/geom/calc/cmpr"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -20,6 +21,28 @@ const (
 // it will be cast to the base type.
 type AssertEqualizer interface {
 	AssertEqual(to interface{}, t cmpr.Tolerance) error
+}
+
+type GeomAssert struct {
+	*assert.Assertions
+	assert.TestingT
+}
+
+func New(t assert.TestingT) *GeomAssert {
+	return &GeomAssert{
+		Assertions: assert.New(t),
+		TestingT:   t,
+	}
+}
+
+func (g *GeomAssert) Equal(expected, actual interface{}, msg ...interface{}) bool {
+	if _, isAssert := expected.(AssertEqualizer); isAssert {
+		return EqualInDelta(g.TestingT, expected, actual, Small, msg...)
+	}
+	if _, isFloat := expected.(float64); isFloat {
+		return EqualInDelta(g.TestingT, expected, actual, Small, msg...)
+	}
+	return g.Assertions.Equal(expected, actual, msg...)
 }
 
 func Message(msg ...interface{}) string {
