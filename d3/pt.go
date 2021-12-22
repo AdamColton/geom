@@ -9,11 +9,17 @@ import (
 	"github.com/adamcolton/geom/geomerr"
 )
 
+// Pt represets a three dimensional point.
 type Pt D3
 
-func (pt Pt) Mag() float64  { return D3(pt).Mag() }
+// Mag returns the magnitude of the point relative to the origin
+func (pt Pt) Mag() float64 { return D3(pt).Mag() }
+
+// Mag2 returns the square of the magnitude. For comparisions this can be more
+// efficient as it avoids a sqrt call.
 func (pt Pt) Mag2() float64 { return D3(pt).Mag2() }
 
+// Subtract returns the difference between two points as V
 func (pt Pt) Subtract(pt2 Pt) V {
 	return V{
 		pt.X - pt2.X,
@@ -22,10 +28,12 @@ func (pt Pt) Subtract(pt2 Pt) V {
 	}
 }
 
+// Pt is defined on Pt to fulfill Point.
 func (pt Pt) Pt() Pt {
 	return pt
 }
 
+// Add a V to a Pt
 func (pt Pt) Add(v V) Pt {
 	return Pt{
 		pt.X + v.X,
@@ -39,6 +47,7 @@ func (pt Pt) Distance(pt2 Pt) float64 {
 	return pt.Subtract(pt2).Mag()
 }
 
+// Multiply performs a scalar multiplication on the Pt
 func (pt Pt) Multiply(scale float64) Pt {
 	return Pt{
 		pt.X * scale,
@@ -47,6 +56,7 @@ func (pt Pt) Multiply(scale float64) Pt {
 	}
 }
 
+// Round a Pt to it's nearest integer values.
 func (pt Pt) Round() Pt {
 	return Pt{
 		X: math.Round(pt.X),

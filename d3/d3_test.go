@@ -6,9 +6,12 @@ import (
 	"testing"
 
 	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/geomerr"
 	"github.com/adamcolton/geom/geomtest"
 	"github.com/stretchr/testify/assert"
 )
+
+var sqrtHalf = math.Sqrt(0.5)
 
 func EqualPt(t *testing.T, expected, got Pt) {
 	assert.InDelta(t, expected.X, got.X, 1e-5, "X")
@@ -20,6 +23,22 @@ func EqualV(t *testing.T, expected, got V) {
 	assert.InDelta(t, expected.X, got.X, 1e-5, "X")
 	assert.InDelta(t, expected.Y, got.Y, 1e-5, "Y")
 	assert.InDelta(t, expected.Z, got.Z, 1e-5, "Z")
+}
+
+func TestAssertEqual(t *testing.T) {
+	p1 := Pt{1, 2, 3}
+	p2 := Pt{1, 2, 3}
+
+	err := p1.AssertEqual(p2, 1e-10)
+	assert.NoError(t, err)
+
+	p2 = Pt{4, 5, 6}
+	err = p1.AssertEqual(p2, 1e-10)
+	assert.Equal(t, "Expected Pt(1.0000, 2.0000, 3.0000) got Pt(4.0000, 5.0000, 6.0000)", err.Error())
+
+	err = p1.AssertEqual(1.0, 1e-10)
+	assert.IsType(t, geomerr.ErrTypeMismatch{}, err)
+
 }
 
 func TestBasicMath(tt *testing.T) {
@@ -39,6 +58,9 @@ func TestBasicMath(tt *testing.T) {
 	t.Equal(Pt{1, 2, 3}, Pt{1.1, 2.2, 2.9}.Round())
 
 	t.Equal(V{1, 2, 3}, V{-1, -2, -3}.Abs())
+
+	t.Equal(V{1, 2, 3}, D3{1, 2, 3}.V())
+	t.Equal(Pt{1, 2, 3}, D3{1, 2, 3}.Pt())
 }
 
 func TestMag(t *testing.T) {
@@ -129,7 +151,7 @@ func TestCross(t *testing.T) {
 		{
 			a:        Rotation{angle.Deg(22.5), XY}.T().V(V{1, 0, 0}),
 			b:        Rotation{angle.Deg(-22.5), XY}.T().V(V{1, 0, 0}),
-			expected: V{0, 0, -0.70710678118},
+			expected: V{0, 0, -sqrtHalf},
 		},
 	}
 
@@ -236,4 +258,16 @@ func TestAng(t *testing.T) {
 	}.T().V(v)
 
 	geomtest.Equal(t, a, float64(v.Ang(v2)))
+}
+
+func TestMinMax(t *testing.T) {
+	m, M := MinMax(Pt{0.1, 0.1, 0.1}, Pt{0, 0.5, 1}, Pt{0.5, 1, 0}, Pt{1, 0, 0.5})
+	geomtest.Equal(t, Pt{0, 0, 0}, m)
+	geomtest.Equal(t, Pt{1, 1, 1}, M)
+
+	geomtest.Equal(t, Pt{}, Min())
+	geomtest.Equal(t, Pt{}, Max())
+	m, M = MinMax()
+	geomtest.Equal(t, Pt{}, m)
+	geomtest.Equal(t, Pt{}, M)
 }
