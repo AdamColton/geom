@@ -39,6 +39,19 @@ func TestAssertEqual(t *testing.T) {
 	err = p1.AssertEqual(1.0, 1e-10)
 	assert.IsType(t, geomerr.ErrTypeMismatch{}, err)
 
+	v1 := V{1, 2, 3}
+	v2 := V{1, 2, 3}
+
+	err = v1.AssertEqual(v2, 1e-10)
+	assert.NoError(t, err)
+
+	v2 = V{4, 5, 6}
+	err = v1.AssertEqual(v2, 1e-10)
+	assert.Equal(t, "Expected V(1.0000, 2.0000, 3.0000) got V(4.0000, 5.0000, 6.0000)", err.Error())
+
+	err = v1.AssertEqual(1.0, 1e-10)
+	assert.IsType(t, geomerr.ErrTypeMismatch{}, err)
+
 }
 
 func TestBasicMath(tt *testing.T) {
