@@ -138,6 +138,14 @@ func TestT(t *testing.T) {
 	}
 }
 
+type justTGenWrapper struct {
+	t TGen
+}
+
+func (t justTGenWrapper) T() *T {
+	return t.t.T()
+}
+
 func TestTGen(t *testing.T) {
 	tt := map[string]TGen{
 		"Scale":     Scale(V{1, 2, 3}),
@@ -153,6 +161,10 @@ func TestTGen(t *testing.T) {
 			p := GetTPair(tc)
 			geomtest.Equal(t, p[0], tc.T())
 			geomtest.Equal(t, p[1], GetTInv(tc))
+			geomtest.Equal(t, id, p[0].T(p[1]))
+			w := justTGenWrapper{tc}
+			geomtest.Equal(t, p[1], GetTInv(w))
+			p = GetTPair(w)
 			geomtest.Equal(t, id, p[0].T(p[1]))
 		})
 	}
