@@ -49,13 +49,13 @@ func newMock() *mockT {
 	}
 }
 
-func (m *mockT) Error(args ...interface{}) {
-	fmt.Fprint(m.buf, args...)
+func (m *mockT) Errorf(format string, args ...interface{}) {
+	fmt.Fprintf(m.buf, format, args...)
 }
 
 func TestWithMessage(t *testing.T) {
 	m := newMock()
-	b := Equal(m, 1, 1.0, " Type-Mismatch")
+	b := Equal(m, 1, 1.0, "Type-Mismatch")
 	assert.False(t, b)
-	assert.Equal(t, "unsupported_type: int Type-Mismatch", m.buf.String())
+	assert.Equal(t, "unsupported_type: int: Type-Mismatch", m.buf.String())
 }
