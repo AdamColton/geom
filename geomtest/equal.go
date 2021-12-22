@@ -63,12 +63,11 @@ func AssertEqual(expected, actual interface{}, delta cmpr.Tolerance) error {
 	if eq, ok := expected.(AssertEqualizer); ok {
 		return eq.AssertEqual(actual, delta)
 	} else if ef, ok := expected.(float64); ok {
-		if af, ok := actual.(float64); ok {
-			if delta.Equal(ef, af) {
-				return nil
-			}
-			return geomerr.NotEqual(ef, af)
+		if err := geomerr.NewTypeMismatch(expected, actual); err != nil {
+			return err
 		}
+		af := actual.(float64)
+		return geomerr.NewNotEqual(delta.Equal(ef, af), ef, af)
 	}
 
 	format := "unsupported_type: %s"
