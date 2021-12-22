@@ -83,3 +83,57 @@ func (pt Pt) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
 	}
 	return nil
 }
+
+// Min returns a Pt with the lowest X, lowest Z and the lowest Y.
+func Min(pts ...Pt) Pt {
+	if len(pts) == 0 {
+		return Pt{}
+	}
+	m := pts[0]
+	for _, pt := range pts[1:] {
+		if pt.X < m.X {
+			m.X = pt.X
+		}
+		if pt.Y < m.Y {
+			m.Y = pt.Y
+		}
+		if pt.Z < m.Z {
+			m.Z = pt.Z
+		}
+	}
+	return m
+}
+
+// Max returns a Pt with the highest X, highest Y and highest Z.
+func Max(pts ...Pt) Pt {
+	if len(pts) == 0 {
+		return Pt{}
+	}
+	m := pts[0]
+	for _, pt := range pts[1:] {
+		if pt.X > m.X {
+			m.X = pt.X
+		}
+		if pt.Y > m.Y {
+			m.Y = pt.Y
+		}
+		if pt.Z > m.Z {
+			m.Z = pt.Z
+		}
+	}
+	return m
+}
+
+// MinMax takes any number of points and returns a min point with the lowest X
+// and the lowest Y in the entire set and a max point with the highest X and
+// highest Y in the set.
+func MinMax(pts ...Pt) (Pt, Pt) {
+	if len(pts) == 0 {
+		return Pt{}, Pt{}
+	}
+	min, max := pts[0], pts[0]
+	for _, pt := range pts[1:] {
+		min, max = Min(min, pt), Max(max, pt)
+	}
+	return min, max
+}
