@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/geomtest"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -21,22 +22,23 @@ func EqualV(t *testing.T, expected, got V) {
 	assert.InDelta(t, expected.Z, got.Z, 1e-5, "Z")
 }
 
-func TestBasicMath(t *testing.T) {
-	EqualPt(t, Pt{1, 2, 3}, Pt{1, 2, 3}.Pt())
-	EqualV(t, V{1, 2, 3}, V{1, 2, 3}.V())
+func TestBasicMath(tt *testing.T) {
+	t := geomtest.New(tt)
+	t.Equal(Pt{1, 2, 3}, Pt{1, 2, 3}.Pt())
+	t.Equal(V{1, 2, 3}, V{1, 2, 3}.V())
 
-	EqualPt(t, Pt{3, 5, 7}, Pt{2, 3, 4}.Add(V{1, 2, 3}))
-	EqualV(t, V{3, 5, 7}, V{2, 3, 4}.Add(V{1, 2, 3}))
+	t.Equal(Pt{3, 5, 7}, Pt{2, 3, 4}.Add(V{1, 2, 3}))
+	t.Equal(V{3, 5, 7}, V{2, 3, 4}.Add(V{1, 2, 3}))
 
-	EqualV(t, V{1, 2, 3}, Pt{3, 5, 7}.Subtract(Pt{2, 3, 4}))
-	EqualV(t, V{1, 2, 3}, V{3, 5, 7}.Subtract(V{2, 3, 4}))
+	t.Equal(V{1, 2, 3}, Pt{3, 5, 7}.Subtract(Pt{2, 3, 4}))
+	t.Equal(V{1, 2, 3}, V{3, 5, 7}.Subtract(V{2, 3, 4}))
 
-	EqualPt(t, Pt{4, 6, 8}, Pt{2, 3, 4}.Multiply(2))
-	EqualV(t, V{4, 6, 8}, V{2, 3, 4}.Multiply(2))
+	t.Equal(Pt{4, 6, 8}, Pt{2, 3, 4}.Multiply(2))
+	t.Equal(V{4, 6, 8}, V{2, 3, 4}.Multiply(2))
 
-	EqualPt(t, Pt{1, 2, 3}, Pt{1.1, 2.2, 2.9}.Round())
+	t.Equal(Pt{1, 2, 3}, Pt{1.1, 2.2, 2.9}.Round())
 
-	EqualV(t, V{1, 2, 3}, V{-1, -2, -3}.Abs())
+	t.Equal(V{1, 2, 3}, V{-1, -2, -3}.Abs())
 }
 
 func TestMag(t *testing.T) {
@@ -88,16 +90,16 @@ func TestMag(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.M.String(), func(t *testing.T) {
-			assert.Equal(t, tc.expected, tc.M.Mag())
-			assert.Equal(t, tc.expected*tc.expected, tc.M.Mag2())
+			geomtest.Equal(t, tc.expected, tc.M.Mag())
+			geomtest.Equal(t, tc.expected*tc.expected, tc.M.Mag2())
 		})
 	}
 }
 
 func TestNormal(t *testing.T) {
 	tt := []V{
-		V{3, 4, 0},
-		V{3, 4, 12},
+		{3, 4, 0},
+		{3, 4, 12},
 	}
 
 	for _, tc := range tt {
@@ -127,13 +129,13 @@ func TestCross(t *testing.T) {
 		{
 			a:        Rotation{angle.Deg(22.5), XY}.T().V(V{1, 0, 0}),
 			b:        Rotation{angle.Deg(-22.5), XY}.T().V(V{1, 0, 0}),
-			expected: V{0, 0, -0.7071},
+			expected: V{0, 0, -0.70710678118},
 		},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.a.String()+tc.b.String(), func(t *testing.T) {
-			EqualV(t, tc.expected, tc.a.Cross(tc.b))
+			geomtest.Equal(t, tc.expected, tc.a.Cross(tc.b))
 		})
 	}
 }
@@ -157,7 +159,7 @@ func TestDot(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.a.String()+tc.b.String(), func(t *testing.T) {
-			assert.InDelta(t, tc.expected, tc.a.Dot(tc.b), 1e-5)
+			geomtest.Equal(t, tc.expected, tc.a.Dot(tc.b))
 		})
 	}
 }
@@ -165,13 +167,13 @@ func TestDot(t *testing.T) {
 func TestAddV(t *testing.T) {
 	v1 := V{1, 2, 3}
 	v2 := V{2, 3, 4}
-	EqualV(t, V{3, 5, 7}, v1.Add(v2))
+	geomtest.Equal(t, V{3, 5, 7}, v1.Add(v2))
 }
 
 func TestAddPt(t *testing.T) {
 	p := Pt{1, 2, 3}
 	v := V{2, 3, 4}
-	EqualPt(t, Pt{3, 5, 7}, p.Add(v))
+	geomtest.Equal(t, Pt{3, 5, 7}, p.Add(v))
 }
 
 func TestDistance(t *testing.T) {
@@ -193,7 +195,7 @@ func TestDistance(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.a.String()+tc.b.String(), func(t *testing.T) {
-			assert.InDelta(t, tc.expected, tc.a.Distance(tc.b), 1e-5)
+			geomtest.Equal(t, tc.expected, tc.a.Distance(tc.b))
 		})
 	}
 }
@@ -219,8 +221,8 @@ func TestProject(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(fmt.Sprint(tc.a, tc.b), func(t *testing.T) {
-			EqualV(t, tc.bOnA, tc.a.Project(tc.b))
-			EqualV(t, tc.aOnB, tc.b.Project(tc.a))
+			geomtest.Equal(t, tc.bOnA, tc.a.Project(tc.b))
+			geomtest.Equal(t, tc.aOnB, tc.b.Project(tc.a))
 		})
 	}
 }
@@ -233,5 +235,5 @@ func TestAng(t *testing.T) {
 		Plane: XY,
 	}.T().V(v)
 
-	assert.InDelta(t, a, float64(v.Ang(v2)), 1e-5)
+	geomtest.Equal(t, a, float64(v.Ang(v2)))
 }

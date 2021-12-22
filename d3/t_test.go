@@ -53,33 +53,34 @@ func TestInverse(t *testing.T) {
 	}
 }
 
-func TestRotate(t *testing.T) {
+func TestRotate(tt *testing.T) {
+	t := geomtest.New(tt)
 
-	EqualPt(t, Pt{0, 1, 0}, Rotation{angle.Rot(0.25), XY}.T().Pt(Pt{1, 0, 0}))
-	EqualPt(t, Pt{-1, 0, 0}, Rotation{angle.Rot(0.50), XY}.T().Pt(Pt{1, 0, 0}))
-	EqualPt(t, Pt{0, -1, 0}, Rotation{angle.Rot(0.75), XY}.T().Pt(Pt{1, 0, 0}))
+	t.Equal(Pt{0, 1, 0}, Rotation{angle.Rot(0.25), XY}.T().Pt(Pt{1, 0, 0}))
+	t.Equal(Pt{-1, 0, 0}, Rotation{angle.Rot(0.50), XY}.T().Pt(Pt{1, 0, 0}))
+	t.Equal(Pt{0, -1, 0}, Rotation{angle.Rot(0.75), XY}.T().Pt(Pt{1, 0, 0}))
 
-	EqualPt(t, Pt{0, 0, 1}, Rotation{angle.Rot(0.25), XZ}.T().Pt(Pt{1, 0, 0}))
-	EqualPt(t, Pt{-1, 0, 0}, Rotation{angle.Rot(0.50), XZ}.T().Pt(Pt{1, 0, 0}))
-	EqualPt(t, Pt{0, 0, -1}, Rotation{angle.Rot(0.75), XZ}.T().Pt(Pt{1, 0, 0}))
+	t.Equal(Pt{0, 0, 1}, Rotation{angle.Rot(0.25), XZ}.T().Pt(Pt{1, 0, 0}))
+	t.Equal(Pt{-1, 0, 0}, Rotation{angle.Rot(0.50), XZ}.T().Pt(Pt{1, 0, 0}))
+	t.Equal(Pt{0, 0, -1}, Rotation{angle.Rot(0.75), XZ}.T().Pt(Pt{1, 0, 0}))
 
-	EqualPt(t, Pt{0, 0, 1}, Rotation{angle.Rot(0.25), YZ}.T().Pt(Pt{0, 1, 0}))
-	EqualPt(t, Pt{0, -1, 0}, Rotation{angle.Rot(0.50), YZ}.T().Pt(Pt{0, 1, 0}))
-	EqualPt(t, Pt{0, 0, -1}, Rotation{angle.Rot(0.75), YZ}.T().Pt(Pt{0, 1, 0}))
+	t.Equal(Pt{0, 0, 1}, Rotation{angle.Rot(0.25), YZ}.T().Pt(Pt{0, 1, 0}))
+	t.Equal(Pt{0, -1, 0}, Rotation{angle.Rot(0.50), YZ}.T().Pt(Pt{0, 1, 0}))
+	t.Equal(Pt{0, 0, -1}, Rotation{angle.Rot(0.75), YZ}.T().Pt(Pt{0, 1, 0}))
 
 	for r := (Rotation{angle.Rot(0), XY}); r.Angle.Rot() < 1.0; r.Angle += angle.Rot(0.01) {
 		p := r.Pair()
-		geomtest.Equal(t, Identity(), p[0].T(p[1]))
+		t.Equal(Identity(), p[0].T(p[1]))
 	}
 
 	for r := (Rotation{angle.Rot(0), XZ}); r.Angle.Rot() < 1.0; r.Angle += angle.Rot(0.01) {
 		p := r.Pair()
-		geomtest.Equal(t, Identity(), p[0].T(p[1]))
+		t.Equal(Identity(), p[0].T(p[1]))
 	}
 
 	for r := (Rotation{angle.Rot(0), YZ}); r.Angle.Rot() < 1.0; r.Angle += angle.Rot(0.01) {
 		p := r.Pair()
-		geomtest.Equal(t, Identity(), p[0].T(p[1]))
+		t.Equal(Identity(), p[0].T(p[1]))
 	}
 }
 
@@ -179,6 +180,6 @@ func TestPtsScale(t *testing.T) {
 		{-0.5, 0, 0},
 	}
 	for i, exp := range expected {
-		EqualPt(t, exp, got[i])
+		geomtest.Equal(t, exp, got[i])
 	}
 }
