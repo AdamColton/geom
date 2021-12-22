@@ -21,18 +21,18 @@ type tHelper interface {
 // Equal calls AssertEqual with the default value of Small. If there is an error
 // it is passed into t.Error. The return bool will be true if the values were
 // equal.
-func Equal(t TestingT, expected, actual interface{}) bool {
+func Equal(t TestingT, expected, actual interface{}, msg ...interface{}) bool {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()
 	}
-	return EqualInDelta(t, expected, actual, Small)
+	return EqualInDelta(t, expected, actual, Small, msg...)
 }
 
 var equalType = reflect.TypeOf((*AssertEqualizer)(nil)).Elem()
 
 // EqualInDelta calls AssertEqual. If there is an error it is passed into
 // t.Error. The return bool will be true if the values were equal.
-func EqualInDelta(t TestingT, expected, actual interface{}, delta cmpr.Tolerance) bool {
+func EqualInDelta(t TestingT, expected, actual interface{}, delta cmpr.Tolerance, msg ...interface{}) bool {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()
 	}
@@ -40,7 +40,7 @@ func EqualInDelta(t TestingT, expected, actual interface{}, delta cmpr.Tolerance
 	if err == nil {
 		return true
 	}
-	t.Error(err)
+	t.Error(err, Message(msg...))
 	return false
 }
 

@@ -1,7 +1,11 @@
 // Package geomtest provides helpers for testing the geom packages.
 package geomtest
 
-import "github.com/adamcolton/geom/calc/cmpr"
+import (
+	"fmt"
+
+	"github.com/adamcolton/geom/calc/cmpr"
+)
 
 const (
 	// Small is the value that will be passed into AssertEqualizer
@@ -16,4 +20,21 @@ const (
 // it will be cast to the base type.
 type AssertEqualizer interface {
 	AssertEqual(to interface{}, t cmpr.Tolerance) error
+}
+
+func Message(msg ...interface{}) string {
+	ln := len(msg)
+	if ln == 0 {
+		return ""
+	}
+	if ln == 1 {
+		if s, ok := msg[0].(string); ok {
+			return s
+		}
+		return fmt.Sprint(msg[0])
+	}
+	if f, ok := msg[0].(string); ok {
+		return fmt.Sprintf(f, msg[1:]...)
+	}
+	return fmt.Sprint(msg...)
 }
