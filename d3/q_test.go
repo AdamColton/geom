@@ -63,7 +63,7 @@ func TestQ(t *testing.T) {
 			expected: Pt{0, 1, 0},
 		},
 		{
-			q:        Q{1, 0, 0, 0}.Product(Q{1, 0, 0, -1}).Normalize(),
+			q:        Q{1, 0, 0, 0}.Product(Q{sqrtHalf, 0, 0, -sqrtHalf}).Normalize(),
 			in:       Pt{1, 0, 0},
 			expected: Pt{0, 1, 0},
 		},
@@ -72,13 +72,14 @@ func TestQ(t *testing.T) {
 	for _, tc := range tt {
 		t.Run(tc.expected.String(), func(t *testing.T) {
 			t.Log(tc.q.String())
-			EqualPt(t, tc.expected, tc.q.T().Pt(tc.in))
+			geomtest.Equal(t, tc.expected, tc.q.T().Pt(tc.in))
 		})
 	}
 }
 
-func TestNormalizeZero(t *testing.T) {
+func TestNormalizeExceptions(t *testing.T) {
 	assert.Equal(t, Q{}, Q{}.Normalize())
+	assert.Equal(t, Q{1, 0, 0, 0}, Q{1, 0, 0, 0}.Normalize())
 }
 
 func TestQInv(t *testing.T) {
@@ -113,7 +114,7 @@ func TestQRotate(t *testing.T) {
 		"Z45": {
 			Q:        QZ(angle.Deg(45)),
 			In:       Pt{1, 0, 0},
-			expected: Pt{0.7071, 0.7071, 0},
+			expected: Pt{sqrtHalf, sqrtHalf, 0},
 		},
 		"X90": {
 			Q:        QX(angle.Deg(90)),
@@ -134,7 +135,7 @@ func TestQRotate(t *testing.T) {
 
 	for n, tc := range tt {
 		t.Run(n, func(t *testing.T) {
-			EqualPt(t, tc.expected, tc.Q.T().Pt(tc.In))
+			geomtest.Equal(t, tc.expected, tc.Q.T().Pt(tc.In))
 		})
 	}
 }
@@ -152,7 +153,7 @@ func TestQV(t *testing.T) {
 	for n, tc := range tt {
 		t.Run(n, func(t *testing.T) {
 			v := QV(tc).T().V(V{1, 0, 0})
-			EqualV(t, tc.Normal(), v)
+			geomtest.Equal(t, tc.Normal(), v)
 		})
 	}
 }

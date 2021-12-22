@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/calc/cmpr"
 )
 
 // Q is a quaternion used for rotations. B, C and D correspond to the X, Y and Z
@@ -14,21 +15,26 @@ type Q struct {
 	A, B, C, D float64
 }
 
+// QX returns Q rotated around the X axis.
 func QX(ang angle.Rad) Q {
 	s, c := (ang / 2.0).Sincos()
 	return Q{c, -s, 0, 0}
 }
 
+// QY returns Q rotated around the Y axis.
 func QY(ang angle.Rad) Q {
 	s, c := (ang / 2.0).Sincos()
 	return Q{c, 0, -s, 0}
 }
 
+// QY returns Q rotated around the Z axis.
 func QZ(ang angle.Rad) Q {
 	s, c := (ang / 2.0).Sincos()
 	return Q{c, 0, 0, -s}
 }
 
+// QV produces an instance of Q such that Q applied to V{1,0,0} will point in
+// the same direction as the argument v.
 func QV(v V) Q {
 	s, c := (angle.Atan(v.Y, v.X) / 2.0).Sincos()
 	qy := Q{c, 0, 0, -s}
@@ -45,10 +51,16 @@ func QV(v V) Q {
 	return out
 }
 
+// Normalize returns an instance of Q pointint in the same direction with a
+// magnitude of 1.
 func (q Q) Normalize() Q {
 	d := q.A*q.A + q.B*q.B + q.C*q.C + q.D*q.D
 	if d == 0 {
 		return Q{}
+	}
+	const small cmpr.Tolerance = 1e-10
+	if small.Equal(1.0, d) {
+		return q
 	}
 	d = math.Sqrt(d)
 	return Q{
@@ -59,6 +71,7 @@ func (q Q) Normalize() Q {
 	}
 }
 
+// Product applies the rotation of q2 to q.
 func (q Q) Product(q2 Q) Q {
 	return Q{
 		A: q.A*q2.A - q.B*q2.B - q.C*q2.C - q.D*q2.D,
@@ -68,6 +81,7 @@ func (q Q) Product(q2 Q) Q {
 	}
 }
 
+// T produces to transform equal to Q.
 func (q Q) T() *T {
 	return &T{
 		{
@@ -94,10 +108,12 @@ func (q Q) T() *T {
 	}
 }
 
+// TInv fulfills TGenInv.
 func (q Q) TInv() *T {
 	return Q{q.A, -q.B, -q.C, -q.D}.T()
 }
 
+// String fullfils Stringer.
 func (q Q) String() string {
 	return strings.Join([]string{
 		"Q(",
