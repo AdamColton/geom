@@ -110,6 +110,7 @@ func TestT(t *testing.T) {
 			p: Pt{2, 1, 0},
 			t: NewTSet().
 				AddBoth(Translate(V{-1, -1, 0}).Pair()).
+				AddBoth(ScaleF(2).Pair()).
 				Add(Rotation{angle.Rot(0.25), XZ}.T()).
 				Get(),
 			expected: Pt{2, 2, 2}.Multiply(0.5),
@@ -121,21 +122,23 @@ func TestT(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		t.Run(tc.t.String(), func(t *testing.T) {
-			t.Log(tc.p)
+		t.Run(tc.t.String(), func(tt *testing.T) {
+			t := geomtest.New(tt)
 			p, w := tc.t.PtF(tc.p)
-			assert.Equal(t, 1.0, w) // for these, w should always be 1
-			EqualPt(t, tc.expected, p)
-			EqualPt(t, tc.expected, tc.t.Pt(tc.p))
-			EqualPt(t, tc.expected, tc.t.PtScl(tc.p))
+			t.Equal(1.0, w) // for these, w should always be 1
+			t.Equal(tc.expected, p)
+			t.Equal(tc.expected, tc.t.Pt(tc.p))
+			t.Equal(tc.expected, tc.t.PtScl(tc.p))
 
 			v := V(tc.p)
 			tv, w := tc.t.VF(v)
-			assert.Equal(t, 1.0, w)
-			EqualV(t, V(tc.expected), tv)
-			EqualV(t, V(tc.expected), tc.t.V(v))
+			t.Equal(1.0, w)
+			t.Equal(V(tc.expected), tv)
+			t.Equal(V(tc.expected), tc.t.V(v))
 		})
 	}
+
+	geomtest.Equal(t, Identity(), TProd())
 }
 
 type justTGenWrapper struct {
