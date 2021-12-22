@@ -13,18 +13,6 @@ import (
 
 var sqrtHalf = math.Sqrt(0.5)
 
-func EqualPt(t *testing.T, expected, got Pt) {
-	assert.InDelta(t, expected.X, got.X, 1e-5, "X")
-	assert.InDelta(t, expected.Y, got.Y, 1e-5, "Y")
-	assert.InDelta(t, expected.Z, got.Z, 1e-5, "Z")
-}
-
-func EqualV(t *testing.T, expected, got V) {
-	assert.InDelta(t, expected.X, got.X, 1e-5, "X")
-	assert.InDelta(t, expected.Y, got.Y, 1e-5, "Y")
-	assert.InDelta(t, expected.Z, got.Z, 1e-5, "Z")
-}
-
 func TestAssertEqual(t *testing.T) {
 	p1 := Pt{1, 2, 3}
 	p2 := Pt{1, 2, 3}
