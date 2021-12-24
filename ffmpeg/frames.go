@@ -2,6 +2,8 @@ package ffmpeg
 
 import (
 	"image"
+
+	"github.com/adamcolton/geom/d2/grid"
 )
 
 // Framer provides an interface for rendering frames to ffmpeg.
@@ -14,20 +16,27 @@ type Framer interface {
 	Frames() int
 }
 
+// Sizer returns a size. If Framer fulfills Sizer, that size will be used when
+// calling Settings.Framer.
+type Sizer interface {
+	Size() grid.Pt
+}
+
 // Framer will iterate through each frame of each framers. They are passed to
 // the ffpeg process through a Pipeline.
-func (s *Settings) Framer(fs ...Framer) (err error) {
+func (s *Settings) Framer(f Framer) (err error) {
+	if sz, ok := f.(Sizer); ok {
+		s.Size = sz.Size()
+	}
 	return s.RunPipeline(func(p *Pipeline) (err error) {
 		var img image.Image
-		for _, f := range fs {
-			fs := f.Frames()
-			for i := 0; i < fs; i++ {
-				img, err = f.Frame(i, img)
-				if err != nil {
-					return
-				}
-				img = p.Add(img)
+		fs := f.Frames()
+		for i := 0; i < fs; i++ {
+			img, err = f.Frame(i, img)
+			if err != nil {
+				return
 			}
+			img = p.Add(img)
 		}
 		p.Wait()
 		return

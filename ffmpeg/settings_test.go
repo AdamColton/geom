@@ -12,7 +12,7 @@ func TestSettings(t *testing.T) {
 		expected []string
 	}{
 		"New": {
-			Settings: New("New", 101, 201),
+			Settings: New("New").Set(101, 201),
 			expected: []string{"-y", "-f", "image2pipe", "-vcodec", "bmp", "-r", "24", "-i", "-", "-vf", "scale=100x200", "-vcodec", "libx264", "-crf", "25", "-pix_fmt", "yuv420p", "New.mp4"},
 		},
 		"NewByAspect": {
