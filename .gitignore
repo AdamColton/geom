@@ -3,4 +3,7 @@
 *.png
 *.mp4
 *.hide
+*.obj
+profile.out
 _dev.*
+_*.md
