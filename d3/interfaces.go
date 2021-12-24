@@ -1,25 +1,32 @@
 package d3
 
+// Point can return an instance of Pt.
 type Point interface {
 	Pt() Pt
 }
 
+// Vector can return an instance of V
 type Vector interface {
 	V() V
 }
 
+// Pt1 is a one dimensional parametric curve.
 type Pt1 interface {
 	Pt1(t0 float64) Pt
 }
 
+// V1 is a one dimensional parametric curve.
 type V1 interface {
 	V1(t0 float64) V
 }
 
+// Pt2 is a two dimensional parametric surface.
 type Pt2 interface {
 	Pt2(t0, t1 float64) Pt
 }
 
+// Pt2c1 is a two dimensional parametric surface that returns a curve on the
+// surface.
 type Pt2c1 interface {
 	Pt2(t0 float64) Pt1
 }

@@ -53,33 +53,34 @@ func TestInverse(t *testing.T) {
 	}
 }
 
-func TestRotate(t *testing.T) {
+func TestRotate(tt *testing.T) {
+	t := geomtest.New(tt)
 
-	EqualPt(t, Pt{0, 1, 0}, Rotation{angle.Rot(0.25), XY}.T().Pt(Pt{1, 0, 0}))
-	EqualPt(t, Pt{-1, 0, 0}, Rotation{angle.Rot(0.50), XY}.T().Pt(Pt{1, 0, 0}))
-	EqualPt(t, Pt{0, -1, 0}, Rotation{angle.Rot(0.75), XY}.T().Pt(Pt{1, 0, 0}))
+	t.Equal(Pt{0, 1, 0}, Rotation{angle.Rot(0.25), XY}.T().Pt(Pt{1, 0, 0}))
+	t.Equal(Pt{-1, 0, 0}, Rotation{angle.Rot(0.50), XY}.T().Pt(Pt{1, 0, 0}))
+	t.Equal(Pt{0, -1, 0}, Rotation{angle.Rot(0.75), XY}.T().Pt(Pt{1, 0, 0}))
 
-	EqualPt(t, Pt{0, 0, 1}, Rotation{angle.Rot(0.25), XZ}.T().Pt(Pt{1, 0, 0}))
-	EqualPt(t, Pt{-1, 0, 0}, Rotation{angle.Rot(0.50), XZ}.T().Pt(Pt{1, 0, 0}))
-	EqualPt(t, Pt{0, 0, -1}, Rotation{angle.Rot(0.75), XZ}.T().Pt(Pt{1, 0, 0}))
+	t.Equal(Pt{0, 0, 1}, Rotation{angle.Rot(0.25), XZ}.T().Pt(Pt{1, 0, 0}))
+	t.Equal(Pt{-1, 0, 0}, Rotation{angle.Rot(0.50), XZ}.T().Pt(Pt{1, 0, 0}))
+	t.Equal(Pt{0, 0, -1}, Rotation{angle.Rot(0.75), XZ}.T().Pt(Pt{1, 0, 0}))
 
-	EqualPt(t, Pt{0, 0, 1}, Rotation{angle.Rot(0.25), YZ}.T().Pt(Pt{0, 1, 0}))
-	EqualPt(t, Pt{0, -1, 0}, Rotation{angle.Rot(0.50), YZ}.T().Pt(Pt{0, 1, 0}))
-	EqualPt(t, Pt{0, 0, -1}, Rotation{angle.Rot(0.75), YZ}.T().Pt(Pt{0, 1, 0}))
+	t.Equal(Pt{0, 0, 1}, Rotation{angle.Rot(0.25), YZ}.T().Pt(Pt{0, 1, 0}))
+	t.Equal(Pt{0, -1, 0}, Rotation{angle.Rot(0.50), YZ}.T().Pt(Pt{0, 1, 0}))
+	t.Equal(Pt{0, 0, -1}, Rotation{angle.Rot(0.75), YZ}.T().Pt(Pt{0, 1, 0}))
 
 	for r := (Rotation{angle.Rot(0), XY}); r.Angle.Rot() < 1.0; r.Angle += angle.Rot(0.01) {
 		p := r.Pair()
-		geomtest.Equal(t, Identity(), p[0].T(p[1]))
+		t.Equal(Identity(), p[0].T(p[1]))
 	}
 
 	for r := (Rotation{angle.Rot(0), XZ}); r.Angle.Rot() < 1.0; r.Angle += angle.Rot(0.01) {
 		p := r.Pair()
-		geomtest.Equal(t, Identity(), p[0].T(p[1]))
+		t.Equal(Identity(), p[0].T(p[1]))
 	}
 
 	for r := (Rotation{angle.Rot(0), YZ}); r.Angle.Rot() < 1.0; r.Angle += angle.Rot(0.01) {
 		p := r.Pair()
-		geomtest.Equal(t, Identity(), p[0].T(p[1]))
+		t.Equal(Identity(), p[0].T(p[1]))
 	}
 }
 
@@ -109,6 +110,7 @@ func TestT(t *testing.T) {
 			p: Pt{2, 1, 0},
 			t: NewTSet().
 				AddBoth(Translate(V{-1, -1, 0}).Pair()).
+				AddBoth(ScaleF(2).Pair()).
 				Add(Rotation{angle.Rot(0.25), XZ}.T()).
 				Get(),
 			expected: Pt{2, 2, 2}.Multiply(0.5),
@@ -120,21 +122,31 @@ func TestT(t *testing.T) {
 	}
 
 	for _, tc := range tt {
-		t.Run(tc.t.String(), func(t *testing.T) {
-			t.Log(tc.p)
+		t.Run(tc.t.String(), func(tt *testing.T) {
+			t := geomtest.New(tt)
 			p, w := tc.t.PtF(tc.p)
-			assert.Equal(t, 1.0, w) // for these, w should always be 1
-			EqualPt(t, tc.expected, p)
-			EqualPt(t, tc.expected, tc.t.Pt(tc.p))
-			EqualPt(t, tc.expected, tc.t.PtScl(tc.p))
+			t.Equal(1.0, w) // for these, w should always be 1
+			t.Equal(tc.expected, p)
+			t.Equal(tc.expected, tc.t.Pt(tc.p))
+			t.Equal(tc.expected, tc.t.PtScl(tc.p))
 
 			v := V(tc.p)
 			tv, w := tc.t.VF(v)
-			assert.Equal(t, 1.0, w)
-			EqualV(t, V(tc.expected), tv)
-			EqualV(t, V(tc.expected), tc.t.V(v))
+			t.Equal(1.0, w)
+			t.Equal(V(tc.expected), tv)
+			t.Equal(V(tc.expected), tc.t.V(v))
 		})
 	}
+
+	geomtest.Equal(t, Identity(), TProd())
+}
+
+type justTGenWrapper struct {
+	t TGen
+}
+
+func (t justTGenWrapper) T() *T {
+	return t.t.T()
 }
 
 func TestTGen(t *testing.T) {
@@ -152,6 +164,10 @@ func TestTGen(t *testing.T) {
 			p := GetTPair(tc)
 			geomtest.Equal(t, p[0], tc.T())
 			geomtest.Equal(t, p[1], GetTInv(tc))
+			geomtest.Equal(t, id, p[0].T(p[1]))
+			w := justTGenWrapper{tc}
+			geomtest.Equal(t, p[1], GetTInv(w))
+			p = GetTPair(w)
 			geomtest.Equal(t, id, p[0].T(p[1]))
 		})
 	}
@@ -179,6 +195,6 @@ func TestPtsScale(t *testing.T) {
 		{-0.5, 0, 0},
 	}
 	for i, exp := range expected {
-		EqualPt(t, exp, got[i])
+		geomtest.Equal(t, exp, got[i])
 	}
 }
