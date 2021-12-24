@@ -6,13 +6,8 @@ import (
 
 	"github.com/adamcolton/geom/calc/cmpr"
 	"github.com/adamcolton/geom/geomerr"
+	"github.com/stretchr/testify/assert"
 )
-
-// TestingT is meant to represent the testing.T type, but it allows anything
-// that fulfills the interface to be passed into Equal or EqualInDelta.
-type TestingT interface {
-	Error(args ...interface{})
-}
 
 type tHelper interface {
 	Helper()
@@ -21,18 +16,18 @@ type tHelper interface {
 // Equal calls AssertEqual with the default value of Small. If there is an error
 // it is passed into t.Error. The return bool will be true if the values were
 // equal.
-func Equal(t TestingT, expected, actual interface{}) bool {
+func Equal(t assert.TestingT, expected, actual interface{}, msg ...interface{}) bool {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()
 	}
-	return EqualInDelta(t, expected, actual, Small)
+	return EqualInDelta(t, expected, actual, Small, msg...)
 }
 
 var equalType = reflect.TypeOf((*AssertEqualizer)(nil)).Elem()
 
 // EqualInDelta calls AssertEqual. If there is an error it is passed into
 // t.Error. The return bool will be true if the values were equal.
-func EqualInDelta(t TestingT, expected, actual interface{}, delta cmpr.Tolerance) bool {
+func EqualInDelta(t assert.TestingT, expected, actual interface{}, delta cmpr.Tolerance, msg ...interface{}) bool {
 	if h, ok := t.(tHelper); ok {
 		h.Helper()
 	}
@@ -40,7 +35,11 @@ func EqualInDelta(t TestingT, expected, actual interface{}, delta cmpr.Tolerance
 	if err == nil {
 		return true
 	}
-	t.Error(err)
+	if len(msg) > 0 {
+		t.Errorf("%s: %s", err.Error(), Message(msg...))
+	} else {
+		t.Errorf("%s", err.Error())
+	}
 	return false
 }
 
@@ -64,12 +63,11 @@ func AssertEqual(expected, actual interface{}, delta cmpr.Tolerance) error {
 	if eq, ok := expected.(AssertEqualizer); ok {
 		return eq.AssertEqual(actual, delta)
 	} else if ef, ok := expected.(float64); ok {
-		if af, ok := actual.(float64); ok {
-			if delta.Equal(ef, af) {
-				return nil
-			}
-			return geomerr.NotEqual(ef, af)
+		if err := geomerr.NewTypeMismatch(expected, actual); err != nil {
+			return err
 		}
+		af := actual.(float64)
+		return geomerr.NewNotEqual(delta.Equal(ef, af), ef, af)
 	}
 
 	format := "unsupported_type: %s"
