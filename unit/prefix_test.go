@@ -54,6 +54,39 @@ func TestPrefixString(t *testing.T) {
 	for n, tc := range tt {
 		t.Run(n, func(t *testing.T) {
 			assert.Equal(t, tc.expected, tc.in.String())
+			got, err := Pre(tc.expected)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.in, got)
+		})
+	}
+}
+
+func TestPre(t *testing.T) {
+	tt := map[string]struct {
+		expected Prefix
+	}{
+		"k": {
+			expected: Kilo,
+		},
+		"2k": {
+			expected: 2 * Kilo,
+		},
+		".2M": {
+			expected: 200 * Kilo,
+		},
+		"100": {
+			expected: 100,
+		},
+		"": {
+			expected: 1.0,
+		},
+	}
+
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			got, err := Pre(n)
+			assert.NoError(t, err)
+			assert.Equal(t, tc.expected, got)
 		})
 	}
 }

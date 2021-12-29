@@ -3,6 +3,8 @@ package unit
 import (
 	"fmt"
 	"math"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -40,6 +42,20 @@ var symbols = map[Prefix]string{
 	Femto: "f",
 }
 
+var symbolLookup = map[string]Prefix{
+	"T": Tera,
+	"G": Giga,
+	"M": Mega,
+	"k": Kilo,
+	"":  1.0,
+	"c": Centi,
+	"m": Mili,
+	"µ": Micro,
+	"n": Nano,
+	"p": Pico,
+	"f": Femto,
+}
+
 func (p Prefix) String() string {
 	m := p.Mag()
 	s := symbols[m]
@@ -69,4 +85,22 @@ func (p Prefix) Mag() Prefix {
 		}
 	}
 	return Prefix(mag)
+}
+
+var preRe = regexp.MustCompile(`(\d*\.?\d+)? *\*? *([a-zA-Z]{0,2})`)
+
+func Pre(s string) (Prefix, error) {
+	match := preRe.FindStringSubmatch(s)
+	if len(match) == 0 {
+		return 0, fmt.Errorf("No Match")
+	}
+	p, found := symbolLookup[match[2]]
+	if !found {
+		return 0, fmt.Errorf("No Prefix for symbol '%s'", match[2])
+	}
+	f := 1.0
+	if match[1] != "" {
+		f, _ = strconv.ParseFloat(match[1], 64)
+	}
+	return p * Prefix(f), nil
 }
