@@ -65,6 +65,14 @@ func (e SliceErrs) AppendF(idx int, format string, args ...interface{}) SliceErr
 	})
 }
 
+// Ret reduces SliceErrs to nil (with no type) if e is nil.
+func (e SliceErrs) Ret() error {
+	if e == nil {
+		return nil
+	}
+	return e
+}
+
 // NewSliceErrs creates an instance of SliceErrs by calling the provided func
 // for every value up to Min(lnExpected, lnActual). If lnExpected and lnActual
 // are not equal and instance of LenMismatch will be added to the start of the
