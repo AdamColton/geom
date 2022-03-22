@@ -50,6 +50,10 @@ func EqualInDelta(t assert.TestingT, expected, actual interface{}, delta cmpr.To
 // check fails, an error is returned.
 func AssertEqual(expected, actual interface{}, delta cmpr.Tolerance) error {
 	ev := reflect.ValueOf(expected)
+	if eq, ok := expected.(AssertEqualizer); ok {
+		return eq.AssertEqual(actual, delta)
+	}
+
 	if ev.Kind() == reflect.Slice {
 		av := reflect.ValueOf(actual)
 		if av.Kind() != reflect.Slice {
@@ -60,9 +64,7 @@ func AssertEqual(expected, actual interface{}, delta cmpr.Tolerance) error {
 		})
 	}
 
-	if eq, ok := expected.(AssertEqualizer); ok {
-		return eq.AssertEqual(actual, delta)
-	} else if ef, ok := expected.(float64); ok {
+	if ef, ok := expected.(float64); ok {
 		if err := geomerr.NewTypeMismatch(expected, actual); err != nil {
 			return err
 		}
