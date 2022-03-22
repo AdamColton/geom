@@ -100,6 +100,23 @@ func (t *T) T(t2 *T) *T {
 	}
 }
 
+// Pow raises T to an integer power
+func (t *T) Pow(e uint) *T {
+	out := IndentityTransform()
+	p := t
+	for {
+		if e&1 == 1 {
+			out = out.T(p)
+		}
+		e >>= 1
+		if e == 0 {
+			break
+		}
+		p = p.T(p)
+	}
+	return out
+}
+
 // AssertEqual fulfils geomtest.AssertEqualizer
 func (t *T) AssertEqual(actual interface{}, tol cmpr.Tolerance) error {
 	t2, ok := actual.(*T)

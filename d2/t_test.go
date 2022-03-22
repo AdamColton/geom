@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/geomtest"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -88,4 +89,33 @@ func TestTSlice(t *testing.T) {
 	expected := []Pt{{4, 5}, {5, 6}, {6, 7}}
 	assert.Equal(t, expected, got)
 
+}
+
+func TestTPow(t *testing.T) {
+	tt := map[string]struct {
+		expected, t *T
+		exp         int
+	}{
+		"translate": {
+			t:        Translate(V{1, 2}).T(),
+			exp:      5,
+			expected: Translate(V{5, 10}).T(),
+		},
+		"rotate": {
+			t:        Rotate(.01).T(),
+			exp:      10,
+			expected: Rotate(.1).T(),
+		},
+		"scale": {
+			t:        Scale(V{2, 3}).T(),
+			exp:      3,
+			expected: Scale(V{8, 27}).T(),
+		},
+	}
+
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			geomtest.Equal(t, tc.expected, tc.t.Pow(uint(tc.exp)))
+		})
+	}
 }
