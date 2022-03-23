@@ -1,8 +1,10 @@
 package d2set
 
 import (
+	"math"
 	"testing"
 
+	"github.com/adamcolton/geom/angle"
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/geomtest"
 	"github.com/stretchr/testify/assert"
@@ -33,4 +35,22 @@ func TestCopyPointSlice(t *testing.T) {
 		{-1, 3}, {0, 4},
 	}
 	geomtest.Equal(t, expect, NewPointSlice(expect))
+}
+
+func TestRotationArray(t *testing.T) {
+	r := RotationArray{
+		Arc:    angle.Deg(180),
+		V:      d2.V{2, 0},
+		N:      5,
+		Source: PointSlice{{1, 1}},
+	}
+	sr2 := math.Sqrt2
+	expect := PointSlice{
+		{3, 1},
+		{sr2 + 1, sr2 + 1},
+		{1, 3},
+		{1 - sr2, sr2 + 1},
+		{-1, 1},
+	}
+	geomtest.Equal(t, expect, r)
 }
