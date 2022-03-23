@@ -67,3 +67,15 @@ func TestReflect(t *testing.T) {
 	}
 	geomtest.Equal(t, expect, r)
 }
+
+func TestPt1Source(t *testing.T) {
+	s := Pt1Source{
+		Pt1: line.New(d2.Pt{0, 0}, d2.Pt{5, 5}),
+	}
+	s.Set(0, 1, 6)
+	expect := PointSlice{
+		{0, 0}, {1, 1}, {2, 2},
+		{3, 3}, {4, 4}, {5, 5},
+	}
+	geomtest.Equal(t, expect, s)
+}
