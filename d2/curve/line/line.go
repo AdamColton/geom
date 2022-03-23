@@ -73,10 +73,7 @@ func (l Line) Intersection(l2 Line) (float64, float64, bool) {
 
 // Closest returns the point on the line closest to pt
 func (l Line) Closest(pt d2.Pt) d2.Pt {
-	l2 := Line{
-		T0: pt,
-		D:  d2.V{-l.D.Y, l.D.X},
-	}
+	l2 := l.Tangent(pt)
 	t0, _, hit := l2.Intersection(l)
 	if !hit {
 		return l.T0
@@ -167,4 +164,22 @@ func (l Line) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
 		return geomerr.NotEqual(l, l2)
 	}
 	return nil
+}
+
+// Reflect a point over the line
+func (l Line) Reflect(pt d2.Pt) d2.Pt {
+	l2 := l.Tangent(pt)
+	t0, _, hit := l.Intersection(l2)
+	if !hit {
+		return l.T0
+	}
+	return l2.Pt1(2 * t0)
+}
+
+// Tangent line starting at pt with t=1 on the line.
+func (l Line) Tangent(pt d2.Pt) Line {
+	return Line{
+		T0: pt,
+		D:  d2.V{-l.D.Y, l.D.X},
+	}
 }

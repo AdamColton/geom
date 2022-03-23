@@ -173,3 +173,9 @@ func TestCross(t *testing.T) {
 		})
 	}
 }
+
+func TestReflect(t *testing.T) {
+	l := New(d2.Pt{0, 0}, d2.Pt{1, 0})
+	geomtest.Equal(t, d2.Pt{2, 2}, l.Reflect(d2.Pt{2, -2}))
+	geomtest.Equal(t, d2.Pt{2, 0}, l.Reflect(d2.Pt{2, 0}))
+}
