@@ -7,7 +7,7 @@ import (
 type TransformArray struct {
 	Source PointSet
 	*d2.T
-	N int
+	Offset, N int
 }
 
 func (ta TransformArray) Len() int {
@@ -17,7 +17,7 @@ func (ta TransformArray) Len() int {
 func (ta TransformArray) Get(n int) d2.Pt {
 	ln := ta.Source.Len()
 	pt := ta.Source.Get(n % ln)
-	t := ta.Pow(uint(n / ln))
+	t := ta.Pow(uint((n / ln) + ta.Offset))
 	return t.Pt(pt)
 }
 
@@ -31,11 +31,16 @@ func (ta TransformArray) ToPointSlice() PointSlice {
 	for i := 0; i < ln; i++ {
 		out[i] = ta.Source.Get(i)
 	}
-	t := d2.IndentityTransform()
+	if ta.Offset > 0 {
+		t := ta.Pow(uint(ta.Offset))
+		for i := 0; i < ln; i++ {
+			out[i] = t.Pt(out[i])
+		}
+	}
+
 	for i := ln; i < n; i += ln {
-		t = t.T(ta.T)
 		for j := 0; j < ln; j++ {
-			out[i+j] = t.Pt(out[j])
+			out[i+j] = ta.T.Pt(out[i+j-ln])
 		}
 	}
 	return out

@@ -27,6 +27,11 @@ func TestTransformArray(t *testing.T) {
 
 	geomtest.Equal(t, expect, ta)
 	geomtest.Equal(t, expect, NewPointSlice(ta))
+
+	ta.Offset = 1
+	ta.N = 2
+	geomtest.Equal(t, expect[2:], ta)
+	geomtest.Equal(t, expect[2:], NewPointSlice(ta))
 }
 
 func TestCopyPointSlice(t *testing.T) {
