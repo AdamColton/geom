@@ -6,6 +6,7 @@ import (
 
 	"github.com/adamcolton/geom/angle"
 	"github.com/adamcolton/geom/d2"
+	"github.com/adamcolton/geom/d2/curve/line"
 	"github.com/adamcolton/geom/geomtest"
 	"github.com/stretchr/testify/assert"
 )
@@ -51,6 +52,18 @@ func TestRotationArray(t *testing.T) {
 		{1, 3},
 		{1 - sr2, sr2 + 1},
 		{-1, 1},
+	}
+	geomtest.Equal(t, expect, r)
+}
+
+func TestReflect(t *testing.T) {
+	r := Reflect{
+		Source: PointSlice{{1, 1}, {2, 2}, {3, 3}},
+		Line:   line.New(d2.Pt{4, 0}, d2.Pt{4, 1}),
+	}
+	expect := PointSlice{
+		{1, 1}, {2, 2}, {3, 3},
+		{7, 1}, {6, 2}, {5, 3},
 	}
 	geomtest.Equal(t, expect, r)
 }
