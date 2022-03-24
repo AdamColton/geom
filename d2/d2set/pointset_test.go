@@ -12,7 +12,7 @@ import (
 )
 
 func TestTransformArray(t *testing.T) {
-	ta := TransformArray{
+	ta := TransformPowArray{
 		Source: PointSlice{{1, 1}, {2, 2}},
 		T:      d2.Translate(d2.V{-1, 1}).T(),
 		N:      3,

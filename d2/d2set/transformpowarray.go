@@ -4,24 +4,24 @@ import (
 	"github.com/adamcolton/geom/d2"
 )
 
-type TransformArray struct {
+type TransformPowArray struct {
 	Source PointSet
 	*d2.T
 	Offset, N int
 }
 
-func (ta TransformArray) Len() int {
+func (ta TransformPowArray) Len() int {
 	return ta.N * ta.Source.Len()
 }
 
-func (ta TransformArray) Get(n int) d2.Pt {
+func (ta TransformPowArray) Get(n int) d2.Pt {
 	ln := ta.Source.Len()
 	pt := ta.Source.Get(n % ln)
 	t := ta.Pow(uint((n / ln) + ta.Offset))
 	return t.Pt(pt)
 }
 
-func (ta TransformArray) ToPointSlice() PointSlice {
+func (ta TransformPowArray) ToPointSlice() PointSlice {
 	if ta.N <= 0 {
 		return nil
 	}
