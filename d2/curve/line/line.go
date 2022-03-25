@@ -183,3 +183,26 @@ func (l Line) Tangent(pt d2.Pt) Line {
 		D:  d2.V{-l.D.Y, l.D.X},
 	}
 }
+
+var reflection = &d2.T{
+	{1, 0, 0},
+	{0, -1, 0},
+	{0, 0, 1},
+}
+
+func (l Line) Reflector() *d2.T {
+	v := d2.Translate(l.T0.V()).Pair()
+	r := d2.Rotate(l.D.Angle()).Pair()
+	// head
+	t := v[1]
+	t = t.T(r[1])
+
+	// reflect
+
+	t = t.T(reflection)
+
+	//tail
+	t = t.T(r[0])
+	t = t.T(v[0])
+	return t
+}

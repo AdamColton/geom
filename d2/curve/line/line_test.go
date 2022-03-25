@@ -175,7 +175,50 @@ func TestCross(t *testing.T) {
 }
 
 func TestReflect(t *testing.T) {
-	l := New(d2.Pt{0, 0}, d2.Pt{1, 0})
-	geomtest.Equal(t, d2.Pt{2, 2}, l.Reflect(d2.Pt{2, -2}))
-	geomtest.Equal(t, d2.Pt{2, 0}, l.Reflect(d2.Pt{2, 0}))
+	tt := map[string]struct {
+		a, b d2.Pt
+		Line
+	}{
+		"(2,2);y=0": {
+			Line: New(d2.Pt{0, 0}, d2.Pt{1, 0}),
+			a:    d2.Pt{2, 2},
+			b:    d2.Pt{2, -2},
+		},
+		"(2,0);y=0": {
+			Line: New(d2.Pt{0, 0}, d2.Pt{1, 0}),
+			a:    d2.Pt{2, 0},
+			b:    d2.Pt{2, 0},
+		},
+		"(2,2);x=0": {
+			Line: New(d2.Pt{0, 0}, d2.Pt{0, 1}),
+			a:    d2.Pt{2, 2},
+			b:    d2.Pt{-2, 2},
+		},
+		"(0,2);x=0": {
+			Line: New(d2.Pt{0, 0}, d2.Pt{0, 1}),
+			a:    d2.Pt{0, 2},
+			b:    d2.Pt{0, 2},
+		},
+		"(0,0);m=-1": {
+			Line: New(d2.Pt{1, 0}, d2.Pt{0, 1}),
+			a:    d2.Pt{0, 0},
+			b:    d2.Pt{1, 1},
+		},
+		"(0,0);m=2": {
+			Line: New(d2.Pt{1, 1}, d2.Pt{2, 3}),
+			a:    d2.Pt{2, 2},
+			b:    d2.Pt{1.2, 2.4},
+		},
+	}
+
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			geomtest.Equal(t, tc.a, tc.Reflect(tc.b))
+			geomtest.Equal(t, tc.b, tc.Reflect(tc.a))
+
+			r := tc.Line.Reflector()
+			geomtest.Equal(t, tc.a, r.Pt(tc.b))
+			geomtest.Equal(t, tc.b, r.Pt(tc.a))
+		})
+	}
 }
