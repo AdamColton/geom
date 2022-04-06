@@ -202,3 +202,9 @@ func (AssertV1) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
 	}
 	return badPoints
 }
+
+// Sincoser returns the sine and cosine associate with the angle of the
+// underlying type.
+type Sincoser interface {
+	Sincos() (float64, float64)
+}
