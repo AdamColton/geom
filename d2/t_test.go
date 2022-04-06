@@ -19,7 +19,11 @@ func TestTransform(t *testing.T) {
 			expected: Pt{2, 3},
 		},
 		{
-			T:        Rotate(math.Pi / 2).T(),
+			T:        Rotate{angle.Rad(math.Pi / 2)}.T(),
+			expected: Pt{-1, 1},
+		},
+		{
+			T:        Rotate{V{0, 1}}.T(),
 			expected: Pt{-1, 1},
 		},
 		{
@@ -27,7 +31,7 @@ func TestTransform(t *testing.T) {
 			expected: Pt{2, 3},
 		},
 		{
-			T:        Chain{Rotate(math.Pi / 2), Translate(V{2, 2}), Scale(V{2, 3})}.T(),
+			T:        Chain{Rotate{angle.Rad(math.Pi / 2)}, Translate(V{2, 2}), Scale(V{2, 3})}.T(),
 			expected: Pt{2, 9},
 		},
 	}
@@ -52,9 +56,9 @@ func TestTransform(t *testing.T) {
 func TestTGen(t *testing.T) {
 	tt := map[string]TGen{
 		"scale":     Scale(V{3, 4}),
-		"rotate":    Rotate(angle.Deg(87)),
+		"rotate":    Rotate{angle.Rad(angle.Deg(87))},
 		"translate": Translate(V{3, 7}),
-		"chain":     Chain{Rotate(math.Pi / 2), Translate(V{2, 2}), Scale(V{2, 3})},
+		"chain":     Chain{Rotate{angle.Rad(math.Pi / 2)}, Translate(V{2, 2}), Scale(V{2, 3})},
 		"chain0":    Chain{},
 		"chain1":    Chain{Scale(V{12, 13})},
 	}
@@ -102,9 +106,9 @@ func TestTPow(t *testing.T) {
 			expected: Translate(V{5, 10}).T(),
 		},
 		"rotate": {
-			t:        Rotate(.01).T(),
+			t:        Rotate{angle.Rad(.01)}.T(),
 			exp:      10,
-			expected: Rotate(.1).T(),
+			expected: Rotate{angle.Rad(0.1)}.T(),
 		},
 		"scale": {
 			t:        Scale(V{2, 3}).T(),
