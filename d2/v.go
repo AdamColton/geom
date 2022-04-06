@@ -54,6 +54,13 @@ func (v V) Product(v2 V) V {
 	}
 }
 
+// Sincos returns the sin and cos of the angle of the vector. This fulfills
+// Sincoser.
+func (v V) Sincos() (float64, float64) {
+	h := v.Mag()
+	return v.Y / h, v.X / h
+}
+
 // String fulfills Stringer, returns the vector as "V(X, Y)"
 func (v V) String() string {
 	return strings.Join([]string{

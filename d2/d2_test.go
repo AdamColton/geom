@@ -197,3 +197,20 @@ func TestDot(t *testing.T) {
 		})
 	}
 }
+
+func TestVSinCos(t *testing.T) {
+	for r := angle.Rad(0); r < angle.Rot(1); r += 0.01 {
+		s, c := r.Sincos()
+		for m := 0.2; m < 2.0; m += 0.2 {
+			v := V{m * c, m * s}
+			rt := Rotate{r}.T()
+			geomtest.Equal(t, rt.V(V{m, 0}), v)
+			geomtest.Equal(t, r, v.Angle())
+
+			vs, vc := v.Sincos()
+			geomtest.Equal(t, s, vs)
+			geomtest.Equal(t, c, vc)
+			geomtest.Equal(t, rt, Rotate{v}.T())
+		}
+	}
+}
