@@ -191,18 +191,14 @@ var reflection = &d2.T{
 }
 
 func (l Line) Reflector() *d2.T {
-	v := d2.Translate(l.T0.V()).Pair()
-	r := d2.Rotate(l.D.Angle()).Pair()
-	// head
-	t := v[1]
-	t = t.T(r[1])
+	t0 := l.T0
+	s, c := l.D.Sincos()
+	s2 := 2 * s * c
+	c2 := 1 - 2*s*s
 
-	// reflect
-
-	t = t.T(reflection)
-
-	//tail
-	t = t.T(r[0])
-	t = t.T(v[0])
-	return t
+	return &d2.T{
+		{c2, s2, (1-c2)*t0.X - s2*t0.Y},
+		{s2, -c2, -s2*t0.X + (1+c2)*t0.Y},
+		{0, 0, 1},
+	}
 }

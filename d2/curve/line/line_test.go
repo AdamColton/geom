@@ -145,7 +145,7 @@ func TestLimits(t *testing.T) {
 }
 
 func TestTransform(t *testing.T) {
-	l := New(d2.Pt{0, 0}, d2.Pt{1, 0}).T(d2.Rotate(angle.Deg(90)).T())
+	l := New(d2.Pt{0, 0}, d2.Pt{1, 0}).T(d2.Rotate{angle.Deg(90)}.T())
 	geomtest.Equal(t, d2.Pt{0, 0}, l.Pt1(0))
 	geomtest.Equal(t, d2.Pt{0, 1}, l.Pt1(1))
 }
@@ -208,6 +208,11 @@ func TestReflect(t *testing.T) {
 			Line: New(d2.Pt{1, 1}, d2.Pt{2, 3}),
 			a:    d2.Pt{2, 2},
 			b:    d2.Pt{1.2, 2.4},
+		},
+		"(0,0);m=1/2": {
+			Line: New(d2.Pt{2, 3}, d2.Pt{4, 4}),
+			a:    d2.Pt{2, 2},
+			b:    d2.Pt{1.2, 3.6},
 		},
 	}
 
