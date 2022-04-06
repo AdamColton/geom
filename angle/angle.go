@@ -2,6 +2,13 @@ package angle
 
 import (
 	"math"
+
+	"github.com/adamcolton/geom/calc/cmpr"
+	"github.com/adamcolton/geom/geomerr"
+)
+
+const (
+	Tau Rad = math.Pi * 2
 )
 
 // Rad is angle in radians
@@ -55,4 +62,32 @@ func (r Rad) Cos() float64 {
 // Sincos returns both the sine and cosine of the angle
 func (r Rad) Sincos() (float64, float64) {
 	return math.Sincos(float64(r))
+}
+
+// Normal returns a value between 0 and 2*Pi.
+func (r Rad) Normal() Rad {
+	if r <= -Tau || r >= Tau {
+		x := float64(r) / float64(Tau)
+		x -= math.Floor(x)
+		r = Rad(x) * Tau
+	}
+	if r < 0 {
+		r += Tau
+	}
+	return r
+}
+
+// AssertEqual fulfils geomtest.AssertEqualizer. It checks that the normals are
+// equal. This means that Rad(1) == Rad(1+2*Pi).
+func (r Rad) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
+	if err := geomerr.NewTypeMismatch(r, actual); err != nil {
+		return err
+	}
+	r2 := actual.(Rad).Normal()
+	r = r.Normal()
+
+	if !t.Zero(float64(r - r2)) {
+		return geomerr.NotEqual(r, r2)
+	}
+	return nil
 }
