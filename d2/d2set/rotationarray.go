@@ -9,7 +9,7 @@ type RotationArray struct {
 	V       d2.V
 	Arc     angle.Rad
 	N       int
-	Source  PointSet
+	Source  PointList
 	Reverse bool
 }
 
@@ -25,7 +25,7 @@ func (ra RotationArray) Get(n int) d2.Pt {
 	if ra.Reverse {
 		r = -r
 	}
-	t := d2.Rotate(r).T()
+	t := d2.Rotate{r}.T()
 	v := t.V(ra.V)
 	t = d2.Translate(v).T()
 	return t.Pt(pt)

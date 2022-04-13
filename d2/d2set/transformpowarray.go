@@ -5,43 +5,35 @@ import (
 )
 
 type TransformPowArray struct {
-	Source PointSet
 	*d2.T
 	Offset, N int
 }
 
 func (ta TransformPowArray) Len() int {
-	return ta.N * ta.Source.Len()
+	return ta.N
 }
 
-func (ta TransformPowArray) Get(n int) d2.Pt {
-	ln := ta.Source.Len()
-	pt := ta.Source.Get(n % ln)
-	t := ta.Pow(uint((n / ln) + ta.Offset))
-	return t.Pt(pt)
+func (ta TransformPowArray) Get(n int) *d2.T {
+	return ta.Pow(uint(n + ta.Offset))
 }
 
-func (ta TransformPowArray) ToPointSlice() PointSlice {
+func (ta TransformPowArray) ToTransformSlice() TransformSlice {
 	if ta.N <= 0 {
 		return nil
 	}
-	ln := ta.Source.Len()
-	n := ln * ta.N
-	out := make([]d2.Pt, n)
-	for i := 0; i < ln; i++ {
-		out[i] = ta.Source.Get(i)
-	}
+	out := make(TransformSlice, ta.N)
+	var t *d2.T
 	if ta.Offset > 0 {
-		t := ta.Pow(uint(ta.Offset))
-		for i := 0; i < ln; i++ {
-			out[i] = t.Pt(out[i])
-		}
+		t = ta.Pow(uint(ta.Offset))
+	} else {
+		t = d2.IndentityTransform()
 	}
 
-	for i := ln; i < n; i += ln {
-		for j := 0; j < ln; j++ {
-			out[i+j] = ta.T.Pt(out[i+j-ln])
-		}
+	for i := 0; i < ta.N-1; i++ {
+		out[i] = t
+		t = t.T(ta.T)
 	}
+	out[ta.N-1] = t
+
 	return out
 }

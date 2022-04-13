@@ -25,7 +25,7 @@ func (ps PointSlice) Get(n int) d2.Pt {
 
 // AssertEqual fulfils geomtest.AssertEqualizer
 func (ps PointSlice) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
-	set, ok := actual.(PointSet)
+	set, ok := actual.(PointList)
 	if !ok {
 		return fmt.Errorf("Type %s does not fulfill PointSet", reflect.TypeOf(actual))
 	}
@@ -35,13 +35,13 @@ func (ps PointSlice) AssertEqual(actual interface{}, t cmpr.Tolerance) error {
 	}
 
 	var errs geomerr.SliceErrs
-	for i := 0; i < ln; i++ {
-		errs = errs.Append(i, ps.Get(i).AssertEqual(set.Get(i), t))
+	for i, p := range ps {
+		errs = errs.Append(i, p.AssertEqual(set.Get(i), t))
 	}
 	return errs.Ret()
 }
 
-func NewPointSlice(ps PointSet) PointSlice {
+func NewPointSlice(ps PointList) PointSlice {
 	if ps, ok := ps.(PointSlicer); ok {
 		return ps.ToPointSlice()
 	}

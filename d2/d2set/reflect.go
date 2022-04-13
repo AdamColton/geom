@@ -7,7 +7,7 @@ import (
 
 type Reflect struct {
 	line.Line
-	Source PointSet
+	Source PointList
 }
 
 func (r Reflect) Len() int {

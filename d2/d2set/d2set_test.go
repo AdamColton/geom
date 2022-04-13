@@ -1,6 +1,7 @@
 package d2set
 
 import (
+	"fmt"
 	"math"
 	"testing"
 
@@ -13,11 +14,17 @@ import (
 
 func TestTransformArray(t *testing.T) {
 	ta := TransformPowArray{
-		Source: PointSlice{{1, 1}, {2, 2}},
-		T:      d2.Translate(d2.V{-1, 1}).T(),
-		N:      3,
+		T: d2.Translate(d2.V{-1, 1}).T(),
+		N: 3,
 	}
-	assert.Equal(t, 6, ta.Len())
+	assert.Equal(t, 3, ta.Len())
+
+	ps := PointSlice{{1, 1}, {2, 2}}
+
+	tpl := TransformPointList{
+		PointList:     ps,
+		TransformList: ta,
+	}
 
 	expect := PointSlice{
 		{1, 1}, {2, 2},
@@ -25,13 +32,14 @@ func TestTransformArray(t *testing.T) {
 		{-1, 3}, {0, 4},
 	}
 
-	geomtest.Equal(t, expect, ta)
-	geomtest.Equal(t, expect, NewPointSlice(ta))
+	geomtest.Equal(t, expect, tpl)
+	geomtest.Equal(t, expect, NewPointSlice(tpl))
 
 	ta.Offset = 1
 	ta.N = 2
-	geomtest.Equal(t, expect[2:], ta)
-	geomtest.Equal(t, expect[2:], NewPointSlice(ta))
+	tpl.TransformList = ta
+	geomtest.Equal(t, expect[2:], tpl)
+	geomtest.Equal(t, expect[2:], NewPointSlice(tpl))
 }
 
 func TestCopyPointSlice(t *testing.T) {
@@ -83,4 +91,56 @@ func TestPt1Source(t *testing.T) {
 		{3, 3}, {4, 4}, {5, 5},
 	}
 	geomtest.Equal(t, expect, s)
+}
+
+func TestCrossComb(t *testing.T) {
+	cc := CrossComb{}
+	a := 3
+	b := 4
+	assert.Equal(t, 12, cc.Len(a, b))
+	got := make(map[string]bool)
+	gen := func(a, b int) string { return fmt.Sprintf("%d_%d", a, b) }
+	for i := 0; i < 12; i++ {
+		ai, bi := cc.Idx(i, a, b)
+		got[gen(ai, bi)] = true
+	}
+
+	for da := 0; da < a; da++ {
+		for db := 0; db < b; db++ {
+			s := gen(da, db)
+			assert.True(t, got[s], s)
+		}
+	}
+}
+
+func TestModComb(t *testing.T) {
+	tt := map[string]struct {
+		a, b   int
+		expect [][2]int
+	}{
+		"3_6": {
+			a: 3,
+			b: 6,
+			expect: [][2]int{
+				{0, 0},
+				{1, 1},
+				{2, 2},
+				{0, 3},
+				{1, 4},
+				{2, 5},
+			},
+		},
+	}
+
+	mc := ModComb{}
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			assert.Equal(t, len(tc.expect), mc.Len(tc.a, tc.b))
+			for i, e := range tc.expect {
+				ga, gb := mc.Idx(i, tc.a, tc.b)
+				assert.Equal(t, e[0], ga)
+				assert.Equal(t, e[1], gb)
+			}
+		})
+	}
 }
