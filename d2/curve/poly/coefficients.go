@@ -18,7 +18,7 @@ type Coefficients interface {
 type X struct{ Coefficients }
 
 // Coefficient returns the X value of the underlying Coefficients.
-func (x X) Coefficient(idx int) float64 {
+func (x X) Idx(idx int) float64 {
 	if idx >= x.Len() || idx < 0 {
 		return 0
 	}
@@ -35,7 +35,7 @@ func (x X) Len() int {
 type Y struct{ Coefficients }
 
 // Coefficient returns the Y value of the underlying Coefficients.
-func (y Y) Coefficient(idx int) float64 {
+func (y Y) Idx(idx int) float64 {
 	if idx >= y.Len() || idx < 0 {
 		return 0
 	}
@@ -100,8 +100,8 @@ type Product [2]Coefficients
 // Coefficient of the product at the given index.
 func (p Product) Coefficient(idx int) d2.V {
 	return d2.V{
-		X: poly1d.Product{X{p[0]}, X{p[1]}}.Coefficient(idx),
-		Y: poly1d.Product{Y{p[0]}, Y{p[1]}}.Coefficient(idx),
+		X: poly1d.Product{X{p[0]}, X{p[1]}}.Idx(idx),
+		Y: poly1d.Product{Y{p[0]}, Y{p[1]}}.Idx(idx),
 	}
 }
 

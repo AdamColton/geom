@@ -18,8 +18,8 @@ func TestLine(t *testing.T) {
 	y := p.Y()
 
 	geomtest.Equal(t, d2.V{}, p.Coefficient(2))
-	geomtest.Equal(t, 0.0, x.Coefficient(2))
-	geomtest.Equal(t, 0.0, y.Coefficient(2))
+	geomtest.Equal(t, 0.0, x.Idx(2))
+	geomtest.Equal(t, 0.0, y.Idx(2))
 
 	for i := 0.0; i < 1.0; i += 0.05 {
 		pt := l.Pt1(i)
