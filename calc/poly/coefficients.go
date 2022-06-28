@@ -1,48 +1,28 @@
 package poly
 
-import "github.com/adamcolton/geom/calc/fbuf"
+import (
+	"github.com/adamcolton/geom/calc/fbuf"
+	"github.com/adamcolton/geom/list"
+)
 
 // Coefficients wraps the concept of a list of float64. It can express the order
 // of the polynomial and return any coeffcient.
-type Coefficients interface {
-	Coefficient(idx int) float64
-	Len() int
-}
+type Coefficients list.List[float64]
 
-// Slice fulfills Coefficients with a []float64.
-type Slice []float64
+var empty = list.Empty[float64]{}
+
+func Empty() Coefficients {
+	return empty
+}
 
 // Buf creates an instance of Poly with c capacity and a value of 1. This is
 // useful when taking the product of several polynomials.
-func Buf(c int, buf []float64) Slice {
+func Buf(c int, buf []float64) list.Slice[float64] {
 	return append(fbuf.Empty(c, buf), 1)
 }
 
-// Coefficient at idx. If the idx is greater than the length of the
-// polynomial, then a 0 is returned.
-func (s Slice) Coefficient(idx int) float64 {
-	if idx >= len(s) {
-		return 0
-	}
-	return s[idx]
-}
-
-// Len of the polynomial is equal to the length of the slice.
-func (s Slice) Len() int {
-	return len(s)
-}
-
-// Empty constructs an empty polynomial.
-type Empty struct{}
-
-// Coefficient always returns 0
-func (Empty) Coefficient(idx int) float64 {
-	return 0
-}
-
-// Len always returns 0
-func (Empty) Len() int {
-	return 0
+func Slice(s ...float64) list.Slice[float64] {
+	return list.Slice[float64](s)
 }
 
 // D0 is a degree 0 polynomial - a constant.
@@ -50,7 +30,7 @@ type D0 float64
 
 // Coefficient returns underlying float64 if the idx is 0, otherwise it returns
 // 0.
-func (d D0) Coefficient(idx int) float64 {
+func (d D0) Idx(idx int) float64 {
 	if idx == 0 {
 		return float64(d)
 	}
@@ -67,7 +47,7 @@ type D1 float64
 
 // Coefficient returns the underlying float64 if idx is 0 and returns 1 if the
 // idx is 1.
-func (d D1) Coefficient(idx int) float64 {
+func (d D1) Idx(idx int) float64 {
 	if idx == 0 {
 		return float64(d)
 	}
@@ -86,8 +66,8 @@ func (D1) Len() int {
 type Sum [2]Coefficients
 
 // Coefficient at idx is the sum of the underlying Coefficients at idx.
-func (s Sum) Coefficient(idx int) float64 {
-	return s[0].Coefficient(idx) + s[1].Coefficient(idx)
+func (s Sum) Idx(idx int) float64 {
+	return s[0].Idx(idx) + s[1].Idx(idx)
 }
 
 // Len is the greater len of the 2 Coefficients.
@@ -106,15 +86,15 @@ type Scale struct {
 }
 
 // Coefficient is product of scale factor and the underlying Coefficient at idx.
-func (s Scale) Coefficient(idx int) float64 {
-	return s.Coefficients.Coefficient(idx) * s.By
+func (s Scale) Idx(idx int) float64 {
+	return s.Coefficients.Idx(idx) * s.By
 }
 
 // Product of two Coefficients
 type Product [2]Coefficients
 
 // Coefficient at idx is the sum of all p[i]*p2[j] where i+j == idx
-func (p Product) Coefficient(idx int) float64 {
+func (p Product) Idx(idx int) float64 {
 	l0 := p[0].Len()
 	l1 := p[1].Len()
 
@@ -125,7 +105,7 @@ func (p Product) Coefficient(idx int) float64 {
 	}
 	for j := 0; i < l0 && i <= idx; i++ {
 		j = idx - i
-		sum += p[0].Coefficient(i) * p[1].Coefficient(j)
+		sum += p[0].Idx(i) * p[1].Idx(j)
 	}
 	return sum
 }
@@ -141,9 +121,9 @@ type Derivative struct {
 }
 
 // Coefficient at idx is (idx+1)*Coefficient(idx+1).
-func (d Derivative) Coefficient(idx int) float64 {
+func (d Derivative) Idx(idx int) float64 {
 	idx++
-	return d.Coefficients.Coefficient(idx) * float64(idx)
+	return d.Coefficients.Idx(idx) * float64(idx)
 }
 
 // Len is always one less than the underlying Coefficients.
@@ -158,11 +138,11 @@ type Integral struct {
 }
 
 // Coefficient at idx is Coefficient(idx-1)/idx. Except at 0 where it is C.
-func (i Integral) Coefficient(idx int) float64 {
+func (i Integral) Idx(idx int) float64 {
 	if idx == 0 {
 		return i.C
 	}
-	return i.Coefficients.Coefficient(idx-1) / float64(idx)
+	return i.Coefficients.Idx(idx-1) / float64(idx)
 }
 
 // Len is always one more than the underlying Coefficients.

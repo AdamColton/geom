@@ -7,6 +7,7 @@ import (
 	"github.com/adamcolton/geom/calc/cmpr"
 	"github.com/adamcolton/geom/calc/fbuf"
 	"github.com/adamcolton/geom/geomerr"
+	"github.com/adamcolton/geom/list"
 )
 
 // Poly is a 1D polynomial. The index corresponds power of X.
@@ -18,7 +19,7 @@ type Poly struct {
 func New(cs ...float64) Poly {
 	ln := len(cs)
 	if ln == 0 {
-		return Poly{Empty{}}
+		return Poly{empty}
 	}
 	if cs[ln-1] == 0 {
 		return New(cs[:ln-1]...)
@@ -29,14 +30,14 @@ func New(cs ...float64) Poly {
 	if ln == 2 && cs[1] == 1 {
 		return Poly{D1(cs[0])}
 	}
-	return Poly{Slice(cs)}
+	return Poly{Slice(cs...)}
 }
 
 // Copy a Polynomial into a buffer.
 func (p Poly) Copy(buf []float64) Poly {
-	out := Slice(fbuf.Slice(p.Len(), buf))
+	out := Slice(fbuf.Slice(p.Len(), buf)...)
 	for i := range out {
-		out[i] = p.Coefficient(i)
+		out[i] = p.Idx(i)
 	}
 	return Poly{out}
 }
@@ -44,7 +45,7 @@ func (p Poly) Copy(buf []float64) Poly {
 // Buf tries to get the Coefficients as a []float64. This is intended for
 // recycling buffers.
 func (p Poly) Buf() []float64 {
-	buf, _ := p.Coefficients.(Slice)
+	buf, _ := p.Coefficients.(list.Slice[float64])
 	return buf
 }
 
@@ -53,7 +54,7 @@ func (p Poly) F(x float64) float64 {
 	idx := p.Len() - 1
 	s := 0.0
 	for ; idx >= 0; idx-- {
-		s = p.Coefficient(idx) + s*x
+		s = p.Idx(idx) + s*x
 	}
 	return s
 }
@@ -71,7 +72,7 @@ func (p Poly) AssertEqual(to interface{}, t cmpr.Tolerance) error {
 		ln = ln2
 	}
 	return geomerr.NewSliceErrs(ln, ln, func(i int) error {
-		c0, c1 := p.Coefficient(i), p2.Coefficient(i)
+		c0, c1 := p.Idx(i), p2.Idx(i)
 		return geomerr.NewNotEqual(c0 == c1, c0, c1)
 	})
 }
@@ -80,10 +81,10 @@ func (p Poly) AssertEqual(to interface{}, t cmpr.Tolerance) error {
 // is the remainder. If (x-n) is a root of p this value will be 0.
 func (p Poly) Divide(n float64, buf []float64) (Poly, float64) {
 	ln := p.Len() - 1
-	out := Slice(fbuf.Slice(ln, buf))
-	r := p.Coefficient(ln)
+	out := Slice(fbuf.Slice(ln, buf)...)
+	r := p.Idx(ln)
 	for i := ln - 1; i >= 0; i-- {
-		out[i], r = r, p.Coefficient(i)+r*n
+		out[i], r = r, p.Idx(i)+r*n
 	}
 	return Poly{out}, r
 }
@@ -128,9 +129,9 @@ func (p *Poly) MultSwap(p2 Poly, buf []float64) []float64 {
 func (p Poly) Exp(n int, buf []float64) Poly {
 	if n < 0 {
 		if cap(buf) == 0 {
-			return Poly{Empty{}}
+			return Poly{empty}
 		}
-		return Poly{Slice(buf[:0])}
+		return Poly{Slice(buf[:0]...)}
 	} else if n == 0 {
 		if cap(buf) == 0 {
 			return Poly{D0(1)}
@@ -151,7 +152,7 @@ func (p Poly) Exp(n int, buf []float64) Poly {
 
 	s, buf := fbuf.Split(ln, buf)
 	s = append(s, 1)
-	sum := Poly{Slice(s)}
+	sum := Poly{Slice(s...)}
 
 	c, buf := fbuf.Split(ln, buf)
 	cur := p.Copy(c[:p.Len()])
@@ -207,20 +208,20 @@ func (p Poly) Roots(buf []float64) []float64 {
 	if ln < 2 {
 		return nil
 	}
-	if p.Coefficient(ln-1) == 0 {
+	if p.Idx(ln-1) == 0 {
 		return Poly{RemoveLeadingZero{p.Coefficients}}.Roots(buf)
 	}
 	if ln == 2 {
-		return append(buf[:0], -p.Coefficient(0)/p.Coefficient(1))
+		return append(buf[:0], -p.Idx(0)/p.Idx(1))
 	}
 	if ln == 3 {
-		return Quad(p.Coefficient(0), p.Coefficient(1), p.Coefficient(2), buf)
+		return Quad(p.Idx(0), p.Idx(1), p.Idx(2), buf)
 	}
 	if ln == 4 {
-		return Cubic(p.Coefficient(0), p.Coefficient(1), p.Coefficient(2), p.Coefficient(3), buf)
+		return Cubic(p.Idx(0), p.Idx(1), p.Idx(2), p.Idx(3), buf)
 	}
 	if ln == 5 {
-		return Quartic(p.Coefficient(0), p.Coefficient(1), p.Coefficient(2), p.Coefficient(3), p.Coefficient(4), buf)
+		return Quartic(p.Idx(0), p.Idx(1), p.Idx(2), p.Idx(3), p.Idx(4), buf)
 	}
 
 	outLn := len(buf)

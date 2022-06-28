@@ -9,6 +9,7 @@ import (
 	"github.com/adamcolton/geom/calc/poly"
 	"github.com/adamcolton/geom/geomerr"
 	"github.com/adamcolton/geom/geomtest"
+	"github.com/adamcolton/geom/list"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,32 +19,32 @@ func sortFloats(fs []float64) {
 
 func TestCoefficient(t *testing.T) {
 	p := poly.New(1, 2, 3)
-	geomtest.Equal(t, 1.0, p.Coefficient(0))
-	geomtest.Equal(t, 2.0, p.Coefficient(1))
-	geomtest.Equal(t, 3.0, p.Coefficient(2))
-	geomtest.Equal(t, 0.0, p.Coefficient(3))
-	geomtest.Equal(t, 0.0, p.Coefficient(100))
+	geomtest.Equal(t, 1.0, p.Idx(0))
+	geomtest.Equal(t, 2.0, p.Idx(1))
+	geomtest.Equal(t, 3.0, p.Idx(2))
+	geomtest.Equal(t, 0.0, p.Idx(3))
+	geomtest.Equal(t, 0.0, p.Idx(100))
 
 	geomtest.Equal(t, []float64{1, 2, 3}, p.Buf())
 
-	e := poly.Poly{poly.Empty{}}
+	e := poly.Poly{poly.Empty()}
 	p = poly.New()
 	assert.Equal(t, p, e)
-	p = poly.Poly{poly.Slice(nil)}
+	p = poly.Poly{poly.Slice()}
 	geomtest.Equal(t, p, e)
-	geomtest.Equal(t, 0.0, e.Coefficient(0))
+	geomtest.Equal(t, 0.0, e.Idx(0))
 
 	d0 := poly.Poly{poly.D0(5)}
 	p = poly.New(5)
 	assert.Equal(t, p, d0)
-	p = poly.Poly{poly.Slice{5}}
+	p = poly.Poly{poly.Slice(5)}
 	geomtest.Equal(t, p, d0)
-	geomtest.Equal(t, 0.0, d0.Coefficient(1))
+	geomtest.Equal(t, 0.0, d0.Idx(1))
 
 	d1 := poly.Poly{poly.D1(5)}
 	p = poly.New(5, 1)
 	assert.Equal(t, p, d1)
-	p = poly.Poly{poly.Slice{5, 1}}
+	p = poly.Poly{poly.Slice(5, 1)}
 	geomtest.Equal(t, p, d1)
 
 	p = poly.New(1, 2, 3, 0, 0, 0)
@@ -82,7 +83,7 @@ func TestF(t *testing.T) {
 
 func TestAssertEqual(t *testing.T) {
 	d1 := poly.Poly{poly.D1(5)}
-	p := poly.Poly{poly.Slice{5, 1, 0}}
+	p := poly.Poly{poly.Slice(5, 1, 0)}
 
 	err := d1.AssertEqual(p, 1e-10)
 	assert.Nil(t, err)
@@ -239,12 +240,12 @@ func TestExp(t *testing.T) {
 	}
 
 	// when no buffer is provided the returned value is equal to Poly{Empty{}}
-	assert.Equal(t, poly.Poly{poly.Empty{}}, poly.New(4, 2, -3, 1).Exp(-1, nil))
+	assert.Equal(t, poly.Poly{poly.Empty()}, poly.New(4, 2, -3, 1).Exp(-1, nil))
 	assert.Equal(t, poly.Poly{poly.D0(1)}, poly.New(4, 2, -3, 1).Exp(0, nil))
 
 	// when a buffer is provided, it is used
-	assert.Equal(t, poly.Poly{poly.Slice{}}, poly.New(4, 2, -3, 1).Exp(-1, []float64{1, 2, 3}))
-	assert.Equal(t, poly.Poly{poly.Slice{1}}, poly.New(4, 2, -3, 1).Exp(0, []float64{5, 2, 3}))
+	assert.Equal(t, poly.Poly{poly.Slice([]float64{}...)}, poly.New(4, 2, -3, 1).Exp(-1, []float64{1, 2, 3}))
+	assert.Equal(t, poly.Poly{poly.Slice(1)}, poly.New(4, 2, -3, 1).Exp(0, []float64{5, 2, 3}))
 }
 
 func TestD(t *testing.T) {
@@ -357,7 +358,7 @@ func TestRoots(t *testing.T) {
 	ln := 17.0
 	bufLn := 5*int(ln) - 6
 	p := poly.Poly{poly.Buf(bufLn, nil)}
-	buf := poly.Slice(make([]float64, bufLn))
+	buf := poly.Slice(make([]float64, bufLn)...)
 	for i := 2.0; i < ln; i++ {
 		buf = p.MultSwap(poly.New(-i, 1), buf)
 
@@ -366,7 +367,7 @@ func TestRoots(t *testing.T) {
 			if variants == 0 {
 				roots = p.Roots(buf)
 			} else if variants == 1 {
-				p0 := poly.Poly{append(p.Coefficients.(poly.Slice), 0)}
+				p0 := poly.Poly{append(p.Coefficients.(list.Slice[float64]), 0)}
 				roots = p0.Roots(buf)
 			} else if variants == 2 {
 				roots = p.Roots(nil)
