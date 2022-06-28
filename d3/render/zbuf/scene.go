@@ -8,8 +8,8 @@ import (
 	"sync/atomic"
 
 	"github.com/adamcolton/geom/d3"
-	"github.com/adamcolton/geom/d3/render/ffmpeg"
 	"github.com/adamcolton/geom/d3/solid/mesh"
+	"github.com/adamcolton/geom/ffmpeg"
 )
 
 type Scene struct {
