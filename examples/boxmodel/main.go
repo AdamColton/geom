@@ -7,6 +7,7 @@ import (
 	"runtime/pprof"
 
 	"github.com/adamcolton/geom/d2"
+	"github.com/adamcolton/geom/d2/curve/bezier"
 	"github.com/adamcolton/geom/d2/draw"
 	"github.com/adamcolton/geom/d2/grid"
 	"github.com/adamcolton/geom/d2/shape"

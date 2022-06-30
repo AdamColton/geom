@@ -3,6 +3,7 @@ package draw
 import (
 	"math"
 
+	"github.com/adamcolton/geom/angle"
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/shape/boxmodel"
 	"github.com/adamcolton/geom/iter"
@@ -31,12 +32,12 @@ func BoxModel(ctx Ctx, model boxmodel.BoxModel) {
 
 var (
 	t45cw = d2.Chain{
-		d2.Rotate(3.25 * math.Pi / 4.0),
+		d2.Rotate{angle.Rad(3.25 * math.Pi / 4.0)},
 		d2.Scale(d2.V{0.2, 0.2}),
 	}.T()
 
 	t45ccw = d2.Chain{
-		d2.Rotate(-3.25 * math.Pi / 4.0),
+		d2.Rotate{angle.Rad(-3.25 * math.Pi / 4.0)},
 		d2.Scale(d2.V{0.2, 0.2}),
 	}.T()
 )
