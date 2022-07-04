@@ -40,16 +40,20 @@ func (f *Frame) PopulateShaders() {
 	ln := len(f.Meshes)
 	f.Shaders = make([]Shader, ln)
 	work.RunRange(ln, func(idx, _ int) {
-		s := f.Meshes[idx].Shader
-		z, ok := s.(ZBufShader)
-		if ok {
-			f.Shaders[idx] = z.ZBufShader
-			return
-		}
-		m, ok := s.(*material.Material)
-		if ok {
-			mw := &MaterialWrapper{*m}
-			f.Shaders[idx] = mw.ZBufShader
-		}
+		f.innerPopulateShaders(idx)
 	})
+}
+
+func (f *Frame) innerPopulateShaders(idx int) {
+	s := f.Meshes[idx].Shader
+	z, ok := s.(ZBufShader)
+	if ok {
+		f.Shaders[idx] = z.ZBufShader
+		return
+	}
+	m, ok := s.(*material.Material)
+	if ok {
+		mw := &MaterialWrapper{*m}
+		f.Shaders[idx] = mw.ZBufShader
+	}
 }
