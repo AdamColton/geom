@@ -26,7 +26,7 @@ type Sizer interface {
 // the ffpeg process through a Pipeline.
 func (s *Settings) Framer(f Framer) (err error) {
 	if sz, ok := f.(Sizer); ok {
-		s.Size = sz.Size()
+		s.SetSize(sz.Size())
 	}
 	return s.RunPipeline(func(p *Pipeline) (err error) {
 		var img image.Image

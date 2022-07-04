@@ -27,7 +27,7 @@ func (c *command) StdinPipe() (io.WriteCloser, error) { return c.cmd.StdinPipe()
 
 func (c *command) SetStdout(w io.Writer) { c.cmd.Stdout = w }
 
-func (c *command) SetStderr(w io.Writer) { c.cmd.Stdout = w }
+func (c *command) SetStderr(w io.Writer) { c.cmd.Stderr = w }
 
 func (c *command) Start() error { return c.cmd.Start() }
 
