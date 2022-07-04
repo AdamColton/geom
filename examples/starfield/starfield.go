@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bytes"
+	"fmt"
 	"image/color"
 	"image/png"
 	"math/rand"
@@ -17,6 +19,7 @@ import (
 
 	"github.com/adamcolton/geom/angle"
 	"github.com/adamcolton/geom/d2"
+	"github.com/adamcolton/geom/d2/grid"
 	d2poly "github.com/adamcolton/geom/d2/shape/polygon"
 	"github.com/adamcolton/geom/d3"
 	"github.com/adamcolton/geom/d3/solid/mesh"
@@ -31,22 +34,22 @@ import (
 
 const (
 	// Frames of video to render
-	frames = 500
+	frames = 50
 	// Number of stars to render
-	stars = 50
+	stars = 10
 
 	// width sets the size, the aspect ratio is always widescreen
-	width = 1000
+	width = 500
 
 	// Set to between 1.0 and 2.0
 	// 1.0 is low quality
 	// 2.0 is high quality
-	imageScale = 3.0
+	imageScale = 1.25
 
 	// enable the profiler
-	profile = false
+	profile = true
 
-	doRay  = false
+	doRay  = true
 	doZbuf = true
 )
 
@@ -66,9 +69,8 @@ func main() {
 	proc := ffmpeg.New("stars")
 
 	s := &scene.Scene{
+		ImgSize: grid.Widescreen.Pt(width),
 		CameraFactory: cameraFactory{
-			w:      proc.Size.X,
-			h:      proc.Size.Y,
 			frames: frames,
 		},
 		FrameCount: frames,
@@ -77,23 +79,6 @@ func main() {
 	starMesh := getStarMesh()
 	for _, starTransform := range defineStarField() {
 		s.AddMesh(starMesh, starTransform, starMaterial)
-	}
-
-	sf := s.Frame(0)
-	ray := &raytrace.Frame{
-		Frame: sf,
-		RayFrame: &raytrace.RayFrame{
-			Background: raytrace.NewMaterialWrapper(backgroundMaterial).RayShader,
-			Depth:      3,
-			RayMult:    2,
-			ImageScale: 1.25,
-		},
-	}
-	if doRay {
-		img := ray.Image(nil)
-		f, _ := os.Create("ray.png")
-		png.Encode(f, resize.Resize(uint(ray.Camera.Size.X), 0, img, resize.Bilinear))
-		f.Close()
 	}
 
 	zb := &zbuf.Scene{
@@ -105,41 +90,46 @@ func main() {
 			Background: color.RGBA{255, 255, 255, 255},
 		},
 	}
-	if doZbuf {
-		zimg, _ := zb.Frame(0, nil)
-		f, _ := os.Create("zbuf.png")
-		png.Encode(f, resize.Resize(uint(ray.Camera.Size.X), 0, zimg, resize.Bilinear))
+
+	ray := &raytrace.Scene{
+		Scene: s,
+		RayFrame: &raytrace.RayFrame{
+			ImageScale: imageScale,
+			Depth:      3,
+			RayMult:    2,
+			Background: raytrace.NewMaterialWrapper(backgroundMaterial).RayShader,
+		},
+	}
+
+	if doRay {
+		img, _ := ray.Frame(0, nil)
+		f, _ := os.Create("ray.png")
+		png.Encode(f, resize.Resize(uint(s.ImgSize.X), 0, img, resize.Bilinear))
 		f.Close()
 	}
 
 	if doZbuf {
+		zimg, _ := zb.Frame(0, nil)
+		f, _ := os.Create("zbuf.png")
+		png.Encode(f, resize.Resize(uint(s.ImgSize.X), 0, zimg, resize.Bilinear))
+		f.Close()
+	}
+
+	if doZbuf {
+		buf := bytes.NewBuffer(nil)
+		proc.Stderr = buf
 		proc.Name = "zbuf"
-		proc.Framer(
-			&zbuf.Scene{
-				Scene:      s,
-				ImageScale: imageScale,
-				ZBufFrame: &zbuf.ZBufFrame{
-					Near:       0.1,
-					Far:        200,
-					Background: color.RGBA{255, 255, 255, 255},
-				},
-			},
-		)
+		err := proc.Framer(zb)
+		if err != nil {
+			s := buf.String()
+			fmt.Println(s)
+			panic(err)
+		}
 	}
 
 	if doRay {
 		proc.Name = "ray"
-		proc.Framer(
-			&raytrace.Scene{
-				Scene: s,
-				RayFrame: &raytrace.RayFrame{
-					ImageScale: imageScale,
-					Depth:      3,
-					RayMult:    2,
-					Background: raytrace.NewMaterialWrapper(backgroundMaterial).RayShader,
-				},
-			},
-		)
+		proc.Framer(ray)
 	}
 }
 
