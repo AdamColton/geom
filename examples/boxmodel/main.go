@@ -8,12 +8,14 @@ import (
 
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/bezier"
+	"github.com/adamcolton/geom/d2/d2list"
 	"github.com/adamcolton/geom/d2/draw"
 	"github.com/adamcolton/geom/d2/grid"
 	"github.com/adamcolton/geom/d2/shape"
 	"github.com/adamcolton/geom/d2/shape/boxmodel"
 	"github.com/adamcolton/geom/d2/shape/ellipse"
 	"github.com/adamcolton/geom/d2/shape/triangle"
+	"github.com/adamcolton/geom/list"
 	"github.com/fogleman/gg"
 )
 
@@ -40,10 +42,12 @@ var (
 			{100, 100}, {100, 150}, {150, 100},
 		},
 	}
-	bez = bezier.New(
-		[]d2.Pt{{0, 250}, {0, 0}, {500, 0}},
-		[]d2.Pt{{500, 250}, {500, 500}, {0, 500}},
-	)
+	bez = d2list.Shape{
+		Curves: list.Slice[d2list.ShapePerimeter]{
+			bezier.Bezier{{0, 250}, {0, 0}, {500, 0}},
+			bezier.Bezier{{500, 250}, {500, 500}, {0, 500}},
+		},
+	}
 	ell       = ellipse.New(d2.Pt{100, 350}, d2.Pt{400, 110}, 170)
 	intersect = shape.Subtract{
 		shape.Intersection{

@@ -6,6 +6,7 @@ import (
 	"github.com/adamcolton/geom/calc/comb"
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/affine"
+	"github.com/adamcolton/geom/d2/shape/box"
 )
 
 // Bezier curve defined by a slice of control points
@@ -72,6 +73,11 @@ func (Bezier) VL(t, c int) d2.Limit {
 		return d2.LimitUnbounded
 	}
 	return d2.LimitUndefined
+}
+
+func (b Bezier) BoundingBox() (min, max d2.Pt) {
+	return box.New(b...).BoundingBox()
+
 }
 
 // Tangent holds a first derivative of a Bezier curve which mathematically is

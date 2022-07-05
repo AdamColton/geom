@@ -110,3 +110,24 @@ func (b *Box) Perimeter() float64 {
 func (b *Box) BoundingBox() (min, max d2.Pt) {
 	return b[0], b[1]
 }
+
+func (b *Box) Expand(pts ...d2.Pt) *Box {
+	if b == nil {
+		return New(pts...)
+	}
+	for _, p := range pts {
+		if p.X < b[0].X {
+			b[0].X = p.X
+		}
+		if p.Y < b[0].Y {
+			b[0].Y = p.Y
+		}
+		if p.X > b[1].X {
+			b[1].X = p.X
+		}
+		if p.Y > b[1].Y {
+			b[1].Y = p.Y
+		}
+	}
+	return b
+}
