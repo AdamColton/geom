@@ -33,12 +33,12 @@ var (
 	t45cw = d2.Chain{
 		d2.Rotate(3.25 * math.Pi / 4.0),
 		d2.Scale(d2.V{0.2, 0.2}),
-	}.T()
+	}.GetT()
 
 	t45ccw = d2.Chain{
 		d2.Rotate(-3.25 * math.Pi / 4.0),
 		d2.Scale(d2.V{0.2, 0.2}),
-	}.T()
+	}.GetT()
 )
 
 func Arrow(ctx Ctx, pt d2.Pt, v d2.V) {

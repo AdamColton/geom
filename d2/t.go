@@ -134,7 +134,7 @@ func (t *T) AssertEqual(actual interface{}, tol cmpr.Tolerance) error {
 type Scale V
 
 // T returns the scale transform
-func (s Scale) T() *T {
+func (s Scale) GetT() *T {
 	return &T{
 		{s.X, 0, 0},
 		{0, s.Y, 0},
@@ -171,7 +171,7 @@ func (s Scale) Pair() [2]*T {
 type Rotate angle.Rad
 
 // T returns the rotation transform
-func (r Rotate) T() *T {
+func (r Rotate) GetT() *T {
 	s, c := angle.Rad(r).Sincos()
 	return &T{
 		{c, -s, 0},
@@ -211,7 +211,7 @@ func (r Rotate) Pair() [2]*T {
 type Translate V
 
 // T returns the translation transform
-func (t Translate) T() *T {
+func (t Translate) GetT() *T {
 	return &T{
 		{1, 0, t.X},
 		{0, 1, t.Y},
@@ -248,16 +248,16 @@ func (t Translate) Pair() [2]*T {
 type Chain []TGen
 
 // T does a forward multiplication through the chain returning the transform
-func (c Chain) T() *T {
+func (c Chain) GetT() *T {
 	if len(c) == 0 {
 		return IndentityTransform()
 	}
 	if len(c) == 1 {
-		return c[0].T()
+		return c[0].GetT()
 	}
-	t := c[0].T().T(c[1].T())
+	t := c[0].GetT().T(c[1].GetT())
 	for _, nxt := range c[2:] {
-		t = t.T(nxt.T())
+		t = t.T(nxt.GetT())
 	}
 	return t
 }
