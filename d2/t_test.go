@@ -193,3 +193,75 @@ func TestInversion(t *testing.T) {
 		})
 	}
 }
+
+func TestPtVTransform(t *testing.T) {
+	type subCase struct {
+		in, expected Pt
+		nontranslate V
+	}
+	tt := map[string]struct {
+		*T
+		subcases []subCase
+	}{
+		"scale": {
+			T: Scale(V{2, 3}).GetT(),
+			subcases: []subCase{
+				{
+					in:           Pt{1, 1},
+					expected:     Pt{2, 3},
+					nontranslate: V{2, 3},
+				},
+				{
+					in:           Pt{5, 7},
+					expected:     Pt{10, 21},
+					nontranslate: V{10, 21},
+				},
+			},
+		},
+		"translate": {
+			T: Translate(V{2, 3}).GetT(),
+			subcases: []subCase{
+				{
+					in:           Pt{1, 1},
+					expected:     Pt{3, 4},
+					nontranslate: V{1, 1},
+				},
+				{
+					in:           Pt{5, 7},
+					expected:     Pt{7, 10},
+					nontranslate: V{5, 7},
+				},
+			},
+		},
+		"rotate-translate": {
+			T: Rotate{angle.Rot(0.25)}.GetT().T(
+				Translate(V{2, 3}).GetT(),
+			),
+			subcases: []subCase{
+				{
+					in:           Pt{1, 1},
+					expected:     Pt{1, 4},
+					nontranslate: V{-1, 1},
+				},
+				{
+					in:           Pt{5, 7},
+					expected:     Pt{-5, 8},
+					nontranslate: V{-7, 5},
+				},
+			},
+		},
+	}
+
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			for _, sc := range tc.subcases {
+				t.Run(sc.in.String(), func(t *testing.T) {
+					v := sc.in.V()
+					geomtest.Equal(t, sc.expected, sc.in.T(tc.T))
+					geomtest.Equal(t, sc.expected.V(), v.T(tc.T))
+					geomtest.Equal(t, sc.nontranslate.V(), v.NonTranslateT(tc.T))
+				})
+			}
+		})
+	}
+}

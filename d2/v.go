@@ -54,6 +54,20 @@ func (v V) Product(v2 V) V {
 	}
 }
 
+// T applies a transform matrix to the vector
+func (v V) T(t *T) V {
+	return V{
+		v.X*t[0][0] + v.Y*t[0][1] + t[0][2],
+		v.X*t[1][0] + v.Y*t[1][1] + t[1][2],
+	}
+}
+
+// NonTranslateT applies a transform matrix to V and cancels out the
+// translation.
+func (v V) NonTranslateT(t *T) V {
+	return v.T(t).Subtract(V{}.T(t))
+}
+
 // String fulfills Stringer, returns the vector as "V(X, Y)"
 func (v V) String() string {
 	return strings.Join([]string{
