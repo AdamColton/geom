@@ -54,6 +54,13 @@ func (v V) Product(v2 V) V {
 	}
 }
 
+func (v V) T(t *T) V {
+	return V{
+		v.X*t[0][0] + v.Y*t[0][1] + t[0][2],
+		v.X*t[1][0] + v.Y*t[1][1] + t[1][2],
+	}
+}
+
 // String fulfills Stringer, returns the vector as "V(X, Y)"
 func (v V) String() string {
 	return strings.Join([]string{

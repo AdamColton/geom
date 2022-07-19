@@ -57,6 +57,14 @@ func (pt Pt) Multiply(scale float64) Pt {
 	return D2{pt.X * scale, pt.Y * scale}.Pt()
 }
 
+// T apply a Transform matrix to the point
+func (pt Pt) T(t *T) Pt {
+	return Pt{
+		pt.X*t[0][0] + pt.Y*t[0][1] + t[0][2],
+		pt.X*t[1][0] + pt.Y*t[1][1] + t[1][2],
+	}
+}
+
 // Prec is the precision for the String method on F
 var Prec = 4
 
