@@ -42,10 +42,10 @@ func NewByAspect(name string, width int, aspect grid.Aspect) *Settings {
 }
 
 // New creates Settings with the defined width and height/
-func New(name string, width, height int) *Settings {
+func New(name string) *Settings {
 	return (&Settings{
 		Name: name,
-	}).Set(width, height)
+	})
 }
 
 // ByAspect update the width and height of the settings using the provided

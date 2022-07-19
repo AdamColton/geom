@@ -14,7 +14,7 @@ type Builder struct {
 	Mesh
 }
 
-// NewBuilder creats a builder
+// NewBuilder creats a builder.
 func NewBuilder() *Builder {
 	return &Builder{
 		pts:   make(map[d3.Pt]uint32),
@@ -48,7 +48,7 @@ func (b *Builder) addPt(pt d3.Pt) uint32 {
 	return i
 }
 
-// Solid is true if the mesh is solid
+// Solid is true if the mesh is solid.
 func (b *Builder) Solid() bool {
 	return b.edges.Solid()
 }

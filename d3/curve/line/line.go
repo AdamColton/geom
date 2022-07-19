@@ -132,3 +132,18 @@ func (l Line) Closest(l2 Line) (float64, float64) {
 	t1 := (t0*d1 + c2) / d2
 	return t0, t1
 }
+
+// AtX return the T value when the X coordinate of the line is at x.
+func (l Line) AtX(x float64) float64 {
+	return (x - l.T0.X) / l.D.X
+}
+
+// AtY return the T value when the Y coordinate of the line is at y.
+func (l Line) AtY(x float64) float64 {
+	return (x - l.T0.Y) / l.D.Y
+}
+
+// AtZ return the T value when the Z coordinate of the line is at z.
+func (l Line) AtZ(x float64) float64 {
+	return (x - l.T0.Z) / l.D.Z
+}

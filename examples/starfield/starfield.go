@@ -1,31 +1,42 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"image/color"
+	"image/png"
 	"math/rand"
 	"os"
 	"runtime/pprof"
 
+	"github.com/adamcolton/geom/d3/render/material"
+	"github.com/adamcolton/geom/d3/render/raytrace"
 	"github.com/adamcolton/geom/d3/render/scene"
 	"github.com/adamcolton/geom/d3/render/zbuf"
 	"github.com/adamcolton/geom/d3/shape/plane"
+	"github.com/adamcolton/geom/ffmpeg"
+	"github.com/nfnt/resize"
 
 	"github.com/adamcolton/geom/angle"
 	"github.com/adamcolton/geom/d2"
+	"github.com/adamcolton/geom/d2/grid"
 	d2poly "github.com/adamcolton/geom/d2/shape/polygon"
 	"github.com/adamcolton/geom/d3"
-	triangle3 "github.com/adamcolton/geom/d3/shape/triangle"
 	"github.com/adamcolton/geom/d3/solid/mesh"
 )
+
+// TODO
+// * Look at profiling - speed up raytrace rendering
+// * set up shaders to look good.
+// * pass out into sceneframe.intersect - this is a lot of allocation and gc
 
 // For this to run, ffmpeg must be installed
 
 const (
 	// Frames of video to render
-	frames = 100
+	frames = 50
 	// Number of stars to render
-	stars = 200
+	stars = 10
 
 	// width sets the size, the aspect ratio is always widescreen
 	width = 500
@@ -33,13 +44,14 @@ const (
 	// Set to between 1.0 and 2.0
 	// 1.0 is low quality
 	// 2.0 is high quality
-	imageScale = 1.5
+	imageScale = 1.25
 
 	// enable the profiler
 	profile = true
-)
 
-var cr = string([]byte{13})
+	doRay  = true
+	doZbuf = true
+)
 
 func main() {
 	if profile {
@@ -48,59 +60,97 @@ func main() {
 			panic(err)
 		}
 		pprof.StartCPUProfile(f)
-		defer pprof.StopCPUProfile()
+		defer func() {
+			pprof.StopCPUProfile()
+			f.Close()
+		}()
 	}
 
-	m := getMesh()
-	w := width
-	if w%2 == 1 {
-		w++
-	}
-	h := (w * 9) / 16
-	if h%2 == 1 {
-		h++
-	}
+	proc := ffmpeg.New("stars")
 
-	s := &zbuf.Scene{
-		Camera: zbuf.Camera{
-			Camera: scene.Camera{
-				Width:  w,
-				Height: h,
-				Angle:  angle.Deg(45),
-				Q:      d3.Q{1, 0, 0, 0},
-			},
-			Near: 0.1,
-			Far:  200,
+	s := &scene.Scene{
+		ImgSize: grid.Widescreen.Pt(width),
+		CameraFactory: cameraFactory{
+			frames: frames,
 		},
-		Framerate:          15,
-		Name:               "stars",
-		ConstantRateFactor: 25,
-		Background:         color.RGBA{255, 255, 255, 255},
-		ImageScale:         1.25,
+		FrameCount: frames,
 	}
 
-	stars := defineStarField()
+	starMesh := getStarMesh()
+	for _, starTransform := range defineStarField() {
+		s.AddMesh(starMesh, starTransform, starMaterial)
+	}
 
-	for frame := 0; frame < frames; frame++ {
-		d := float64(frame) / float64(frames)
-		s.Camera.Pt.Z = d * -150.0
-		rot := angle.Rot(d)
-		s.Camera.Q.A, s.Camera.Q.D = rot.Sincos()
-		f := s.NewFrame(len(stars))
-		for _, star := range stars {
-			if star.Z+0.2 > s.Camera.Pt.Z {
-				continue
-			}
-			f.AddMesh(&m, starShader, star.T(float64(frame)))
+	zb := &zbuf.Scene{
+		Scene:      s,
+		ImageScale: imageScale,
+		ZBufFrame: &zbuf.ZBufFrame{
+			Near:       0.1,
+			Far:        200,
+			Background: color.RGBA{255, 255, 255, 255},
+		},
+	}
+
+	ray := &raytrace.Scene{
+		Scene: s,
+		RayFrame: &raytrace.RayFrame{
+			ImageScale: imageScale,
+			Depth:      3,
+			RayMult:    2,
+			Background: raytrace.NewMaterialWrapper(backgroundMaterial).RayShader,
+		},
+	}
+
+	if doRay {
+		img, _ := ray.Frame(0, nil)
+		f, _ := os.Create("ray.png")
+		png.Encode(f, resize.Resize(uint(s.ImgSize.X), 0, img, resize.Bilinear))
+		f.Close()
+	}
+
+	if doZbuf {
+		zimg, _ := zb.Frame(0, nil)
+		f, _ := os.Create("zbuf.png")
+		png.Encode(f, resize.Resize(uint(s.ImgSize.X), 0, zimg, resize.Bilinear))
+		f.Close()
+	}
+
+	if doZbuf {
+		buf := bytes.NewBuffer(nil)
+		proc.Stderr = buf
+		proc.Name = "zbuf"
+		err := proc.Framer(zb)
+		if err != nil {
+			s := buf.String()
+			fmt.Println(s)
+			panic(err)
 		}
-		f.Render()
-		fmt.Print(cr, "Frame ", frame, "         ")
 	}
-	s.Done()
+
+	if doRay {
+		proc.Name = "ray"
+		proc.Framer(ray)
+	}
 }
 
-func getMesh() mesh.TriangleMesh {
-	var points = 8
+type cameraFactory struct {
+	w, h   int
+	frames int
+}
+
+func (cf cameraFactory) Camera(frameIdx int) *scene.Camera {
+	d := float64(frameIdx) / float64(frames)
+	rot := angle.Rot(d)
+	var q d3.Q
+	q.A, q.D = rot.Sincos()
+
+	return scene.NewCamera(d3.Pt{0, 0, d * -150.0}, angle.Deg(45)).
+		SetSize(cf.w, cf.h).
+		SetRot(q)
+}
+
+func getStarMesh() *mesh.TriangleMesh {
+	var points = 5
 	outer := d2poly.RegularPolygonRadius(d2.Pt{0, 0}, 2, angle.Rot(0.25), points)
 	inner := d2poly.RegularPolygonRadius(d2.Pt{0, 0}, 1, angle.Rot(0.25+1.0/float64(points*2)), points)
 	star2d := make([]d2.Pt, points*2)
@@ -115,46 +165,57 @@ func getMesh() mesh.TriangleMesh {
 
 	up := uint32(points)
 	for i := uint32(0); i < up; i++ {
-		tm.Polygons = append(tm.Polygons, [][3]uint32{
-			{i * 2, i*2 + 1, (up * 2)},
-		}, [][3]uint32{
-			{i * 2, i*2 + 1, (up * 2) + 1},
-		}, [][3]uint32{
-			{i*2 + 1, (i*2 + 2) % (up * 2), (up * 2)},
-		}, [][3]uint32{
-			{i*2 + 1, (i*2 + 2) % (up * 2), (up * 2) + 1},
-		})
+		tm.Polygons = append(tm.Polygons,
+			[][3]uint32{
+				{i * 2, i*2 + 1, (up * 2)},
+			},
+			[][3]uint32{
+				{i*2 + 1, i * 2, (up * 2) + 1},
+			},
+			[][3]uint32{
+				{i*2 + 1, (i*2 + 2) % (up * 2), (up * 2)},
+			},
+			[][3]uint32{
+				{(i*2 + 2) % (up * 2), i*2 + 1, (up * 2) + 1},
+			})
 	}
 
-	return tm
+	return &tm
 }
 
 type star struct {
 	d3.V
 	angle.Rad
-	speed angle.Rad
+	speed  angle.Rad
+	offset *d3.T
 }
 
-func (s *star) T(frame float64) *d3.T {
-	return d3.Rotation{
-		s.Rad + s.speed*angle.Rad(frame),
+func (s *star) T(frame int) *d3.T {
+	xz := d3.Rotation{
+		s.Rad + s.speed*angle.Rad(float64(frame)),
 		d3.XZ,
-	}.T().
-		T(d3.Translate(s.V).T())
+	}.T()
+	t := d3.Translate(s.V).T()
+	return xz.T(s.offset).T(t)
+
 }
 
-func defineStarField() []star {
-	out := make([]star, stars)
+func defineStarField() []*star {
+	out := make([]*star, stars)
 	for i := range out {
 		v2 := d2.Polar{
 			M: rand.Float64()*10 + 3,
 			A: angle.Rot(rand.Float64()),
 		}.V()
 
-		out[i] = star{
+		out[i] = &star{
 			V:     d3.V{v2.X, v2.Y, rand.Float64() * -200},
 			Rad:   angle.Rot(rand.Float64()),
 			speed: angle.Rot(rand.Float64()*.05) + .05,
+			offset: d3.Rotation{
+				angle.Rot(rand.Float64()),
+				d3.XY,
+			}.T(),
 		}
 		if rand.Intn(2) == 0 {
 			out[i].speed = -out[i].speed
@@ -163,20 +224,17 @@ func defineStarField() []star {
 	return out
 }
 
-var black = color.RGBA{0, 0, 0, 255}
+var starMaterial = &material.Material{
+	Specular:    angle.Deg(5),
+	Diffuse:     angle.Deg(1),
+	Color:       &material.Color{0.95, 0.95, 0},
+	Border:      0.03,
+	BorderColor: &material.Color{0, 0, 0},
+}
 
-func starShader(ctx *zbuf.Context) *color.RGBA {
-	if ctx.B.U < 0.03 || ctx.B.V < 0.03 || ctx.B.U+ctx.B.V > 0.97 {
-		return &black
-	}
-	tIdxs := ctx.Original.Polygons[ctx.PolygonIdx][ctx.TriangleIdx]
-	n := (&triangle3.Triangle{
-		ctx.Space[tIdxs[0]],
-		ctx.Space[tIdxs[1]],
-		ctx.Space[tIdxs[2]],
-	}).Normal().Normal()
-	r := (n.X*0.25 + 0.75) * 255
-	g := (n.Y*0.25 + 0.75) * 255
-
-	return &(color.RGBA{uint8(r), uint8(g), 0, 255})
+var backgroundMaterial = material.Material{
+	Specular:    angle.Deg(5),
+	Diffuse:     angle.Deg(1),
+	Color:       &material.Color{1, 1, 1},
+	BorderColor: &material.Color{1, 1, 1},
 }

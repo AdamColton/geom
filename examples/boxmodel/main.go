@@ -10,7 +10,6 @@ import (
 	"github.com/adamcolton/geom/d2/draw"
 	"github.com/adamcolton/geom/d2/grid"
 	"github.com/adamcolton/geom/d2/shape"
-	"github.com/adamcolton/geom/d2/shape/bezier"
 	"github.com/adamcolton/geom/d2/shape/boxmodel"
 	"github.com/adamcolton/geom/d2/shape/ellipse"
 	"github.com/adamcolton/geom/d2/shape/triangle"

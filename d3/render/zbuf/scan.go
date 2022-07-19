@@ -34,18 +34,17 @@ m*U.Y + n*V.Y = 0
 m = (-n*V.Y)/ U.Y
 */
 
-func Scan(t triangle.Triangle, step float64) (*barycentric.BIterator, *triangle.BT) {
-	bi := scanU(t)
-	bt := t.BT(bi.Origin, bi.U)
+func Scan(t *triangle.Triangle, dx, dy float64, biBuf *barycentric.BIterator, btBuf *triangle.BT) (*barycentric.BIterator, *triangle.BT) {
+	bi := scanU(t, biBuf)
+	bt := t.BT(bi.Origin, bi.U, btBuf)
 	if bt == nil || bt.U.Y == 0 {
 		return nil, bt // triangle is horizontal line
 	}
-	bi.Step[1] = barycentric.B{U: step / bt.U.Y, V: 0}
+	bi.Step[1] = barycentric.B{U: dy / bt.U.Y, V: 0}
 
-	dx := step
 	c := bt.U.Cross(bt.V)
 	if c.Z > 0 {
-		dx = -step
+		dx = -dx
 	}
 
 	var m, n float64
@@ -70,17 +69,26 @@ func Scan(t triangle.Triangle, step float64) (*barycentric.BIterator, *triangle.
 	return bi, bt
 }
 
-func scanU(t triangle.Triangle) *barycentric.BIterator {
-	bi := &barycentric.BIterator{}
+func scanU(t *triangle.Triangle, buf *barycentric.BIterator) *barycentric.BIterator {
+	var bi *barycentric.BIterator
+	if buf == nil {
+		bi = &barycentric.BIterator{}
+	} else {
+		bi = buf
+		bi.Origin = 0
+		bi.U = 0
+		bi.Idx = 0
+	}
 
 	// Choose Origin and U so that they span the height of the triangle
 	// So Origin has the lowest Y and U has the highest Y
-	for i, p := range t[1:] {
+	for i := 1; i < 3; i++ {
+		p := t[i]
 		if p.Y < t[bi.Origin].Y || (p.Y == t[bi.Origin].Y && p.X < t[bi.Origin].X) {
-			bi.Origin = i + 1
+			bi.Origin = i
 		}
 		if p.Y > t[bi.U].Y || (p.Y == t[bi.U].Y && p.X > t[bi.U].X) {
-			bi.U = i + 1
+			bi.U = i
 		}
 	}
 	return bi

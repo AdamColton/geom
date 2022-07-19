@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/adamcolton/geom/iter"
-	"github.com/testify/assert"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestIdx(t *testing.T) {

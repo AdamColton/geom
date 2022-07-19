@@ -5,7 +5,7 @@ type Aspect float64
 // Common aspect rations
 const (
 	Widescreen Aspect = 9.0 / 16.0
-	Fullscreen Aspect = 4.0 / 3.0
+	Fullscreen Aspect = 3.0 / 4.0
 	Square     Aspect = 1.0
 )
 
