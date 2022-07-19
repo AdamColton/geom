@@ -18,3 +18,7 @@ func NewTransformPointList(t TransformList, p PointList) TransformPointList {
 		Fn: TransformPointListFn,
 	}
 }
+
+func PointListTransform(t *d2.T, p PointList) TransformPointList {
+	return NewTransformPointList(TransformSlice{t}, p)
+}

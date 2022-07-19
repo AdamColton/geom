@@ -25,19 +25,16 @@ func Test(t *testing.T) {
 			{1, 2},
 		},
 	)
+	ptCtx := PointContext{
+		PointList: ps,
+	}
 
 	cs := d2list.CurveSlice{
-		&Triangle{
-			PointList: PointList{
-				PointList: ps,
-				Idxs:      []int{0, 1, 2},
-			},
-		},
+		ptCtx.Triangle(0, 1, 2),
 	}
-	UpdateCurveList(cs)
+	ptCtx.Update()
 
 	DrawCurveList(cs, ctx)
-	ctx.SetRGB(1, 0, 0)
-	DrawPointList(ps, 3, ctx)
+	ptCtx.Draw(ctx)
 	ctx.SavePNG("test.png")
 }

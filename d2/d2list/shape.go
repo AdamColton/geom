@@ -11,6 +11,26 @@ import (
 	"github.com/adamcolton/geom/list"
 )
 
+type ShapeList list.List[shape.Shape]
+
+type ShapeSlice = list.Slice[shape.Shape]
+
+type ShapeGenerator interface {
+	GenerateShape(pts PointList) shape.Shape
+}
+
+type ShapeGeneratorList list.List[ShapeGenerator]
+
+type ShapeGeneratorSlice = list.Slice[shape.Shape]
+
+func GenerateShapeSlice(pts PointList, l ShapeGeneratorList) ShapeSlice {
+	out := make(ShapeSlice, l.Len())
+	for i := range out {
+		out[i] = l.Idx(i).GenerateShape(pts)
+	}
+	return out
+}
+
 type ShapePerimeter interface {
 	d2.Pt1
 	line.Intersector

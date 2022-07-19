@@ -44,6 +44,15 @@ func (l Line) M() float64 {
 	return l.D.Y / l.D.X
 }
 
+// Sincos fulfills d2.Sincoser. It returns the sin and cos of D.
+func (l Line) Sincos() (float64, float64) {
+	return l.D.Sincos()
+}
+
+func (l Line) BoundingBox() (min, max d2.Pt) {
+	return d2.MinMax(l.T0, l.Pt1(1))
+}
+
 // LineIntersections returns the points at which the lines intersect. It fulls
 // the Intersections interface. If the lines are parallel, nil is returned.
 // Otherwise a slice with a single value is returned indicating the parametric
