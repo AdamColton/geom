@@ -51,3 +51,7 @@ type Shape interface {
 	line.Intersector
 	ConvexHuller
 }
+
+type TransformShaper interface {
+	TransformShape(*d2.T) Shape
+}
