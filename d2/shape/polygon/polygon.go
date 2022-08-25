@@ -79,10 +79,11 @@ func (p Polygon) Centroid() d2.Pt {
 	return d2.Pt{x * a, y * a}
 }
 
-// Contains returns true of the point f is inside of the polygon
+// Contains returns true of the point f is inside of the polygon. This is done
+// with the winding number algorithm and runs in O(n).
 func (p Polygon) Contains(pt d2.Pt) bool {
-	// http://geomalgorithms.com/a03-_inclusion.html
-	wn := 0
+	// https://en.wikipedia.org/wiki/Point_in_polygon#Winding_number_algorithm
+	windings := 0
 	prev := p[len(p)-1]
 	for _, cur := range p {
 		c := line.New(prev, cur).Cross(pt)
@@ -92,14 +93,14 @@ func (p Polygon) Contains(pt d2.Pt) bool {
 			return true
 		} else if prev.Y <= pt.Y {
 			if c > 0 && cur.Y > pt.Y {
-				wn++
+				windings++
 			}
 		} else if c < 0 && cur.Y <= pt.Y {
-			wn--
+			windings--
 		}
 		prev = cur
 	}
-	return wn != 0
+	return windings != 0
 }
 
 // Perimeter returngs the total length of the perimeter
