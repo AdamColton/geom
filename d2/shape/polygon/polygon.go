@@ -86,7 +86,11 @@ func (p Polygon) Contains(pt d2.Pt) bool {
 	prev := p[len(p)-1]
 	for _, cur := range p {
 		c := line.New(prev, cur).Cross(pt)
-		if prev.Y <= pt.Y {
+		if c == 0 &&
+			((pt.X >= prev.X && pt.X <= cur.X) || (pt.X <= prev.X && pt.X >= cur.X)) &&
+			((pt.Y >= prev.Y && pt.Y <= cur.Y) || (pt.Y <= prev.Y && pt.Y >= cur.Y)) {
+			return true
+		} else if prev.Y <= pt.Y {
 			if c > 0 && cur.Y > pt.Y {
 				wn++
 			}

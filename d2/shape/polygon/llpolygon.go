@@ -44,7 +44,11 @@ func (p *LLPolygon) Contains(pt d2.Pt) bool {
 		nextNd := p.Nodes[curNd.NextIdx]
 		cur, next := p.Pts[curNd.PIdx], p.Pts[nextNd.PIdx]
 		c := line.New(cur, next).Cross(pt)
-		if cur.Y <= pt.Y {
+		if c == 0 &&
+			((pt.X >= next.X && pt.X <= cur.X) || (pt.X <= next.X && pt.X >= cur.X)) &&
+			((pt.Y >= next.Y && pt.Y <= cur.Y) || (pt.Y <= next.Y && pt.Y >= cur.Y)) {
+			return true
+		} else if cur.Y <= pt.Y {
 			if c > 0 && next.Y > pt.Y {
 				wn++
 			}
