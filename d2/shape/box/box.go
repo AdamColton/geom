@@ -16,6 +16,23 @@ func New(pts ...d2.Pt) *Box {
 	return b
 }
 
+func (b *Box) Add(pts ...d2.Pt) {
+	for _, pt := range pts {
+		if pt.X < b[0].X {
+			b[0].X = pt.X
+		}
+		if pt.Y < b[0].Y {
+			b[0].Y = pt.Y
+		}
+		if pt.X > b[1].X {
+			b[1].X = pt.X
+		}
+		if pt.Y > b[1].Y {
+			b[1].Y = pt.Y
+		}
+	}
+}
+
 // V is the vector from the min point to the max point
 func (b *Box) V() d2.V {
 	return b[1].Subtract(b[0])
