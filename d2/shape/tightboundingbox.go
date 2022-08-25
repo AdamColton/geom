@@ -6,6 +6,20 @@ import (
 	"github.com/adamcolton/geom/d2/shape/box"
 )
 
+var DefaultNewBoundingBoxSteps = 8
+
+func NewBoundingBox(s Shape) Rebound {
+	r := Rebound{
+		Shape: s,
+	}
+
+	m, M, ok := TightBoundingBox(s, DefaultNewBoundingBoxSteps)
+	if ok {
+		r.Box = &box.Box{m, M}
+	}
+	return r
+}
+
 type Rebound struct {
 	Shape
 	*box.Box

@@ -48,7 +48,8 @@ func (s Subtract) LineIntersections(l line.Line, buf []float64) []float64 {
 }
 
 // BoundingBox fulfills shape.Shape, it returns a box that contains the shape.
+// This shape may not be tight to the boundaries. Use NewBoundingBox to create
+// a Rebound shape.
 func (s Subtract) BoundingBox() (d2.Pt, d2.Pt) {
-	// Bounding box may be tighter, but that's not easy to determine.
 	return s[0].BoundingBox()
 }

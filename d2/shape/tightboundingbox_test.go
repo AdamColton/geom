@@ -8,6 +8,7 @@ import (
 	"github.com/adamcolton/geom/d2/shape"
 	"github.com/adamcolton/geom/d2/shape/box"
 	"github.com/adamcolton/geom/d2/shape/ellipse"
+	"github.com/adamcolton/geom/d2/shape/polygon"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -41,4 +42,18 @@ func TestTightCircle(t *testing.T) {
 	assert.False(t, perfect.Contains(M))
 	assert.True(t, expected.Contains(m))
 	assert.True(t, expected.Contains(M))
+}
+
+func TestNewBoundingBox(t *testing.T) {
+	s := shape.Subtract{
+		polygon.RectangleTwoPoints(d2.Pt{0, 0}, d2.Pt{1, 1}),
+		ellipse.NewCircle(d2.Pt{0, 0.5}, 1),
+	}
+	r := shape.NewBoundingBox(s)
+	m, M := r.BoundingBox()
+	sbox := box.New(s.BoundingBox())
+
+	assert.True(t, sbox.Contains(m))
+	assert.True(t, sbox.Contains(M))
+	assert.True(t, sbox[0].X < m.X)
 }
