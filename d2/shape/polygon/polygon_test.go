@@ -67,6 +67,9 @@ func TestContains(t *testing.T) {
 				assert.False(t, tc.Contains(p))
 				assert.False(t, ll.Contains(p))
 			}
+			a := AssertConvexHuller(append(tc.Polygon, tc.does...))
+			geomtest.Equal(t, a, tc.Polygon)
+			geomtest.Equal(t, a, ll)
 		})
 	}
 }

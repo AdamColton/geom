@@ -306,3 +306,9 @@ func (p Polygon) Reverse() Polygon {
 func (p Polygon) BoundingBox() (min, max d2.Pt) {
 	return d2.MinMax(p...)
 }
+
+// ConvexHull fulfills shape.ConvexHuller. Returns the convex hull of the
+// polygon using the ConvexHull function.
+func (p Polygon) ConvexHull() []d2.Pt {
+	return ConvexHull(p...)
+}
