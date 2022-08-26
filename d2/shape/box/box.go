@@ -110,3 +110,13 @@ func (b *Box) Perimeter() float64 {
 func (b *Box) BoundingBox() (min, max d2.Pt) {
 	return b[0], b[1]
 }
+
+// ConvexHull fulfills shape.ConvexHuller. Returns the 4 corners of the box.
+func (b *Box) ConvexHull() []d2.Pt {
+	return []d2.Pt{
+		b[0],
+		{b[1].X, b[0].Y},
+		b[1],
+		{b[0].X, b[1].Y},
+	}
+}
