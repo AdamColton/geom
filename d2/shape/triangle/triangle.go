@@ -141,3 +141,8 @@ func (t *Triangle) CircumCenter() d2.Pt {
 	}
 	return line.New(t[0], t[1]).Pt1(0.5)
 }
+
+// ConvexHull fulfills shape.ConvexHuller. It returns the triangle as a slice.
+func (t *Triangle) ConvexHull() []d2.Pt {
+	return t[:]
+}
