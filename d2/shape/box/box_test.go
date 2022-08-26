@@ -1,4 +1,4 @@
-package box
+package box_test
 
 import (
 	"testing"
@@ -6,12 +6,14 @@ import (
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
 	"github.com/adamcolton/geom/d2/generate"
+	"github.com/adamcolton/geom/d2/shape/box"
+	"github.com/adamcolton/geom/d2/shape/polygon"
 	"github.com/adamcolton/geom/geomtest"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestBox(t *testing.T) {
-	b := New(d2.Pt{0, 0}, d2.Pt{1, 1})
+	b := box.New(d2.Pt{0, 0}, d2.Pt{1, 1})
 	assert.Equal(t, 1.0, b.Area())
 	assert.Equal(t, 1.0, b.SignedArea())
 	geomtest.Equal(t, d2.Pt{0.5, 0.5}, b.Centroid())
@@ -27,6 +29,15 @@ func TestBox(t *testing.T) {
 	geomtest.Equal(t, b[0], m)
 	geomtest.Equal(t, b[1], M)
 
+	a := polygon.AssertConvexHuller([]d2.Pt{
+		{0, 0}, {1, 0}, {1, 1}, {0, 1},
+		{0.5, 0.5}, {0.25, 0.25}, {0.75, 0.25}, {0.75, 0.75}, {0.25, 0.75},
+	})
+	geomtest.Equal(t, a, b)
+	for i, pt := range b.ConvexHull() {
+		geomtest.Equal(t, b.Vertex(i), pt, i)
+	}
+
 	// malformed but allows testing of SignedArea
 	b[0] = d2.Pt{0, 2}
 	assert.Equal(t, 1.0, b.Area())
@@ -40,14 +51,14 @@ func TestBoxContains(t *testing.T) {
 	for i := range pts {
 		pts[i] = generate.Pt().Multiply(scale)
 	}
-	box := New(pts...)
+	box := box.New(pts...)
 	for _, p := range pts {
 		assert.True(t, box.Contains(p))
 	}
 }
 
 func TestLineIntersections(t *testing.T) {
-	b := New(d2.Pt{0, 0}, d2.Pt{1, 1})
+	b := box.New(d2.Pt{0, 0}, d2.Pt{1, 1})
 	tt := map[string]struct {
 		expected []d2.Pt
 		line.Line
