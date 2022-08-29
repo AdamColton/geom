@@ -33,6 +33,12 @@ type BoundingBoxer interface {
 	BoundingBox() (min, max d2.Pt)
 }
 
+// ConvexHuller returns a slice of points that form a convex hull that contains
+// the underlying geometric object.
+type ConvexHuller interface {
+	ConvexHull() []d2.Pt
+}
+
 // Closest point on the perimeter to given point.
 type Closest interface {
 	Closest(pt d2.Pt) d2.Pt
