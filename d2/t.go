@@ -81,6 +81,18 @@ func (t *T) VF(v V) (V, float64) {
 	}, v.X*t[2][0] + v.Y*t[2][1] + t[2][2]
 }
 
+// TProd returns the product of multiple transforms.
+func TProd(ts ...*T) *T {
+	if len(ts) == 0 {
+		return IndentityTransform()
+	}
+	t := ts[0]
+	for _, t2 := range ts[1:] {
+		t = t.T(t2)
+	}
+	return t
+}
+
 // T returns the product of t with t2
 func (t *T) T(t2 *T) *T {
 	return &T{
@@ -107,15 +119,14 @@ func (t *T) AssertEqual(actual interface{}, tol cmpr.Tolerance) error {
 		return geomerr.TypeMismatch(t, actual)
 	}
 
-	for iy, row := range t {
-		for ix, val := range row {
-			if !tol.Zero(val - t2[iy][ix]) {
-				return geomerr.NotEqual(t, t2)
+	return geomerr.NewSliceErrs(3, -1, func(x int) error {
+		return geomerr.NewSliceErrs(3, -1, func(y int) error {
+			if !tol.Equal(t[x][y], t2[x][y]) {
+				return geomerr.NotEqual(t[x][y], t2[x][y])
 			}
-		}
-	}
-
-	return nil
+			return nil
+		})
+	})
 }
 
 // Scale generates a scale transform
@@ -182,12 +193,11 @@ func (r Rotate) TInv() *T {
 func (r Rotate) Pair() [2]*T {
 	s, c := angle.Rad(r).Sincos()
 	return [2]*T{
-		&T{
+		{
 			{c, -s, 0},
 			{s, c, 0},
 			{0, 0, 1},
-		},
-		&T{
+		}, {
 			{c, s, 0},
 			{-s, c, 0},
 			{0, 0, 1},
@@ -219,12 +229,11 @@ func (t Translate) TInv() *T {
 // Pair returns the translation transform and it's inverse.
 func (t Translate) Pair() [2]*T {
 	return [2]*T{
-		&T{
+		{
 			{1, 0, t.X},
 			{0, 1, t.Y},
 			{0, 0, 1},
-		},
-		&T{
+		}, {
 			{1, 0, -t.X},
 			{0, 1, -t.Y},
 			{0, 0, 1},
@@ -315,4 +324,43 @@ func (t *T) String() string {
 		strconv.FormatFloat(t[2][2], 'f', Prec, 64),
 		") ]",
 	}, "")
+}
+
+// TransformSet builds up a chain of transformaitions.
+type TransformSet struct {
+	Head, Middle, Tail []*T
+}
+
+// NewTSet creates a TransformSet.
+func NewTSet() *TransformSet {
+	return &TransformSet{}
+}
+
+// AddBoth appends the transform and it's inverse to the head and tail.
+func (ts *TransformSet) AddBoth(t TGen) *TransformSet {
+	p := t.Pair()
+	ts.Head = append(ts.Head, p[0])
+	ts.Tail = append(ts.Tail, p[1])
+	return ts
+}
+
+// Add t to the middle
+func (ts *TransformSet) Add(t *T) *TransformSet {
+	ts.Middle = append(ts.Middle, t)
+	return ts
+}
+
+// Get produces a transform produces a transform by applying the transforms in
+// head, then middle then applying tail in reverse.
+func (ts *TransformSet) GetT() *T {
+	h := TProd(ts.Head...)
+	m := TProd(ts.Middle...)
+	var t *T
+	if ln := len(ts.Tail); ln > 0 {
+		t = ts.Tail[ln-1]
+		for i := ln - 2; i >= 0; i-- {
+			t = t.T(ts.Tail[i])
+		}
+	}
+	return TProd(h, m, t)
 }
