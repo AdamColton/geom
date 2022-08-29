@@ -51,6 +51,8 @@ func TestUnion(t *testing.T) {
 	m, M := s.BoundingBox()
 	geomtest.Equal(t, d2.Pt{0, 0}, m)
 	geomtest.Equal(t, d2.Pt{2, 3}, M)
+
+	geomtest.Equal(t, []d2.Pt{{1, 0}, {2, 1}, {2, 2}, {1, 3}, {0, 2}, {0, 1}}, s.ConvexHull())
 }
 
 func TestSubtract(t *testing.T) {
