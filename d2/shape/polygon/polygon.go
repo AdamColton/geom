@@ -11,6 +11,12 @@ import (
 // Polygon represents a Convex Polygon
 type Polygon []d2.Pt
 
+// New creates a polygon and orders the points to proceed counter clockwise.
+func New(pts []d2.Pt) Polygon {
+	p, c := NewPolar(pts)
+	return p.Polygon(c)
+}
+
 // Pt2c1 returns line.Segments as d2.Pt1 that adheres to the Shape rules
 func (p Polygon) Pt2c1(t0 float64) d2.Pt1 {
 	n := (len(p) - 1)
