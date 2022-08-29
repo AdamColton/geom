@@ -52,3 +52,8 @@ func (s Subtract) BoundingBox() (d2.Pt, d2.Pt) {
 	// Bounding box may be tighter, but that's not easy to determine.
 	return s[0].BoundingBox()
 }
+
+func (s Subtract) ConvexHull() []d2.Pt {
+	ch := s[0].(ConvexHuller)
+	return ch.ConvexHull()
+}
