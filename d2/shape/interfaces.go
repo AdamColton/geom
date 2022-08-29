@@ -49,5 +49,5 @@ type Closest interface {
 type Shape interface {
 	Container
 	line.Intersector
-	BoundingBoxer
+	ConvexHuller
 }

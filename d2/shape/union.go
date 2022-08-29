@@ -43,15 +43,7 @@ func (a Union) LineIntersections(l line.Line, buf []float64) []float64 {
 	return buf
 }
 
-// BoundingBox fulfills shape.Shape, it returns a box that contains the shape.
-func (a Union) BoundingBox() (d2.Pt, d2.Pt) {
-	m, M := a[0].BoundingBox()
-	m1, M1 := a[1].BoundingBox()
-	return d2.Min(m, m1), d2.Max(M, M1)
-}
-
 func (a Union) ConvexHull() []d2.Pt {
-	a0h, a1h := a[0].(ConvexHuller), a[1].(ConvexHuller)
-	both := append(a0h.ConvexHull(), a1h.ConvexHull()...)
+	both := append(a[0].ConvexHull(), a[1].ConvexHull()...)
 	return polygon.ConvexHull(both...)
 }
