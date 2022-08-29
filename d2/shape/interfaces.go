@@ -51,3 +51,14 @@ type Shape interface {
 	line.Intersector
 	BoundingBoxer
 }
+
+// PointsInContainer checks the given points against the container. If the
+// contains value matches filter, it is appended to the buffer.
+func PointsInContainer(pts []d2.Pt, c Container, filter bool, buf []d2.Pt) []d2.Pt {
+	for _, pt := range pts {
+		if c.Contains(pt) == filter {
+			buf = append(buf, pt)
+		}
+	}
+	return buf
+}
