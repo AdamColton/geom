@@ -36,6 +36,8 @@ type BoxModel interface {
 	// SignedArea is the same as Area.
 	SignedArea() float64
 
+	ConvexHull() []d2.Pt
+
 	// Centroid is the center of mass of the shape.
 	Centroid() d2.Pt
 	tree() *tree

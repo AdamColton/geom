@@ -4,6 +4,7 @@ import (
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
 	"github.com/adamcolton/geom/d2/shape/box"
+	"github.com/adamcolton/geom/d2/shape/polygon"
 )
 
 type tree struct {
@@ -52,6 +53,14 @@ func (t *tree) PerimeterCursor() (Iterator, box.Box, bool) {
 
 func (t *tree) OutsideCursor() (Iterator, box.Box, bool) {
 	return t.match(outsideLeaf)
+}
+
+func (t *tree) ConvexHull() []d2.Pt {
+	pts := make([]d2.Pt, 0, t.inside*4)
+	for i, b, done := t.InsideCursor(); !done; b, done = i.Next() {
+		pts = append(pts, b.ConvexHull()...)
+	}
+	return polygon.ConvexHull(pts...)
 }
 
 func (t *tree) tree() *tree {
