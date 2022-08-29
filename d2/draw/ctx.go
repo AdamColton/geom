@@ -29,6 +29,7 @@ type Ctx interface {
 type Context struct {
 	Ctx
 	iter.FloatRange
+	PointSize float64
 }
 
 func (c *Context) Pt1(pt1 d2.Pt1) {
@@ -60,10 +61,29 @@ func (c *Context) Circle(pt d2.Pt, radius float64) {
 	c.Ctx.Stroke()
 }
 
+// Pts draws a circle at each point with a diamter of Context.PointSize.
+func (c *Context) Pts(pts ...d2.Pt) {
+	for _, pt := range pts {
+		c.Ctx.DrawCircle(pt.X, pt.Y, c.PointSize)
+	}
+	c.Ctx.Stroke()
+}
+
+// LinePts draws line segments connecting the points.
+func (c *Context) LinePts(pts ...d2.Pt) {
+	prev := pts[0]
+	for _, pt := range pts[1:] {
+		c.Ctx.DrawLine(prev.X, prev.Y, pt.X, pt.Y)
+		prev = pt
+	}
+	c.Ctx.Stroke()
+}
+
 // ContextGenerator is a helper for generating Contexts
 type ContextGenerator struct {
 	Size       grid.Pt
 	Clear, Set color.Color
+	PointSize  float64
 }
 
 // Generate a Context of the defined size, set the background color and set the
@@ -90,5 +110,6 @@ func (g *ContextGenerator) GenerateForCtx(ctx *gg.Context) *Context {
 	return &Context{
 		Ctx:        ctx,
 		FloatRange: iter.Include(1, 0.0025),
+		PointSize:  g.PointSize,
 	}
 }
