@@ -29,6 +29,8 @@ func TestIntersection(t *testing.T) {
 	m, M := s.BoundingBox()
 	geomtest.Equal(t, d2.Pt{0, 1}, m)
 	geomtest.Equal(t, d2.Pt{2, 2}, M)
+
+	geomtest.Equal(t, []d2.Pt{{0.5, 1.0}, {1.5, 1}, {0.5, 2}, {0.25, 1.5}}, s.ConvexHull())
 }
 
 func TestUnion(t *testing.T) {

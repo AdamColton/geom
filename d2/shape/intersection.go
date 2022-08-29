@@ -3,6 +3,7 @@ package shape
 import (
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
+	"github.com/adamcolton/geom/d2/shape/polygon"
 )
 
 // Intersection takes two Shapes and creates a new Shape that is their
@@ -47,9 +48,27 @@ func (a Intersection) LineIntersections(l line.Line, buf []float64) []float64 {
 	return buf
 }
 
-// BoundingBox fulfills shape.Shape, it returns a box that contains the shape.
+//BoundingBox fulfills shape.Shape, it returns a box that contains the shape.
 func (a Intersection) BoundingBox() (d2.Pt, d2.Pt) {
 	m, M := a[0].BoundingBox()
 	m1, M1 := a[1].BoundingBox()
 	return d2.Max(m, m1), d2.Min(M, M1)
+}
+
+func (a Intersection) ConvexHull() []d2.Pt {
+	a0h, a1h := a[0].(ConvexHuller), a[1].(ConvexHuller)
+	s0h, s1h := polygon.Polygon(a0h.ConvexHull()), polygon.Polygon(a1h.ConvexHull())
+	out := s0h.PolygonIntersections(s1h)
+	out = PointsInContainer(s0h, a[1], out)
+	out = PointsInContainer(s1h, a[0], out)
+	return polygon.New(out)
+}
+
+func PointsInContainer(pts []d2.Pt, c Container, buf []d2.Pt) []d2.Pt {
+	for _, pt := range pts {
+		if c.Contains(pt) {
+			buf = append(buf, pt)
+		}
+	}
+	return buf
 }
