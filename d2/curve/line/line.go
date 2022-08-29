@@ -73,6 +73,31 @@ func (l Line) Intersection(l2 Line) (tl float64, tl2 float64, does bool) {
 	return
 }
 
+// Range checks if an intersection happened and was within a range.
+type Range struct {
+	T0 *[2]float64
+	T1 *[2]float64
+}
+
+// DefaultRange checks that
+var DefaultRange = Range{
+	T0: &[2]float64{0, 1},
+	T1: &[2]float64{0, 1},
+}
+
+// Check that ok is true. Check that t0 and t1 are in their respective range,
+// if that range is not nil.
+func (r Range) Check(t0, t1 float64, ok bool) (float64, float64, bool) {
+	if ok && r.T0 != nil {
+		ok = t0 >= r.T0[0] && t0 < r.T0[1]
+	}
+	if ok && r.T1 != nil {
+		ok = t1 >= r.T1[0] && t1 < r.T1[1]
+	}
+
+	return t0, t1, ok
+}
+
 // Closest returns the point on the line closest to pt
 func (l Line) Closest(pt d2.Pt) d2.Pt {
 	l2 := Line{

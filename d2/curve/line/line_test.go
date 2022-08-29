@@ -5,6 +5,7 @@ import (
 
 	"github.com/adamcolton/geom/angle"
 	"github.com/adamcolton/geom/d2"
+	"github.com/adamcolton/geom/geomerr"
 	"github.com/adamcolton/geom/geomtest"
 	"github.com/stretchr/testify/assert"
 )
@@ -172,4 +173,115 @@ func TestCross(t *testing.T) {
 			assert.Equal(t, tc.expected, tc.Line.Cross(tc.Pt))
 		})
 	}
+}
+
+func TestRange(t *testing.T) {
+	tt := map[string]struct {
+		t0, t1       float64
+		r            Range
+		ok, expected bool
+	}{
+		"DefaultRange_0.5_0.5_T": {
+			t0:       0.5,
+			t1:       0.5,
+			r:        DefaultRange,
+			ok:       true,
+			expected: true,
+		},
+		"DefaultRange_0_0_T": {
+			t0:       0,
+			t1:       0,
+			r:        DefaultRange,
+			ok:       true,
+			expected: true,
+		},
+		"DefaultRange_0_0_F": {
+			t0:       0,
+			t1:       0,
+			r:        DefaultRange,
+			ok:       false,
+			expected: false,
+		},
+		"DefaultRange_0_1_T": {
+			t0:       0,
+			t1:       1,
+			r:        DefaultRange,
+			ok:       true,
+			expected: false,
+		},
+		"DefaultRange_1_0_T": {
+			t0:       1,
+			t1:       0,
+			r:        DefaultRange,
+			ok:       true,
+			expected: false,
+		},
+		"T0Range_0.5_2_T": {
+			t0: 0.5,
+			t1: 2,
+			r: Range{
+				T0: &[2]float64{0, 1},
+			},
+			ok:       true,
+			expected: true,
+		},
+		"T0Range_2_2_T": {
+			t0: 2,
+			t1: 2,
+			r: Range{
+				T0: &[2]float64{0, 1},
+			},
+			ok:       true,
+			expected: false,
+		},
+		"T1Range_2_0.5_T": {
+			t0: 2,
+			t1: 0.5,
+			r: Range{
+				T1: &[2]float64{0, 1},
+			},
+			ok:       true,
+			expected: true,
+		},
+		"T1Range_2_2_T": {
+			t0: 2,
+			t1: 2,
+			r: Range{
+				T1: &[2]float64{0, 1},
+			},
+			ok:       true,
+			expected: false,
+		},
+	}
+
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			t0, t1, ok := tc.r.Check(tc.t0, tc.t1, tc.ok)
+			assert.Equal(t, tc.expected, ok)
+			assert.Equal(t, tc.t0, t0)
+			assert.Equal(t, tc.t1, t1)
+		})
+	}
+}
+
+func TestAssertEqual(t *testing.T) {
+	l := New(d2.Pt{1, 3}, d2.Pt{2, 4})
+	err := l.AssertEqual(l.T0, 1e-6)
+	assert.Equal(t, geomerr.TypeMismatch(l, l.T0), err)
+
+	l2 := l
+	l2.T0.X += 1
+	err = l.AssertEqual(l2, 1e-6)
+	assert.Equal(t, geomerr.NotEqual(l, l2), err)
+
+	l2 = l
+	l2.D.X += 1
+	err = l.AssertEqual(l2, 1e-6)
+	assert.Equal(t, geomerr.NotEqual(l, l2), err)
+
+	l2 = l
+	l2.T0.X += 1e-6 - 1e-12
+	l2.D.X += 1e-6 - 1e-12
+	err = l.AssertEqual(l2, 1e-6)
+	assert.NoError(t, err)
 }

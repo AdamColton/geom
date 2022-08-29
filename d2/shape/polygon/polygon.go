@@ -203,12 +203,8 @@ func (p Polygon) Collision(lineSegment line.Line) (lineT float64, idx int, sideT
 	ln := len(p)
 	for i, f := range p {
 		side := line.New(f, p[(i+1)%ln])
-		t0, t1, ok := side.Intersection(lineSegment)
-		if ok &&
-			t1 >= 0 && t1 < 1 &&
-			t0 >= 0 && t0 < 1 &&
-			(idx == -1 || lineT > t1) {
-
+		t0, t1, ok := line.DefaultRange.Check(side.Intersection(lineSegment))
+		if ok && (idx == -1 || lineT > t1) {
 			lineT = t1
 			idx = i
 			sideT = t0
@@ -236,15 +232,88 @@ func (p Polygon) LineIntersections(ln line.Line, buf []float64) []float64 {
 	return buf
 }
 
+// Collision between two polygons
+type Collision struct {
+	PIdx, P2Idx int
+	PT, P2T     float64
+}
+
+// P returns the collision point using polygon P to compute.
+func (c Collision) P(p Polygon) d2.Pt {
+	return p.Side(c.PIdx).Pt1(c.PT)
+}
+
+// P2 returns the collision point using polygon P2 to compute.
+func (c Collision) P2(p2 Polygon) d2.Pt {
+	return p2.Side(c.P2Idx).Pt1(c.P2T)
+}
+
+// Collisions represent a set of collisions between two polygons.
+type Collisions []Collision
+
+// P returns the collision points using polygon P to compute.
+func (cs Collisions) P(p Polygon) []d2.Pt {
+	out := make([]d2.Pt, 0, len(cs))
+	for _, c := range cs {
+		out = append(out, c.P(p))
+	}
+	return out
+}
+
+// P2 returns the collision points using polygon P2 to compute.
+func (cs Collisions) P2(p2 Polygon) []d2.Pt {
+	out := make([]d2.Pt, 0, len(cs))
+	for _, c := range cs {
+		out = append(out, c.P2(p2))
+	}
+	return out
+}
+
+// PolygonIntersections finds the intersection points between two polygons.
+func (p Polygon) PolygonCollisions(p2 Polygon) Collisions {
+	ln := len(p)
+	ln2 := len(p2)
+	if ln < 2 || ln2 < 2 {
+		return nil
+	}
+	sides := p.Sides()
+	sides2 := p2.Sides()
+	var out Collisions
+	for idx, s := range sides {
+		for idx2, s2 := range sides2 {
+			t, t2, ok := line.DefaultRange.Check(s.Intersection(s2))
+			if ok {
+				out = append(out, Collision{
+					PIdx:  idx,
+					P2Idx: idx2,
+					PT:    t,
+					P2T:   t2,
+				})
+			}
+		}
+	}
+	return out
+}
+
 // Sides converts the perimeter of the polygon to a slice of lines.
 func (p Polygon) Sides() []line.Line {
-	side := make([]line.Line, len(p))
-	prev := p[len(p)-1]
-	for i, f := range p {
-		side[i] = line.New(prev, f)
-		prev = f
+	ln := len(p)
+	side := make([]line.Line, ln)
+	for i, pt := range p[:ln-1] {
+		side[i] = line.New(pt, p[(i+1)])
 	}
+	side[ln-1] = line.New(p[ln-1], p[0])
 	return side
+}
+
+// Side n of the polygon where the side is formed by p[n] to p[n+1].
+func (p Polygon) Side(n int) line.Line {
+	ln := len(p)
+	n %= ln
+	if n < 0 {
+		n += ln
+	}
+	return line.New(p[n], p[(n+1)%ln])
 }
 
 // NonIntersecting returns false if any two sides intersect. This requires
