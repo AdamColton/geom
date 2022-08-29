@@ -94,7 +94,7 @@ func (b *Box) AssertEqual(to interface{}, t cmpr.Tolerance) error {
 	}
 	b2 := to.(*Box)
 
-	return geomerr.NewSliceErrs(2, 2, func(i int) error {
+	return geomerr.NewSliceErrs(2, -1, func(i int) error {
 		return b[i].AssertEqual(b2[i], t)
 	})
 }

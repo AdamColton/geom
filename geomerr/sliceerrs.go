@@ -68,11 +68,17 @@ func (e SliceErrs) AppendF(idx int, format string, args ...interface{}) SliceErr
 // NewSliceErrs creates an instance of SliceErrs by calling the provided func
 // for every value up to Min(lnExpected, lnActual). If lnExpected and lnActual
 // are not equal and instance of LenMismatch will be added to the start of the
-// SliceErrs with an index of -1.
+// SliceErrs with an index of -1. If lnActual == -1 the length check is ignored.
 func NewSliceErrs(lnExpected, lnActual int, fn func(int) error) error {
 	var out SliceErrs
-	ln, _, lnErr := NewLenMismatch(lnExpected, lnActual)
-	out = out.Append(-1, lnErr)
+	var ln int
+	if lnActual >= 0 {
+		var lnErr error
+		ln, _, lnErr = NewLenMismatch(lnExpected, lnActual)
+		out = out.Append(-1, lnErr)
+	} else {
+		ln = lnExpected
+	}
 	for i := 0; i < ln; i++ {
 		out = out.Append(i, fn(i))
 	}

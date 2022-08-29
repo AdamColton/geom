@@ -29,6 +29,11 @@ func TestSliceErrs(t *testing.T) {
 	se := SliceErrs{}
 	se = se.AppendF(1, "%s is a test %d", "this", 123)
 	assert.Equal(t, "\t1: this is a test 123", se.Error())
+
+	a = []int{1, 2, 3}
+	b = []int{1, 2, 3, 4, 5}
+	err = NewSliceErrs(len(a), -1, fn)
+	assert.NoError(t, err)
 }
 
 func TestTypeMismatch(t *testing.T) {
