@@ -3,6 +3,7 @@ package polygon
 import (
 	"testing"
 
+	"github.com/adamcolton/geom/angle"
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
 	"github.com/adamcolton/geom/d2/grid"
@@ -411,4 +412,15 @@ func TestPolygonCollisions(t *testing.T) {
 			geomtest.Equal(t, cs.P(tc.p), cs.P2(tc.p2))
 		})
 	}
+}
+
+func TestNew(t *testing.T) {
+	p := RegularPolygonRadius(d2.Pt{10, 12}, 3, angle.Rot(4.0/7.0), 7)
+
+	pts := make([]d2.Pt, 7)
+	for i := range p {
+		pts[i] = p[(i*2+1)%7]
+	}
+
+	geomtest.Equal(t, p, New(pts))
 }
