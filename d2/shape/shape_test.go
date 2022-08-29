@@ -26,11 +26,8 @@ func TestIntersection(t *testing.T) {
 	assert.Equal(t, expected[:1], s.LineIntersections(l, []float64{0}))
 	assert.Equal(t, expected[:2], s.LineIntersections(l, []float64{0, 0}))
 
-	m, M := s.BoundingBox()
-	geomtest.Equal(t, d2.Pt{0, 1}, m)
-	geomtest.Equal(t, d2.Pt{2, 2}, M)
-
 	geomtest.Equal(t, []d2.Pt{{1.5, 1}, {1.75, 1.5}, {1.5, 2}, {0.5, 2}, {0.25, 1.5}, {0.5, 1}}, s.ConvexHull())
+
 }
 
 func TestUnion(t *testing.T) {
@@ -47,10 +44,6 @@ func TestUnion(t *testing.T) {
 	assert.Equal(t, expected, s.LineIntersections(l, nil))
 	assert.Equal(t, expected[:1], s.LineIntersections(l, []float64{0}))
 	assert.Equal(t, expected[:2], s.LineIntersections(l, []float64{0, 0}))
-
-	m, M := s.BoundingBox()
-	geomtest.Equal(t, d2.Pt{0, 0}, m)
-	geomtest.Equal(t, d2.Pt{2, 3}, M)
 
 	geomtest.Equal(t, []d2.Pt{{1, 0}, {2, 1}, {2, 2}, {1, 3}, {0, 2}, {0, 1}}, s.ConvexHull())
 }
@@ -70,10 +63,6 @@ func TestSubtract(t *testing.T) {
 	assert.Equal(t, expected, s.LineIntersections(l, nil))
 	assert.Equal(t, expected[:1], s.LineIntersections(l, []float64{0}))
 	assert.Equal(t, expected[:2], s.LineIntersections(l, []float64{0, 0}))
-
-	m, M := s.BoundingBox()
-	geomtest.Equal(t, d2.Pt{0, 1}, m)
-	geomtest.Equal(t, d2.Pt{2, 3}, M)
 
 	geomtest.Equal(t, []d2.Pt{{0, 1}, {2, 1}, {1, 3}}, s.ConvexHull())
 }

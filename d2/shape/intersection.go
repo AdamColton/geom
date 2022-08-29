@@ -48,19 +48,11 @@ func (a Intersection) LineIntersections(l line.Line, buf []float64) []float64 {
 	return buf
 }
 
-//BoundingBox fulfills shape.Shape, it returns a box that contains the shape.
-func (a Intersection) BoundingBox() (d2.Pt, d2.Pt) {
-	m, M := a[0].BoundingBox()
-	m1, M1 := a[1].BoundingBox()
-	return d2.Max(m, m1), d2.Min(M, M1)
-}
-
 // ConvexHull fulfills shape.ConvexHuller. It returns the convex hull of the
 // Intersection. If the underlying Convex hulls are tight, the result will also
 // be tight.
 func (a Intersection) ConvexHull() []d2.Pt {
-	a0h, a1h := a[0].(ConvexHuller), a[1].(ConvexHuller)
-	s0h, s1h := polygon.Polygon(a0h.ConvexHull()), polygon.Polygon(a1h.ConvexHull())
+	s0h, s1h := polygon.Polygon(a[0].ConvexHull()), polygon.Polygon(a[1].ConvexHull())
 	out := s0h.PolygonCollisions(s1h).P(s0h)
 	out = PointsInContainer(s0h, a[1], true, out)
 	out = PointsInContainer(s1h, a[0], true, out)

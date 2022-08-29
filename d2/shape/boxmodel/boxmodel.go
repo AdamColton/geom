@@ -50,7 +50,7 @@ type Iterator interface {
 
 // New BoxModel representing the shape.
 func New(s shape.Shape, depth int) BoxModel {
-	b := box.New(s.BoundingBox())
+	b := box.New(s.ConvexHull()...)
 	t := &tree{
 		start: firstParent,
 		nodes: make([]children, 1, 1<<(depth+2)),

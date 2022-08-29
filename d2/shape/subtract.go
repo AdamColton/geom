@@ -47,16 +47,9 @@ func (s Subtract) LineIntersections(l line.Line, buf []float64) []float64 {
 	return buf
 }
 
-// BoundingBox fulfills shape.Shape, it returns a box that contains the shape.
-func (s Subtract) BoundingBox() (d2.Pt, d2.Pt) {
-	// Bounding box may be tighter, but that's not easy to determine.
-	return s[0].BoundingBox()
-}
-
 // ConvexHull fulfills shape.ConvexHuller. It returns the convex hull of the
 // Intersection. It just returns the convex hull of the shape being subtracted
 // from, so the result may not be tight.
 func (s Subtract) ConvexHull() []d2.Pt {
-	ch := s[0].(ConvexHuller)
-	return ch.ConvexHull()
+	return s[0].ConvexHull()
 }

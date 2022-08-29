@@ -49,7 +49,7 @@ type Closest interface {
 type Shape interface {
 	Container
 	line.Intersector
-	BoundingBoxer
+	ConvexHuller
 }
 
 // PointsInContainer checks the given points against the container. If the
