@@ -232,6 +232,25 @@ func (p Polygon) LineIntersections(ln line.Line, buf []float64) []float64 {
 	return buf
 }
 
+// PolygonIntersections finds the intersection points between two polygons.
+func (p Polygon) PolygonIntersections(p2 Polygon) []d2.Pt {
+	if len(p) < 2 || len(p2) < 2 {
+		return nil
+	}
+	var out []d2.Pt
+	buf := make([]float64, 0, 2)
+	prev := p[0]
+	for _, pt := range p[1:] {
+		l := line.New(prev, pt)
+		for _, t := range p2.LineIntersections(l, buf[:0]) {
+			if t >= 0 && t <= 1 {
+				out = append(out, l.Pt1(t))
+			}
+		}
+	}
+	return out
+}
+
 // Sides converts the perimeter of the polygon to a slice of lines.
 func (p Polygon) Sides() []line.Line {
 	side := make([]line.Line, len(p))
