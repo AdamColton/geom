@@ -131,8 +131,8 @@ func (t *T) AssertEqual(to interface{}, tol cmpr.Tolerance) error {
 		return err
 	}
 	t2 := to.(*T)
-	return geomerr.NewSliceErrs(4, 4, func(x int) error {
-		return geomerr.NewSliceErrs(4, 4, func(y int) error {
+	return geomerr.NewSliceErrs(4, -1, func(x int) error {
+		return geomerr.NewSliceErrs(4, -1, func(y int) error {
 			a, b := t[y][x], t2[y][x]
 			return geomerr.NewNotEqual(tol.Equal(a, b), a, b)
 		})
