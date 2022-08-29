@@ -74,7 +74,7 @@ func BoxModel(ctx *draw.Context) {
 	g.AddColorStop(1, color.RGBA{0, 0, 255, 255})
 	ctx.Ctx.(*gg.Context).SetFillStyle(g)
 
-	ctx.BoxModel(boxmodel.New(shape.Subtract{
+	b := boxmodel.New(shape.Subtract{
 		shape.Union{
 			ellipse.NewCircle(d2.Pt{250, 250}, 230),
 			&triangle.Triangle{
@@ -82,7 +82,12 @@ func BoxModel(ctx *draw.Context) {
 			},
 		},
 		ellipse.NewCircle(d2.Pt{350, 250}, 40),
-	}, 10))
+	}, 10)
+	ctx.BoxModel(b)
+	ctx.SetRGB(0, 0.5, 0)
+	pts := b.ConvexHull()
+	ctx.Pts(pts...)
+	ctx.LinePts(pts...)
 }
 
 func Arrow(ctx *draw.Context) {
