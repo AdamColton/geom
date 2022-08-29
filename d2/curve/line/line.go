@@ -60,28 +60,40 @@ func (l Line) LineIntersections(l2 Line, buf []float64) []float64 {
 // line passed in as an argument and a bool indicating if there was an
 // intersection.
 func (l Line) Intersection(l2 Line) (float64, float64, bool) {
-	d := l.D.Cross(l2.D)
+	t0, d, v := l.PartialIntersection(l2)
 	if d == 0 {
-		// lines are parallel do not intersect or overlap
 		return 0, 0, false
 	}
-	v := l.T0.Subtract(l2.T0)
-	t0 := (l.D.X*v.Y - l.D.Y*v.X) / d
 	t1 := (l2.D.Y*(v.X) + l2.D.X*(-v.Y)) / -d
 	return t0, t1, true
 }
 
-// Closest returns the point on the line closest to pt
-func (l Line) Closest(pt d2.Pt) d2.Pt {
+// PartialIntersection finds the intersection of l and l2 relative to l. It
+// also returns the cross product and v which is the vector from l.T0 to l2.T0.
+func (l Line) PartialIntersection(l2 Line) (t0, cross float64, v d2.V) {
+	cross = l.D.Cross(l2.D)
+	if cross == 0 {
+		// lines are parallel do not intersect or overlap
+		return
+	}
+	v = l.T0.Subtract(l2.T0)
+	t0 = (l.D.X*v.Y - l.D.Y*v.X) / cross
+	return
+}
+
+// ClosestT return the parametric T value closest to the given point.
+func (l Line) ClosestT(pt d2.Pt) float64 {
 	l2 := Line{
 		T0: pt,
 		D:  d2.V{-l.D.Y, l.D.X},
 	}
-	t0, _, hit := l2.Intersection(l)
-	if !hit {
-		return l.T0
-	}
-	return l.Pt1(t0)
+	t0, _, _ := l2.Intersection(l)
+	return t0
+}
+
+// Closest returns the point on the line closest to pt
+func (l Line) Closest(pt d2.Pt) d2.Pt {
+	return l.Pt1(l.ClosestT(pt))
 }
 
 // String fulfills Stringer
