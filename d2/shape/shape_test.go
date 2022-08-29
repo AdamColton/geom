@@ -72,4 +72,6 @@ func TestSubtract(t *testing.T) {
 	m, M := s.BoundingBox()
 	geomtest.Equal(t, d2.Pt{0, 1}, m)
 	geomtest.Equal(t, d2.Pt{2, 3}, M)
+
+	geomtest.Equal(t, []d2.Pt{{0, 1}, {2, 1}, {1, 3}}, s.ConvexHull())
 }
