@@ -1,7 +1,6 @@
 package d2
 
 import (
-	"math"
 	"testing"
 
 	"github.com/adamcolton/geom/angle"
@@ -18,14 +17,16 @@ func TestTransform(t *testing.T) {
 		{
 			T:        Translate(V{1, 2}).T(),
 			expected: Pt{2, 3},
-		}, {
-			T:        Rotate(math.Pi / 2).T(),
+		},
+		{
+			T:        Rotate{angle.Rot(0.25)}.T(),
 			expected: Pt{-1, 1},
 		}, {
 			T:        Scale(V{2, 3}).T(),
 			expected: Pt{2, 3},
-		}, {
-			T:        Chain{Rotate(math.Pi / 2), Translate(V{2, 2}), Scale(V{2, 3})}.T(),
+		},
+		{
+			T:        Chain{Rotate{angle.Rot(0.25)}, Translate(V{2, 2}), Scale(V{2, 3})}.T(),
 			expected: Pt{2, 9},
 		},
 	}
@@ -48,9 +49,9 @@ func TestTransform(t *testing.T) {
 func TestTGen(t *testing.T) {
 	tt := map[string]TGen{
 		"scale":     Scale(V{3, 4}),
-		"rotate":    Rotate(angle.Deg(87)),
+		"rotate":    Rotate{angle.Deg(87)},
 		"translate": Translate(V{3, 7}),
-		"chain":     Chain{Rotate(math.Pi / 2), Translate(V{2, 2}), Scale(V{2, 3})},
+		"chain":     Chain{Rotate{angle.Rot(0.5)}, Translate(V{2, 2}), Scale(V{2, 3})},
 		"chain0":    Chain{},
 		"chain1":    Chain{Scale(V{12, 13})},
 	}
@@ -153,7 +154,7 @@ func TestTAssertEqual(t *testing.T) {
 func TestTransformSet(t *testing.T) {
 	trans := Translate(V{1, 2})
 	scale := Scale(V{3, 4})
-	rot := Rotate(angle.Rot(0.25)).T()
+	rot := Rotate{angle.Rot(0.25)}.T()
 
 	tr := NewTSet().
 		AddBoth(trans).

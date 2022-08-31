@@ -153,12 +153,11 @@ func (s Scale) TInv() *T {
 // Pair returns the Scale transform and it's inverse
 func (s Scale) Pair() [2]*T {
 	return [2]*T{
-		&T{
+		{
 			{s.X, 0, 0},
 			{0, s.Y, 0},
 			{0, 0, 1},
-		},
-		&T{
+		}, {
 			{1.0 / s.X, 0, 0},
 			{0, 1.0 / s.Y, 0},
 			{0, 0, 1},
@@ -167,11 +166,11 @@ func (s Scale) Pair() [2]*T {
 }
 
 // Rotate generates a rotation transform
-type Rotate angle.Rad
+type Rotate struct{ angle.Sincoser }
 
 // T returns the rotation transform
 func (r Rotate) T() *T {
-	s, c := angle.Rad(r).Sincos()
+	s, c := r.Sincos()
 	return &T{
 		{c, -s, 0},
 		{s, c, 0},
@@ -181,7 +180,7 @@ func (r Rotate) T() *T {
 
 // TInv returns the inverse of the rotation transform
 func (r Rotate) TInv() *T {
-	s, c := angle.Rad(r).Sincos()
+	s, c := r.Sincos()
 	return &T{
 		{c, s, 0},
 		{-s, c, 0},
@@ -191,7 +190,7 @@ func (r Rotate) TInv() *T {
 
 // Pair returns the rotation transform and it's inverse
 func (r Rotate) Pair() [2]*T {
-	s, c := angle.Rad(r).Sincos()
+	s, c := r.Sincos()
 	return [2]*T{
 		{
 			{c, -s, 0},
