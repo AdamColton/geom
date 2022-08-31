@@ -27,9 +27,10 @@ func main() {
 	Clear()
 
 	gen := draw.ContextGenerator{
-		Size:  grid.Pt{500, 500},
-		Clear: draw.Color(1, 1, 1),
-		Set:   draw.Color(1, 0, 0),
+		Size:      grid.Pt{500, 500},
+		Clear:     draw.Color(1, 1, 1),
+		Set:       draw.Color(1, 0, 0),
+		PointSize: 5,
 	}
 
 	draw.Call(gen.Generate,
@@ -48,6 +49,7 @@ func main() {
 		Blossom,
 		BezierSegment,
 		PtNorm,
+		EllipsePtApprox,
 	)
 }
 
@@ -72,7 +74,7 @@ func BoxModel(ctx *draw.Context) {
 	g.AddColorStop(1, color.RGBA{0, 0, 255, 255})
 	ctx.Ctx.(*gg.Context).SetFillStyle(g)
 
-	ctx.BoxModel(boxmodel.New(shape.Subtract{
+	b := boxmodel.New(shape.Subtract{
 		shape.Union{
 			ellipse.NewCircle(d2.Pt{250, 250}, 230),
 			&triangle.Triangle{
@@ -80,7 +82,12 @@ func BoxModel(ctx *draw.Context) {
 			},
 		},
 		ellipse.NewCircle(d2.Pt{350, 250}, 40),
-	}, 10))
+	}, 10)
+	ctx.BoxModel(b)
+	ctx.SetRGB(0, 0.5, 0)
+	pts := b.ConvexHull()
+	ctx.Pts(pts...)
+	ctx.LinePts(pts...)
 }
 
 func Arrow(ctx *draw.Context) {
@@ -256,5 +263,27 @@ func PtNorm(ctx *draw.Context) {
 	for i := 0; i < 2000; i++ {
 		pt := generate.PtNorm().Multiply(75).Add(v)
 		ctx.Circle(pt, 3)
+	}
+}
+
+func EllipsePtApprox(ctx *draw.Context) {
+	n := 10
+	for x, d := range []float64{50, 100} {
+		for y, ang := range []angle.Rad{angle.Rot(0), angle.Rot(0.125)} {
+			c := d2.Pt{
+				X: float64((x*2 + 1) * 125),
+				Y: float64((y*2 + 1) * 125),
+			}
+			pt1 := c.Add(d2.Polar{M: d, A: ang}.V())
+			pt2 := c.Add(d2.Polar{M: d, A: ang + angle.Rot(0.5)}.V())
+			e := ellipse.New(pt1, pt2, 50)
+			ctx.SetRGB(1, 0, 0)
+			ctx.Pt1(e)
+			pts := e.PtApprox(n)
+			ctx.SetRGB(0, 1, 0)
+			ctx.Pts(pts[0])
+			ctx.SetRGB(0, 0, 1)
+			ctx.Pts(pts[1:]...)
+		}
 	}
 }

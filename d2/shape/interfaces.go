@@ -33,6 +33,12 @@ type BoundingBoxer interface {
 	BoundingBox() (min, max d2.Pt)
 }
 
+// ConvexHuller returns a slice of points that form a convex hull that contains
+// the underlying geometric object.
+type ConvexHuller interface {
+	ConvexHull() []d2.Pt
+}
+
 // Closest point on the perimeter to given point.
 type Closest interface {
 	Closest(pt d2.Pt) d2.Pt
@@ -43,5 +49,16 @@ type Closest interface {
 type Shape interface {
 	Container
 	line.Intersector
-	BoundingBoxer
+	ConvexHuller
+}
+
+// PointsInContainer checks the given points against the container. If the
+// contains value matches filter, it is appended to the buffer.
+func PointsInContainer(pts []d2.Pt, c Container, filter bool, buf []d2.Pt) []d2.Pt {
+	for _, pt := range pts {
+		if c.Contains(pt) == filter {
+			buf = append(buf, pt)
+		}
+	}
+	return buf
 }

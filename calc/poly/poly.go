@@ -70,7 +70,7 @@ func (p Poly) AssertEqual(to interface{}, t cmpr.Tolerance) error {
 	if ln2 := p2.Len(); ln2 > ln {
 		ln = ln2
 	}
-	return geomerr.NewSliceErrs(ln, ln, func(i int) error {
+	return geomerr.NewSliceErrs(ln, -1, func(i int) error {
 		c0, c1 := p.Coefficient(i), p2.Coefficient(i)
 		return geomerr.NewNotEqual(c0 == c1, c0, c1)
 	})

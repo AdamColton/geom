@@ -39,10 +39,6 @@ var (
 			{100, 100}, {100, 150}, {150, 100},
 		},
 	}
-	bez = bezier.New(
-		[]d2.Pt{{0, 250}, {0, 0}, {500, 0}},
-		[]d2.Pt{{500, 250}, {500, 500}, {0, 500}},
-	)
 	ell       = ellipse.New(d2.Pt{100, 350}, d2.Pt{400, 110}, 170)
 	intersect = shape.Subtract{
 		shape.Intersection{
@@ -80,7 +76,6 @@ func main() {
 
 	draw.Call(gen.Generate,
 		Triangles,
-		Bez,
 		Ellipse,
 		Intersection,
 		Compressed0,
@@ -125,6 +120,10 @@ func drawModel(ctx *draw.Context, bm boxmodel.BoxModel) {
 		ctx.DrawRectangle(b[0].X, b[0].Y, d.X, d.Y)
 	}
 	ctx.Stroke()
+
+	ctx.SetRGB(0, 0, 0)
+	ctx.LinePts(bm.ConvexHull()...)
+	ctx.Stroke()
 }
 
 func solid(bm boxmodel.BoxModel, name string) {
@@ -146,10 +145,6 @@ func solid(bm boxmodel.BoxModel, name string) {
 
 func Triangles(ctx *draw.Context) {
 	drawModel(ctx, boxmodel.New(triangles, 8))
-}
-
-func Bez(ctx *draw.Context) {
-	drawModel(ctx, boxmodel.New(bez, 8))
 }
 
 func Ellipse(ctx *draw.Context) {

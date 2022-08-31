@@ -60,8 +60,8 @@ func (b *Box) LineIntersections(l line.Line, buf []float64) []float64 {
 	buf = buf[:0]
 	for _, s := range b.Sides() {
 		t0, t1, ok := l.Intersection(s)
-		if ok && t0 >= 0 && t0 < 1 {
-			buf = append(buf, t1)
+		if ok && t1 >= 0 && t1 < 1 {
+			buf = append(buf, t0)
 			if max == 1 {
 				return buf
 			}
@@ -109,4 +109,14 @@ func (b *Box) Perimeter() float64 {
 // BoundingBox fulfils shape.BoundingBoxer and shape.Shape.
 func (b *Box) BoundingBox() (min, max d2.Pt) {
 	return b[0], b[1]
+}
+
+// ConvexHull fulfills shape.ConvexHuller. Returns the 4 corners of the box.
+func (b *Box) ConvexHull() []d2.Pt {
+	return []d2.Pt{
+		b[0],
+		{b[1].X, b[0].Y},
+		b[1],
+		{b[0].X, b[1].Y},
+	}
 }

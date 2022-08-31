@@ -36,6 +36,8 @@ type BoxModel interface {
 	// SignedArea is the same as Area.
 	SignedArea() float64
 
+	ConvexHull() []d2.Pt
+
 	// Centroid is the center of mass of the shape.
 	Centroid() d2.Pt
 	tree() *tree
@@ -48,7 +50,7 @@ type Iterator interface {
 
 // New BoxModel representing the shape.
 func New(s shape.Shape, depth int) BoxModel {
-	b := box.New(s.BoundingBox())
+	b := box.New(s.ConvexHull()...)
 	t := &tree{
 		start: firstParent,
 		nodes: make([]children, 1, 1<<(depth+2)),

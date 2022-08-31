@@ -11,6 +11,12 @@ import (
 // Polygon represents a Convex Polygon
 type Polygon []d2.Pt
 
+// New creates a polygon and orders the points to proceed counter clockwise.
+func New(pts []d2.Pt) Polygon {
+	p, c := NewPolar(pts)
+	return p.Polygon(c)
+}
+
 // Pt2c1 returns line.Segments as d2.Pt1 that adheres to the Shape rules
 func (p Polygon) Pt2c1(t0 float64) d2.Pt1 {
 	n := (len(p) - 1)
@@ -79,23 +85,28 @@ func (p Polygon) Centroid() d2.Pt {
 	return d2.Pt{x * a, y * a}
 }
 
-// Contains returns true of the point f is inside of the polygon
+// Contains returns true of the point f is inside of the polygon. This is done
+// with the winding number algorithm and runs in O(n).
 func (p Polygon) Contains(pt d2.Pt) bool {
-	// http://geomalgorithms.com/a03-_inclusion.html
-	wn := 0
+	// https://en.wikipedia.org/wiki/Point_in_polygon#Winding_number_algorithm
+	windings := 0
 	prev := p[len(p)-1]
 	for _, cur := range p {
 		c := line.New(prev, cur).Cross(pt)
-		if prev.Y <= pt.Y {
+		if c == 0 &&
+			((pt.X >= prev.X && pt.X <= cur.X) || (pt.X <= prev.X && pt.X >= cur.X)) &&
+			((pt.Y >= prev.Y && pt.Y <= cur.Y) || (pt.Y <= prev.Y && pt.Y >= cur.Y)) {
+			return true
+		} else if prev.Y <= pt.Y {
 			if c > 0 && cur.Y > pt.Y {
-				wn++
+				windings++
 			}
 		} else if c < 0 && cur.Y <= pt.Y {
-			wn--
+			windings--
 		}
 		prev = cur
 	}
-	return wn != 0
+	return windings != 0
 }
 
 // Perimeter returngs the total length of the perimeter
@@ -198,15 +209,11 @@ func (p Polygon) Collision(lineSegment line.Line) (lineT float64, idx int, sideT
 	ln := len(p)
 	for i, f := range p {
 		side := line.New(f, p[(i+1)%ln])
-		t0, t1, ok := side.Intersection(lineSegment)
-		if ok &&
-			t0 >= 0 && t0 < 1 &&
-			t1 >= 0 && t1 < 1 &&
-			(idx == -1 || lineT > t0) {
-
-			lineT = t0
+		t0, t1, ok := line.DefaultRange.Check(side.Intersection(lineSegment))
+		if ok && (idx == -1 || lineT > t1) {
+			lineT = t1
 			idx = i
-			sideT = t1
+			sideT = t0
 		}
 	}
 	return
@@ -220,8 +227,8 @@ func (p Polygon) LineIntersections(ln line.Line, buf []float64) []float64 {
 	for _, cur := range p {
 		side := line.New(prev, cur)
 		t0, t1, ok := ln.Intersection(side)
-		if ok && t0 >= 0 && t0 < 1 {
-			buf = append(buf, t1)
+		if ok && t1 >= 0 && t1 < 1 {
+			buf = append(buf, t0)
 			if max > 0 && len(buf) == max {
 				return buf
 			}
@@ -231,15 +238,88 @@ func (p Polygon) LineIntersections(ln line.Line, buf []float64) []float64 {
 	return buf
 }
 
+// Collision between two polygons
+type Collision struct {
+	PIdx, P2Idx int
+	PT, P2T     float64
+}
+
+// P returns the collision point using polygon P to compute.
+func (c Collision) P(p Polygon) d2.Pt {
+	return p.Side(c.PIdx).Pt1(c.PT)
+}
+
+// P2 returns the collision point using polygon P2 to compute.
+func (c Collision) P2(p2 Polygon) d2.Pt {
+	return p2.Side(c.P2Idx).Pt1(c.P2T)
+}
+
+// Collisions represent a set of collisions between two polygons.
+type Collisions []Collision
+
+// P returns the collision points using polygon P to compute.
+func (cs Collisions) P(p Polygon) []d2.Pt {
+	out := make([]d2.Pt, 0, len(cs))
+	for _, c := range cs {
+		out = append(out, c.P(p))
+	}
+	return out
+}
+
+// P2 returns the collision points using polygon P2 to compute.
+func (cs Collisions) P2(p2 Polygon) []d2.Pt {
+	out := make([]d2.Pt, 0, len(cs))
+	for _, c := range cs {
+		out = append(out, c.P2(p2))
+	}
+	return out
+}
+
+// PolygonIntersections finds the intersection points between two polygons.
+func (p Polygon) PolygonCollisions(p2 Polygon) Collisions {
+	ln := len(p)
+	ln2 := len(p2)
+	if ln < 2 || ln2 < 2 {
+		return nil
+	}
+	sides := p.Sides()
+	sides2 := p2.Sides()
+	var out Collisions
+	for idx, s := range sides {
+		for idx2, s2 := range sides2 {
+			t, t2, ok := line.DefaultRange.Check(s.Intersection(s2))
+			if ok {
+				out = append(out, Collision{
+					PIdx:  idx,
+					P2Idx: idx2,
+					PT:    t,
+					P2T:   t2,
+				})
+			}
+		}
+	}
+	return out
+}
+
 // Sides converts the perimeter of the polygon to a slice of lines.
 func (p Polygon) Sides() []line.Line {
-	side := make([]line.Line, len(p))
-	prev := p[len(p)-1]
-	for i, f := range p {
-		side[i] = line.New(prev, f)
-		prev = f
+	ln := len(p)
+	side := make([]line.Line, ln)
+	for i, pt := range p[:ln-1] {
+		side[i] = line.New(pt, p[(i+1)])
 	}
+	side[ln-1] = line.New(p[ln-1], p[0])
 	return side
+}
+
+// Side n of the polygon where the side is formed by p[n] to p[n+1].
+func (p Polygon) Side(n int) line.Line {
+	ln := len(p)
+	n %= ln
+	if n < 0 {
+		n += ln
+	}
+	return line.New(p[n], p[(n+1)%ln])
 }
 
 // NonIntersecting returns false if any two sides intersect. This requires
@@ -252,8 +332,8 @@ func (p Polygon) NonIntersecting() bool {
 		for _, sj := range side[i+2:] {
 			t0, t1, ok := si.Intersection(sj)
 			if ok &&
-				t0 > 0 && t0 < 1 &&
-				t1 > 0 && t1 < 1 {
+				t1 > 0 && t1 < 1 &&
+				t0 > 0 && t0 < 1 {
 				return false
 			}
 		}
@@ -275,4 +355,10 @@ func (p Polygon) Reverse() Polygon {
 // BoundingBox fulfills BoundingBoxer returning a box that contains the polygon.
 func (p Polygon) BoundingBox() (min, max d2.Pt) {
 	return d2.MinMax(p...)
+}
+
+// ConvexHull fulfills shape.ConvexHuller. Returns the convex hull of the
+// polygon using the ConvexHull function.
+func (p Polygon) ConvexHull() []d2.Pt {
+	return ConvexHull(p...)
 }

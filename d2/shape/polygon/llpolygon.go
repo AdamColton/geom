@@ -44,7 +44,11 @@ func (p *LLPolygon) Contains(pt d2.Pt) bool {
 		nextNd := p.Nodes[curNd.NextIdx]
 		cur, next := p.Pts[curNd.PIdx], p.Pts[nextNd.PIdx]
 		c := line.New(cur, next).Cross(pt)
-		if cur.Y <= pt.Y {
+		if c == 0 &&
+			((pt.X >= next.X && pt.X <= cur.X) || (pt.X <= next.X && pt.X >= cur.X)) &&
+			((pt.Y >= next.Y && pt.Y <= cur.Y) || (pt.Y <= next.Y && pt.Y >= cur.Y)) {
+			return true
+		} else if cur.Y <= pt.Y {
 			if c > 0 && next.Y > pt.Y {
 				wn++
 			}
@@ -68,7 +72,7 @@ func (p *LLPolygon) DoesIntersect(ln line.Line) bool {
 
 		side := line.New(p.Pts[curNd.PIdx], p.Pts[nextNd.PIdx])
 		i0, i1, ok := side.Intersection(ln)
-		if ok && i0 >= small && i0 < 1.0-small && i1 >= 0 && i1 < 1.0 {
+		if ok && i1 >= small && i1 < 1.0-small && i0 >= 0 && i0 < 1.0 {
 			return true
 		}
 
@@ -78,4 +82,10 @@ func (p *LLPolygon) DoesIntersect(ln line.Line) bool {
 		curNd = nextNd
 	}
 	return false
+}
+
+// ConvexHull fulfills shape.ConvexHuller. Returns the convex hull of the
+// polygon using the ConvexHull function.
+func (p *LLPolygon) ConvexHull() []d2.Pt {
+	return ConvexHull(p.Pts...)
 }

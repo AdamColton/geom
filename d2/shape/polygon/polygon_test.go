@@ -3,6 +3,7 @@ package polygon
 import (
 	"testing"
 
+	"github.com/adamcolton/geom/angle"
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
 	"github.com/adamcolton/geom/d2/grid"
@@ -51,7 +52,7 @@ func TestContains(t *testing.T) {
 				d2.Pt{1, 0},
 				d2.Pt{2, -2},
 			},
-			does:   []d2.Pt{{0.5, 0}, {1, 1}},
+			does:   []d2.Pt{{0.5, 0}, {1, 1}, {0, 0}, {2, 2}},
 			doesnt: []d2.Pt{{0.5, 1}, {2, 0}, {1.5, 0}},
 		},
 	}
@@ -67,6 +68,9 @@ func TestContains(t *testing.T) {
 				assert.False(t, tc.Contains(p))
 				assert.False(t, ll.Contains(p))
 			}
+			a := AssertConvexHuller(append(tc.Polygon, tc.does...))
+			geomtest.Equal(t, a, tc.Polygon)
+			geomtest.Equal(t, a, ll)
 		})
 	}
 }
@@ -378,4 +382,48 @@ func TestCollision(t *testing.T) {
 			assert.Equal(t, tc.expSideT, side)
 		})
 	}
+}
+
+func TestSides(t *testing.T) {
+	for sides := 3; sides < 10; sides++ {
+		p := RegularPolygonRadius(d2.Pt{}, 1, 0, sides)
+		expected := p.Sides()
+		for idx := 0; idx < sides; idx++ {
+			geomtest.Equal(t, expected[idx], p.Side(idx))
+			geomtest.Equal(t, p.Side(-idx), p.Side(sides-idx))
+			geomtest.Equal(t, p.Side(idx), p.Side(idx+sides))
+		}
+	}
+}
+
+func TestPolygonCollisions(t *testing.T) {
+	tt := map[string]struct {
+		p, p2    Polygon
+		expected int
+	}{
+		"basic": {
+			p:        Polygon{{0, 0}, {2, 0}, {2, 2}, {0, 1}},
+			p2:       Polygon{{1, 1}, {5, 1}, {5, 5}, {1, 5}},
+			expected: 2,
+		},
+	}
+
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			cs := tc.p.PolygonCollisions(tc.p2)
+			assert.Len(t, cs, tc.expected)
+			geomtest.Equal(t, cs.P(tc.p), cs.P2(tc.p2))
+		})
+	}
+}
+
+func TestNew(t *testing.T) {
+	p := RegularPolygonRadius(d2.Pt{10, 12}, 3, angle.Rot(4.0/7.0), 7)
+
+	pts := make([]d2.Pt, 7)
+	for i := range p {
+		pts[i] = p[(i*2+1)%7]
+	}
+
+	geomtest.Equal(t, p, New(pts))
 }
