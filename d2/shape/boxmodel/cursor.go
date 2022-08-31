@@ -26,6 +26,10 @@ type cursor struct {
 
 func (c *cursor) moveTo(child byte) {
 	c.stack = append(c.stack, c.parent)
+	c.stacklessMoveTo(child)
+}
+
+func (c *cursor) stacklessMoveTo(child byte) {
 	c.parent = frame{
 		node:  c.idx,
 		child: child,
@@ -140,13 +144,13 @@ func (c *cursor) sum(s *sum) {
 	}
 }
 
-func (c *cursor) Next() (b box.Box, done bool) {
+func (c *cursor) Next() (b *box.Box, done bool) {
 	for c.nextLeaf(0) {
 		if c.idx == c.match {
 			return c.box(), false
 		}
 	}
-	return box.Box{}, true
+	return &box.Box{}, true
 }
 
 func (c *cursor) nextLeaf(child byte) bool {
@@ -163,8 +167,8 @@ func (c *cursor) nextLeaf(child byte) bool {
 	return true
 }
 
-func (c *cursor) box() box.Box {
-	return box.Box{
+func (c *cursor) box() *box.Box {
+	return &box.Box{
 		d2.Pt{c.h.Pt1(c.x).X, c.v.Pt1(c.y).Y},
 		d2.Pt{c.h.Pt1(c.x + c.size).X, c.v.Pt1(c.y + c.size).Y},
 	}
@@ -192,4 +196,52 @@ func (c *cursor) scan(s shape.Shape, depth int) {
 			c.insert(t, vt, depth)
 		}
 	}
+}
+
+func (c *cursor) at(pt d2.Pt) uint32 {
+	if c.idx < firstParent {
+		return c.idx
+	}
+	b := c.box()
+	center := b.Centroid()
+	var child byte
+	if pt.X > center.X {
+		child += 1
+	}
+	if pt.Y > center.Y {
+		child += 2
+	}
+	c.stacklessMoveTo(child)
+	return c.at(pt)
+}
+
+type intersection struct {
+	t    float64
+	kind byte
+}
+
+func (c *cursor) lineIntersections(l line.Line, buf []float64, hits []intersection) []intersection {
+	bx := c.box()
+	buf = bx.LineIntersections(l, buf)
+	ln := len(buf)
+	if ln == 0 {
+		return hits
+	}
+	if c.idx < firstParent {
+		if ln >= 2 {
+			buf[0] = (buf[0] + buf[1]) / 2.0
+		}
+		return append(hits, intersection{
+			t:    buf[0],
+			kind: byte(c.idx),
+		})
+	}
+
+	buf = buf[:0]
+	for child := byte(0); child < 4; child++ {
+		c.moveTo(child)
+		hits = c.lineIntersections(l, buf, hits)
+		c.pop()
+	}
+	return hits
 }

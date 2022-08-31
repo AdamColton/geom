@@ -38,6 +38,12 @@ func TestBox(t *testing.T) {
 		geomtest.Equal(t, b.Vertex(i), pt, i)
 	}
 
+	ls := line.Segments(append(b.ConvexHull(), b[0]))
+	for i := 0.0; i < 1.0; i += 0.01 {
+		geomtest.Equal(t, ls.Pt1(i), b.Pt1(i))
+		geomtest.Equal(t, b.Pt1(1-i), b.Pt1(-i), -i)
+	}
+
 	// malformed but allows testing of SignedArea
 	b[0] = d2.Pt{0, 2}
 	assert.Equal(t, 1.0, b.Area())
@@ -113,6 +119,27 @@ func TestLineIntersections(t *testing.T) {
 				one := li.LineIntersections(tc.Line, []float64{0})
 				geomtest.Equal(t, tc.expected[0], tc.Line.Pt1(one[0]))
 			}
+		})
+	}
+}
+
+func TestMap(t *testing.T) {
+	tt := map[string]struct {
+		m, M     d2.Pt
+		v        d2.V
+		expected d2.Pt
+	}{
+		"basic": {
+			m:        d2.Pt{1, 2},
+			M:        d2.Pt{3, 4},
+			v:        d2.V{.5, .6},
+			expected: d2.Pt{2, 3.2},
+		},
+	}
+
+	for n, tc := range tt {
+		t.Run(n, func(t *testing.T) {
+			geomtest.Equal(t, tc.expected, box.New(tc.m, tc.M).Map(tc.v))
 		})
 	}
 }

@@ -7,6 +7,7 @@ import (
 	"runtime/pprof"
 
 	"github.com/adamcolton/geom/d2"
+	"github.com/adamcolton/geom/d2/curve/line"
 	"github.com/adamcolton/geom/d2/draw"
 	"github.com/adamcolton/geom/d2/grid"
 	"github.com/adamcolton/geom/d2/shape"
@@ -121,9 +122,11 @@ func drawModel(ctx *draw.Context, bm boxmodel.BoxModel) {
 	}
 	ctx.Stroke()
 
+	size := ctx.Image().Bounds().Max
 	ctx.SetRGB(0, 0, 0)
-	ctx.LinePts(bm.ConvexHull()...)
-	ctx.Stroke()
+	l := line.New(d2.Pt{0.4 * float64(size.X), 0}, d2.Pt{0.6 * float64(size.X), float64(size.Y)})
+	ctx.CurvePts(l, bm.LineIntersections(l, nil))
+	ctx.Pt1(l)
 }
 
 func solid(bm boxmodel.BoxModel, name string) {

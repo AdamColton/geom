@@ -79,15 +79,6 @@ func (c *Context) LinePts(pts ...d2.Pt) {
 	c.Ctx.Stroke()
 }
 
-// CurvePts points on a curve with a diamter of Context.PointSize.
-func (c *Context) CurvePts(curve d2.Pt1, pts []float64) {
-	for _, t := range pts {
-		pt := curve.Pt1(t)
-		c.Ctx.DrawCircle(pt.X, pt.Y, c.PointSize)
-	}
-	c.Ctx.Stroke()
-}
-
 // ContextGenerator is a helper for generating Contexts
 type ContextGenerator struct {
 	Size       grid.Pt
@@ -110,39 +101,15 @@ func (g *ContextGenerator) GenerateForImage(img image.Image) *Context {
 	return g.GenerateForCtx(gg.NewContextForImage(img))
 }
 
-var DefaultPointSize float64 = 3
-
 // GenerateForCtx clears the gg.Context and uses it as Ctx in the returned
 // Context.
 func (g *ContextGenerator) GenerateForCtx(ctx *gg.Context) *Context {
 	ctx.SetColor(g.Clear)
 	ctx.Clear()
-	return g.SetCtx(ctx)
-}
-
-func (g *ContextGenerator) SetCtx(ctx *gg.Context) *Context {
 	ctx.SetColor(g.Set)
-	ps := g.PointSize
-	if ps == 0 {
-		ps = DefaultPointSize
-	}
 	return &Context{
 		Ctx:        ctx,
 		FloatRange: iter.Include(1, 0.0025),
-		PointSize:  ps,
+		PointSize:  g.PointSize,
 	}
-}
-
-func (g *ContextGenerator) Clone(img image.Image) *Context {
-	b := img.Bounds()
-	r := grid.Range{
-		grid.Pt{b.Min.X, b.Min.Y},
-		grid.Pt{b.Max.X, b.Max.Y},
-	}
-	out := image.NewRGBA(b)
-	for i, done := r.Iter().Start(); !done; done = i.Next() {
-		pt := i.Pt()
-		out.Set(pt.X, pt.Y, img.At(pt.X, pt.Y))
-	}
-	return g.SetCtx(gg.NewContextForRGBA(out))
 }

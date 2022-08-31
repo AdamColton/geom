@@ -14,19 +14,19 @@ type BoxModel interface {
 	Inside() int
 	// InsideCursor returns a cursor that will iterate over all the boxes
 	// inside the shape.
-	InsideCursor() (Iterator, box.Box, bool)
+	InsideCursor() (Iterator, *box.Box, bool)
 
 	// Perimeter returns the number of boxes that contain the perimeter.
 	Perimeter() int
 	// PerimeterCursor returns a cursor that will iterate over all the boxes
 	// on the perimeter of the shape.
-	PerimeterCursor() (Iterator, box.Box, bool)
+	PerimeterCursor() (Iterator, *box.Box, bool)
 
 	// Outside returns the number of boxes outside the shape.
 	Outside() int
 	// OutsideCursor returns a cursor that will iterate over all the boxes
 	// inside the shape.
-	OutsideCursor() (Iterator, box.Box, bool)
+	OutsideCursor() (Iterator, *box.Box, bool)
 
 	// Area is an approximation of the area of the shape. It is the sum of all
 	// the boxes inside the shape and half the area of the boxes on the
@@ -36,7 +36,12 @@ type BoxModel interface {
 	// SignedArea is the same as Area.
 	SignedArea() float64
 
+	// ConvexHull fulfills shape.ConvexHuller.
 	ConvexHull() []d2.Pt
+
+	Contains(d2.Pt) bool
+
+	LineIntersections(l line.Line, buf []float64) []float64
 
 	// Centroid is the center of mass of the shape.
 	Centroid() d2.Pt
@@ -45,7 +50,7 @@ type BoxModel interface {
 
 // Iterator iterates over a collection of boxes
 type Iterator interface {
-	Next() (b box.Box, done bool)
+	Next() (b *box.Box, done bool)
 }
 
 // New BoxModel representing the shape.

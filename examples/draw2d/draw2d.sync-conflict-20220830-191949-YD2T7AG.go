@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"image/color"
-	"math/rand"
 	"os"
 	"path/filepath"
 
@@ -89,20 +88,6 @@ func BoxModel(ctx *draw.Context) {
 	pts := b.ConvexHull()
 	ctx.Pts(pts...)
 	ctx.LinePts(pts...)
-
-	ctx.SetRGB(0, 0, 0)
-	size := ctx.Image().Bounds().Max
-	for i := 0; i < 1; i++ {
-		s, e := rand.Float64(), rand.Float64()
-		s, e = 0.5, 0.5
-		//x := line.New(d2.Pt{s * float64(size.X), 0}, d2.Pt{e * float64(size.X), float64(size.Y)})
-		x := line.New(d2.Pt{s * float64(size.X), 0}, d2.Pt{e * float64(size.X), float64(size.Y)})
-		//y := line.New(d2.Pt{0, s * float64(size.Y)}, d2.Pt{float64(size.X), e * float64(size.Y)})
-		ctx.CurvePts(x, b.LineIntersections(x, nil))
-		ctx.Pt1(x)
-		//ctx.CurvePts(y, b.LineIntersections(y, nil))
-		//ctx.Pt1(y)
-	}
 }
 
 func Arrow(ctx *draw.Context) {

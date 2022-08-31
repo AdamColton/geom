@@ -112,6 +112,15 @@ func (t *T) T(t2 *T) *T {
 	}
 }
 
+func (t *T) TInv() *T {
+	inv, _ := t.Inversion()
+	return inv
+}
+
+func (t *T) Inversion() (*T, bool) {
+	panic("not implemented")
+}
+
 // AssertEqual fulfils geomtest.AssertEqualizer
 func (t *T) AssertEqual(actual interface{}, tol cmpr.Tolerance) error {
 	t2, ok := actual.(*T)
@@ -128,6 +137,20 @@ func (t *T) AssertEqual(actual interface{}, tol cmpr.Tolerance) error {
 	}
 
 	return nil
+}
+
+type Pair [2]*T
+
+func (p Pair) GetT() *T {
+	return p[0]
+}
+
+func (p Pair) TInv() *T {
+	return p[1]
+}
+
+func (p Pair) Pair() [2]*T {
+	return p
 }
 
 // Scale generates a scale transform

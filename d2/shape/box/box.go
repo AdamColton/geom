@@ -1,6 +1,8 @@
 package box
 
 import (
+	"math"
+
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
 )
@@ -119,4 +121,17 @@ func (b *Box) ConvexHull() []d2.Pt {
 		b[1],
 		{b[0].X, b[1].Y},
 	}
+}
+
+func (b *Box) Map(v d2.V) d2.Pt {
+	return b[0].Add(b.V().Product(v))
+}
+
+func (b *Box) Pt1(t float64) d2.Pt {
+	_, t = math.Modf(t)
+	if t < 0.0 {
+		t += 1
+	}
+	n, t := math.Modf(t * 4)
+	return b.Side(int(n)).Pt1(t)
 }

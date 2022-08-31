@@ -1,9 +1,13 @@
 package boxmodel
 
 import (
+	"math/rand"
+	"sort"
 	"testing"
 
 	"github.com/adamcolton/geom/d2"
+	"github.com/adamcolton/geom/d2/curve/line"
+	"github.com/adamcolton/geom/d2/generate"
 	"github.com/adamcolton/geom/d2/shape"
 	"github.com/adamcolton/geom/d2/shape/box"
 	"github.com/adamcolton/geom/d2/shape/ellipse"
@@ -18,9 +22,10 @@ type testShape interface {
 	shape.Centroid
 	shape.Area
 	d2.Pt1
+	shape.BoundingBoxer
 }
 
-func countIterator(fn func() (Iterator, box.Box, bool)) int {
+func countIterator(fn func() (Iterator, *box.Box, bool)) int {
 	sum := 0
 	for c, _, done := fn(); !done; _, done = c.Next() {
 		sum++
@@ -64,11 +69,30 @@ func TestBasicShapes(t *testing.T) {
 			scale := 1.001
 			h := (&d2.TransformSet{}).
 				AddBoth(d2.Translate(b.Centroid().Multiply(-1)).Pair()).
-				Add(d2.Scale(d2.V{scale, scale}).T()).
+				Add(d2.Scale(d2.V{scale, scale}).GetT()).
 				Get().
 				Slice(b.ConvexHull())
 
 			geomtest.Equal(t, a, h)
+
+			bx := box.New(tc.BoundingBox())
+			correct := 0
+			for i := 0; i < 1000; i++ {
+				pt := bx.Map(generate.V())
+				if tc.Contains(pt) == b.Contains(pt) {
+					correct++
+				}
+			}
+			assert.True(t, float64(correct)/1000.0 > 0.99, correct)
+
+			for i := 0; i < 1000; i++ {
+				l := line.New(bx.Pt1(rand.Float64()), bx.Pt1(rand.Float64()))
+				expected := tc.LineIntersections(l, nil)
+				actual := b.LineIntersections(l, nil)
+				sort.Sort(sort.Float64Slice(expected))
+				sort.Sort(sort.Float64Slice(actual))
+				geomtest.EqualInDelta(t, expected, actual, 1e-4)
+			}
 		})
 	}
 }
