@@ -42,10 +42,10 @@ func (ls Segments) LineIntersections(l Line, buf []float64) []float64 {
 		seg := New(prev, pt)
 		prev = pt
 		t0, t1, ok := seg.Intersection(l)
-		if !ok || t1 < 0 || t1 >= 1 {
+		if !ok || t0 < 0 || t0 >= 1 {
 			continue
 		}
-		buf = append(buf, t0)
+		buf = append(buf, t1)
 		if max > 0 && len(buf) == max {
 			return buf
 		}

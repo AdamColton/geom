@@ -112,7 +112,7 @@ func (t *Triangle) LineIntersections(l line.Line, buf []float64) []float64 {
 	for _, cur := range t {
 		l2 := line.New(prev, cur)
 		prev = cur
-		tt, t0, ok := l.Intersection(l2)
+		t0, tt, ok := l.Intersection(l2)
 		if tt >= 0 && tt < 1 && ok {
 			buf = append(buf, t0)
 			if max > 0 && len(buf) == max {
@@ -132,7 +132,7 @@ func (t *Triangle) BoundingBox() (d2.Pt, d2.Pt) {
 func (t *Triangle) CircumCenter() d2.Pt {
 	l01 := line.Bisect(t[0], t[1])
 	l02 := line.Bisect(t[0], t[2])
-	t0, _, ok := l01.Intersection(l02)
+	_, t0, ok := l01.Intersection(l02)
 	if ok {
 		return l02.Pt1(t0)
 	}

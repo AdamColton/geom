@@ -68,7 +68,7 @@ func (p *LLPolygon) DoesIntersect(ln line.Line) bool {
 
 		side := line.New(p.Pts[curNd.PIdx], p.Pts[nextNd.PIdx])
 		i0, i1, ok := side.Intersection(ln)
-		if ok && i0 >= small && i0 < 1.0-small && i1 >= 0 && i1 < 1.0 {
+		if ok && i1 >= small && i1 < 1.0-small && i0 >= 0 && i0 < 1.0 {
 			return true
 		}
 

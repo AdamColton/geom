@@ -60,8 +60,8 @@ func (b *Box) LineIntersections(l line.Line, buf []float64) []float64 {
 	buf = buf[:0]
 	for _, s := range b.Sides() {
 		t0, t1, ok := l.Intersection(s)
-		if ok && t0 >= 0 && t0 < 1 {
-			buf = append(buf, t1)
+		if ok && t1 >= 0 && t1 < 1 {
+			buf = append(buf, t0)
 			if max == 1 {
 				return buf
 			}

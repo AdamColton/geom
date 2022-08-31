@@ -49,26 +49,28 @@ func (l Line) M() float64 {
 // Otherwise a slice with a single value is returned indicating the parametric
 // point along l2 at which the intersection occures.
 func (l Line) LineIntersections(l2 Line, buf []float64) []float64 {
-	t, _, does := l.Intersection(l2)
+	_, t, does := l.Intersection(l2)
 	if !does {
 		return buf[:0]
 	}
 	return append(buf[:0], t)
 }
 
-// Intersection returns the parametric value of the intersection point on the
+// Small is the value that will be used to compare against 0.
+var Small = cmpr.Tolerance(1e-12)
+
+// Intersection returns the parametric values of the intersection point on the
 // line passed in as an argument and a bool indicating if there was an
 // intersection.
-func (l Line) Intersection(l2 Line) (float64, float64, bool) {
+func (l Line) Intersection(l2 Line) (tl float64, tl2 float64, does bool) {
 	d := l.D.Cross(l2.D)
-	if d == 0 {
-		// lines are parallel do not intersect or overlap
-		return 0, 0, false
+	does = !Small.Zero(d)
+	if does {
+		v := l.T0.Subtract(l2.T0)
+		tl2 = (l.D.X*v.Y - l.D.Y*v.X) / d
+		tl = (l2.D.Y*(v.X) + l2.D.X*(-v.Y)) / -d
 	}
-	v := l.T0.Subtract(l2.T0)
-	t0 := (l.D.X*v.Y - l.D.Y*v.X) / d
-	t1 := (l2.D.Y*(v.X) + l2.D.X*(-v.Y)) / -d
-	return t0, t1, true
+	return
 }
 
 // Closest returns the point on the line closest to pt
@@ -77,7 +79,7 @@ func (l Line) Closest(pt d2.Pt) d2.Pt {
 		T0: pt,
 		D:  d2.V{-l.D.Y, l.D.X},
 	}
-	t0, _, hit := l2.Intersection(l)
+	_, t0, hit := l2.Intersection(l)
 	if !hit {
 		return l.T0
 	}
