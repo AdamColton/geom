@@ -151,9 +151,9 @@ func (t0w T0Wrapper) Pt1(t1 float64) Pt {
 // TGen is a Transform generator. If both the T and it's inverse are needed,
 // Pair may reduce some duplicate calculations.
 type TGen interface {
-	T() *T
+	GetT() *T
 	TInv() *T
-	Pair() [2]*T
+	Pair() Pair
 }
 
 // AssertV1 checks that the derivative is close the derivative approximation. A

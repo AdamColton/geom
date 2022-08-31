@@ -15,18 +15,19 @@ func TestTransform(t *testing.T) {
 		expected Pt
 	}{
 		{
-			T:        Translate(V{1, 2}).T(),
+			T:        Translate(V{1, 2}).GetT(),
 			expected: Pt{2, 3},
 		},
 		{
-			T:        Rotate{angle.Rot(0.25)}.T(),
+			T:        Rotate{angle.Rot(0.25)}.GetT(),
 			expected: Pt{-1, 1},
-		}, {
-			T:        Scale(V{2, 3}).T(),
+		},
+		{
+			T:        Scale(V{2, 3}).GetT(),
 			expected: Pt{2, 3},
 		},
 		{
-			T:        Chain{Rotate{angle.Rot(0.25)}, Translate(V{2, 2}), Scale(V{2, 3})}.T(),
+			T:        Chain{Rotate{angle.Rot(0.25)}, Translate(V{2, 2}), Scale(V{2, 3})}.GetT(),
 			expected: Pt{2, 9},
 		},
 	}
@@ -58,7 +59,7 @@ func TestTGen(t *testing.T) {
 
 	for name, gen := range tt {
 		t.Run(name, func(t *testing.T) {
-			tr, ti := gen.T(), gen.TInv()
+			tr, ti := gen.GetT(), gen.TInv()
 			p := gen.Pair()
 			geomtest.Equal(t, tr, p[0])
 			geomtest.Equal(t, ti, p[1])
@@ -73,7 +74,7 @@ func TestTString(t *testing.T) {
 }
 
 func TestTSlice(t *testing.T) {
-	tr := Translate(V{3, 4}).T()
+	tr := Translate(V{3, 4}).GetT()
 	got := tr.Slice([]Pt{{1, 1}, {2, 2}, {3, 3}})
 	expected := []Pt{{4, 5}, {5, 6}, {6, 7}}
 	geomtest.Equal(t, expected, got)
@@ -135,7 +136,7 @@ func TestTProd(t *testing.T) {
 }
 
 func TestTAssertEqual(t *testing.T) {
-	tr := Translate(V{3, 4}).T()
+	tr := Translate(V{3, 4}).GetT()
 	err := tr.AssertEqual(Pt{1, 1}, 1e-6)
 	assert.Equal(t, geomerr.TypeMismatch(tr, Pt{1, 1}), err)
 
@@ -154,7 +155,7 @@ func TestTAssertEqual(t *testing.T) {
 func TestTransformSet(t *testing.T) {
 	trans := Translate(V{1, 2})
 	scale := Scale(V{3, 4})
-	rot := Rotate{angle.Rot(0.25)}.T()
+	rot := Rotate{angle.Rot(0.25)}.GetT()
 
 	tr := NewTSet().
 		AddBoth(trans).
@@ -167,4 +168,28 @@ func TestTransformSet(t *testing.T) {
 	expected := TProd(tp[0], sp[0], rot, sp[1], tp[1])
 
 	geomtest.Equal(t, expected, tr)
+}
+
+func TestInversion(t *testing.T) {
+	tt := []TGen{
+		Rotate{angle.Deg(30)},
+		Translate(V{2, 3}),
+		Scale(V{31, 41}),
+	}
+
+	i := IndentityTransform()
+	for _, tc := range tt {
+		t0 := tc.GetT()
+		t.Run(t0.String(), func(t *testing.T) {
+			ti, ok := t0.Inversion()
+			assert.True(t, ok)
+			geomtest.Equal(t, i, t0.T(ti))
+			geomtest.Equal(t, ti, t0.TInv())
+
+			p := t0.Pair()
+			geomtest.Equal(t, p.GetT(), t0)
+			geomtest.Equal(t, p.TInv(), ti)
+			assert.Equal(t, p.Pair(), p)
+		})
+	}
 }

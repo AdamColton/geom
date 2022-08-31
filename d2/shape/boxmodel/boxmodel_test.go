@@ -64,7 +64,7 @@ func TestBasicShapes(t *testing.T) {
 			scale := 1.001
 			h := (&d2.TransformSet{}).
 				AddBoth(d2.Translate(b.Centroid().Multiply(-1))).
-				Add(d2.Scale(d2.V{scale, scale}).T()).
+				Add(d2.Scale(d2.V{scale, scale}).GetT()).
 				GetT().
 				Slice(b.ConvexHull())
 
