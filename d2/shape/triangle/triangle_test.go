@@ -1,40 +1,43 @@
-package triangle
+package triangle_test
 
 import (
 	"math"
 	"testing"
 
 	"github.com/adamcolton/geom/angle"
+	"github.com/adamcolton/geom/geomtest"
 
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
 	"github.com/adamcolton/geom/d2/grid"
+	"github.com/adamcolton/geom/d2/shape/polygon"
+	"github.com/adamcolton/geom/d2/shape/triangle"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestTransform(t *testing.T) {
 	tt := []struct {
-		T1, T2 *Triangle
+		T1, T2 *triangle.Triangle
 	}{
 		{
-			T1: &Triangle{
+			T1: &triangle.Triangle{
 				{1, 1},
 				{2, 1},
 				{2, 2},
 			},
-			T2: &Triangle{
+			T2: &triangle.Triangle{
 				{2, 1},
 				{3, 1},
 				{3, 2},
 			},
 		},
 		{
-			T1: &Triangle{
+			T1: &triangle.Triangle{
 				{0, 0},
 				{1, 0},
 				{0, 1},
 			},
-			T2: &Triangle{
+			T2: &triangle.Triangle{
 				{0, 1},
 				{0, 0},
 				{1, 0},
@@ -44,7 +47,7 @@ func TestTransform(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.T1.String()+tc.T2.String(), func(t *testing.T) {
-			tfrm, err := Transform(tc.T1, tc.T2)
+			tfrm, err := triangle.Transform(tc.T1, tc.T2)
 			assert.NoError(t, err)
 			for i, pt := range tc.T1 {
 				pt = tfrm.Pt(pt)
@@ -55,7 +58,7 @@ func TestTransform(t *testing.T) {
 }
 
 func TestPt2(t *testing.T) {
-	tri := &Triangle{{0, 0}, {1, 0}, {0, 1}}
+	tri := &triangle.Triangle{{0, 0}, {1, 0}, {0, 1}}
 	assert.Equal(t, tri[0], tri.Pt2(0, 0))
 
 	i := grid.Pt{1, 1}.To(grid.Pt{10, 10})
@@ -70,7 +73,7 @@ func TestPt2(t *testing.T) {
 }
 
 func TestPt1(t *testing.T) {
-	tri := &Triangle{{0, 0}, {1, 0}, {0, 1}}
+	tri := &triangle.Triangle{{0, 0}, {1, 0}, {0, 1}}
 	assert.Equal(t, tri[0], tri.Pt1(0))
 	assert.Equal(t, tri[1], tri.Pt1(1.0/3.0))
 	assert.Equal(t, tri[2], tri.Pt1(2.0/3.0))
@@ -96,7 +99,7 @@ func TestCircumCenter(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		tr := &Triangle{
+		tr := &triangle.Triangle{
 			tc.center.Add(d2.Polar{tc.m, tc.angles[0]}.V()),
 			tc.center.Add(d2.Polar{tc.m, tc.angles[1]}.V()),
 			tc.center.Add(d2.Polar{tc.m, tc.angles[2]}.V()),
@@ -105,7 +108,7 @@ func TestCircumCenter(t *testing.T) {
 		assert.InDelta(t, 0, tc.center.Distance(tr.CircumCenter()), 1e-10)
 	}
 
-	tr := Triangle{}
+	tr := triangle.Triangle{}
 
 	assert.InDelta(t, 0, d2.Pt{0, 0}.Distance(tr.CircumCenter()), 1e-10)
 
@@ -115,11 +118,11 @@ func TestCircumCenter(t *testing.T) {
 
 func TestContains(t *testing.T) {
 	tt := map[string]struct {
-		*Triangle
+		*triangle.Triangle
 		inside, outside []d2.Pt
 	}{
 		"Basic": {
-			Triangle: &Triangle{{0, 0}, {1, 0}, {0, 1}},
+			Triangle: &triangle.Triangle{{0, 0}, {1, 0}, {0, 1}},
 			inside:   []d2.Pt{{.1, .1}, {.4, .4}, {.8, .1}, {.1, .8}},
 			outside:  []d2.Pt{{-1, -1}, {.6, .6}},
 		},
@@ -138,29 +141,29 @@ func TestContains(t *testing.T) {
 }
 
 func TestArea(t *testing.T) {
-	tri := &Triangle{{0, 0}, {0, 1}, {1, 0}}
+	tri := &triangle.Triangle{{0, 0}, {0, 1}, {1, 0}}
 	assert.Equal(t, 0.5, tri.Area())
 	assert.Equal(t, -0.5, tri.SignedArea())
 }
 
 func TestPerimeter(t *testing.T) {
-	tri := &Triangle{{0, 0}, {0, 1}, {1, 0}}
+	tri := &triangle.Triangle{{0, 0}, {0, 1}, {1, 0}}
 	assert.Equal(t, 2.0+math.Sqrt2, tri.Perimeter())
 }
 
 func TestCentroid(t *testing.T) {
-	tri := &Triangle{{0, 0}, {0, 1}, {1, 0}}
+	tri := &triangle.Triangle{{0, 0}, {0, 1}, {1, 0}}
 	assert.Equal(t, d2.Pt{1.0 / 3.0, 1.0 / 3.0}, tri.Centroid())
 }
 
 func TestLimit(t *testing.T) {
-	tri := &Triangle{}
+	tri := &triangle.Triangle{}
 	assert.Equal(t, d2.LimitBounded, tri.L(1, 0))
 	assert.Equal(t, d2.LimitUndefined, tri.L(2, 0))
 }
 
 func TestIntersections(t *testing.T) {
-	tri := &Triangle{{0, 0}, {0, 1}, {1, 0}}
+	tri := &triangle.Triangle{{0, 0}, {0, 1}, {1, 0}}
 	l := line.New(d2.Pt{0, .1}, d2.Pt{1, .1})
 	expected := []float64{0, .9}
 	_ = line.Intersector(tri)
@@ -169,8 +172,15 @@ func TestIntersections(t *testing.T) {
 }
 
 func TestBoundingBox(t *testing.T) {
-	tri := &Triangle{{0, 0}, {0, 1}, {1, 0}}
+	tri := &triangle.Triangle{{0, 0}, {0, 1}, {1, 0}}
 	m, M := tri.BoundingBox()
 	assert.Equal(t, d2.Pt{0, 0}, m)
 	assert.Equal(t, d2.Pt{1, 1}, M)
+}
+
+func TestConvexHull(t *testing.T) {
+	tri := &triangle.Triangle{{0, 0}, {0, 1}, {1, 0}}
+
+	a := polygon.AssertConvexHuller(append((*tri)[:], d2.Pt{0.25, 0.25}))
+	geomtest.Equal(t, a, tri)
 }

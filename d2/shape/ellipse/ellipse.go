@@ -172,3 +172,32 @@ func (e Ellipse) BoundingBox() (min d2.Pt, max d2.Pt) {
 func (e Ellipse) LineIntersections(l line.Line, buf []float64) []float64 {
 	return e.perimeter.LineIntersections(l, buf)
 }
+
+// PtApprox returns a polygon approximation of the ellipse. All points are
+// outside the polygon and the lines between them intersect the ellipse at a
+// single tangent point.
+func (e Ellipse) PtApprox(n int) []d2.Pt {
+	out := make([]d2.Pt, 0, n)
+	step := 1.0 / float64(n)
+	prev := line.TangentLine(e.perimeter, 0)
+	init := prev
+	for t := step; t < 1.0-(step/2); t += step {
+		l := line.TangentLine(e.perimeter, t)
+		lt, _, _ := l.PartialIntersection(prev)
+		out = append(out, l.Pt1(lt))
+		prev = l
+	}
+	lt, _, _ := init.PartialIntersection(prev)
+	out = append(out, init.Pt1(lt))
+	return out
+}
+
+// ConvexHullPoints sets the number of points Ellipse.ConvexHull returns.
+var ConvexHullPoints = 12
+
+// ConvexHull fulfills shape.ConvexHuller. It returns a polygon with the number
+// of points set by ConvexHullPoints. The sides of the polygon will intersect
+// the ellipse at a single tangent point.
+func (e Ellipse) ConvexHull() []d2.Pt {
+	return e.PtApprox(ConvexHullPoints)
+}

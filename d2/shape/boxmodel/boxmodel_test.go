@@ -1,14 +1,19 @@
 package boxmodel
 
 import (
+	"math/rand"
+	"sort"
 	"testing"
 
 	"github.com/adamcolton/geom/d2"
+	"github.com/adamcolton/geom/d2/curve/line"
+	"github.com/adamcolton/geom/d2/generate"
 	"github.com/adamcolton/geom/d2/shape"
 	"github.com/adamcolton/geom/d2/shape/box"
 	"github.com/adamcolton/geom/d2/shape/ellipse"
 	"github.com/adamcolton/geom/d2/shape/polygon"
 	"github.com/adamcolton/geom/d2/shape/triangle"
+	"github.com/adamcolton/geom/geomtest"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,9 +21,11 @@ type testShape interface {
 	shape.Shape
 	shape.Centroid
 	shape.Area
+	d2.Pt1
+	shape.BoundingBoxer
 }
 
-func countIterator(fn func() (Iterator, box.Box, bool)) int {
+func countIterator(fn func() (Iterator, *box.Box, bool)) int {
 	sum := 0
 	for c, _, done := fn(); !done; _, done = c.Next() {
 		sum++
@@ -47,6 +54,45 @@ func TestBasicShapes(t *testing.T) {
 			assert.Equal(t, countIterator(b.OutsideCursor), b.Outside())
 			assert.Equal(t, countIterator(b.InsideCursor), b.Inside())
 			assert.Equal(t, countIterator(b.PerimeterCursor), b.Perimeter())
+
+			var a polygon.AssertConvexHull
+			for i := 0.0; i < 1.0; i += 0.1 {
+				a = append(a, tc.Pt1(i))
+			}
+			for i, bx, done := b.InsideCursor(); !done; bx, done = i.Next() {
+				a = append(a, bx.Centroid())
+				assert.True(t, tc.Contains(bx.Centroid()))
+			}
+
+			// Some points lie just outside the hull, scaling up by just 0.1%
+			// guarentees all points lie inside the hull
+			scale := 1.001
+			h := (&d2.TransformSet{}).
+				AddBoth(d2.Translate(b.Centroid().Multiply(-1)).Pair()).
+				Add(d2.Scale(d2.V{scale, scale}).GetT()).
+				Get().
+				Slice(b.ConvexHull())
+
+			geomtest.Equal(t, a, h)
+
+			bx := box.New(tc.BoundingBox())
+			correct := 0
+			for i := 0; i < 1000; i++ {
+				pt := bx.Map(generate.V())
+				if tc.Contains(pt) == b.Contains(pt) {
+					correct++
+				}
+			}
+			assert.True(t, float64(correct)/1000.0 > 0.99, correct)
+
+			for i := 0; i < 1000; i++ {
+				l := line.New(bx.Pt1(rand.Float64()), bx.Pt1(rand.Float64()))
+				expected := tc.LineIntersections(l, nil)
+				actual := b.LineIntersections(l, nil)
+				sort.Sort(sort.Float64Slice(expected))
+				sort.Sort(sort.Float64Slice(actual))
+				geomtest.EqualInDelta(t, expected, actual, 1e-4)
+			}
 		})
 	}
 }

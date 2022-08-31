@@ -81,6 +81,18 @@ func (t *T) VF(v V) (V, float64) {
 	}, v.X*t[2][0] + v.Y*t[2][1] + t[2][2]
 }
 
+// TProd returns the product of multiple transforms.
+func TProd(ts ...*T) *T {
+	if len(ts) == 0 {
+		return IndentityTransform()
+	}
+	t := ts[0]
+	for _, t2 := range ts[1:] {
+		t = t.T(t2)
+	}
+	return t
+}
+
 // T returns the product of t with t2
 func (t *T) T(t2 *T) *T {
 	return &T{
@@ -98,6 +110,15 @@ func (t *T) T(t2 *T) *T {
 			t[0][2]*t2[2][0] + t[1][2]*t2[2][1] + t[2][2]*t2[2][2],
 		},
 	}
+}
+
+func (t *T) TInv() *T {
+	inv, _ := t.Inversion()
+	return inv
+}
+
+func (t *T) Inversion() (*T, bool) {
+	panic("not implemented")
 }
 
 // AssertEqual fulfils geomtest.AssertEqualizer
@@ -118,11 +139,25 @@ func (t *T) AssertEqual(actual interface{}, tol cmpr.Tolerance) error {
 	return nil
 }
 
+type Pair [2]*T
+
+func (p Pair) GetT() *T {
+	return p[0]
+}
+
+func (p Pair) TInv() *T {
+	return p[1]
+}
+
+func (p Pair) Pair() [2]*T {
+	return p
+}
+
 // Scale generates a scale transform
 type Scale V
 
 // T returns the scale transform
-func (s Scale) T() *T {
+func (s Scale) GetT() *T {
 	return &T{
 		{s.X, 0, 0},
 		{0, s.Y, 0},
@@ -159,7 +194,7 @@ func (s Scale) Pair() [2]*T {
 type Rotate angle.Rad
 
 // T returns the rotation transform
-func (r Rotate) T() *T {
+func (r Rotate) GetT() *T {
 	s, c := angle.Rad(r).Sincos()
 	return &T{
 		{c, -s, 0},
@@ -199,7 +234,7 @@ func (r Rotate) Pair() [2]*T {
 type Translate V
 
 // T returns the translation transform
-func (t Translate) T() *T {
+func (t Translate) GetT() *T {
 	return &T{
 		{1, 0, t.X},
 		{0, 1, t.Y},
@@ -236,16 +271,16 @@ func (t Translate) Pair() [2]*T {
 type Chain []TGen
 
 // T does a forward multiplication through the chain returning the transform
-func (c Chain) T() *T {
+func (c Chain) GetT() *T {
 	if len(c) == 0 {
 		return IndentityTransform()
 	}
 	if len(c) == 1 {
-		return c[0].T()
+		return c[0].GetT()
 	}
-	t := c[0].T().T(c[1].T())
+	t := c[0].GetT().T(c[1].GetT())
 	for _, nxt := range c[2:] {
-		t = t.T(nxt.T())
+		t = t.T(nxt.GetT())
 	}
 	return t
 }
@@ -315,4 +350,42 @@ func (t *T) String() string {
 		strconv.FormatFloat(t[2][2], 'f', Prec, 64),
 		") ]",
 	}, "")
+}
+
+// TransformSet builds up a chain of transformaitions.
+type TransformSet struct {
+	Head, Middle, Tail []*T
+}
+
+// NewTSet creates a TransformSet.
+func NewTSet() *TransformSet {
+	return &TransformSet{}
+}
+
+// AddBoth appends the transform and it's inverse to the head and tail.
+func (ts *TransformSet) AddBoth(t [2]*T) *TransformSet {
+	ts.Head = append(ts.Head, t[0])
+	ts.Tail = append(ts.Tail, t[1])
+	return ts
+}
+
+// Add t to the middle
+func (ts *TransformSet) Add(t *T) *TransformSet {
+	ts.Middle = append(ts.Middle, t)
+	return ts
+}
+
+// Get produces a transform produces a transform by applying the transforms in
+// head, then middle then applying tail in reverse.
+func (ts *TransformSet) Get() *T {
+	h := TProd(ts.Head...)
+	m := TProd(ts.Middle...)
+	var t *T
+	if ln := len(ts.Tail); ln > 0 {
+		t = ts.Tail[ln-1]
+		for i := ln - 2; i >= 0; i-- {
+			t = t.T(ts.Tail[i])
+		}
+	}
+	return TProd(h, m, t)
 }

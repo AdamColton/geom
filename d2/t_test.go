@@ -14,19 +14,19 @@ func TestTransform(t *testing.T) {
 		expected Pt
 	}{
 		{
-			T:        Translate(V{1, 2}).T(),
+			T:        Translate(V{1, 2}).GetT(),
 			expected: Pt{2, 3},
 		},
 		{
-			T:        Rotate(math.Pi / 2).T(),
+			T:        Rotate(math.Pi / 2).GetT(),
 			expected: Pt{-1, 1},
 		},
 		{
-			T:        Scale(V{2, 3}).T(),
+			T:        Scale(V{2, 3}).GetT(),
 			expected: Pt{2, 3},
 		},
 		{
-			T:        Chain{Rotate(math.Pi / 2), Translate(V{2, 2}), Scale(V{2, 3})}.T(),
+			T:        Chain{Rotate(math.Pi / 2), Translate(V{2, 2}), Scale(V{2, 3})}.GetT(),
 			expected: Pt{2, 9},
 		},
 	}
@@ -60,7 +60,7 @@ func TestTGen(t *testing.T) {
 
 	for name, gen := range tt {
 		t.Run(name, func(t *testing.T) {
-			tr, ti := gen.T(), gen.TInv()
+			tr, ti := gen.GetT(), gen.TInv()
 			p := gen.Pair()
 			assert.Equal(t, tr, p[0])
 			assert.Equal(t, ti, p[1])
@@ -83,7 +83,7 @@ func TestTString(t *testing.T) {
 }
 
 func TestTSlice(t *testing.T) {
-	tr := Translate(V{3, 4}).T()
+	tr := Translate(V{3, 4}).GetT()
 	got := tr.Slice([]Pt{{1, 1}, {2, 2}, {3, 3}})
 	expected := []Pt{{4, 5}, {5, 6}, {6, 7}}
 	assert.Equal(t, expected, got)

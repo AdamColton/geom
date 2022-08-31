@@ -4,8 +4,10 @@ import (
 	"math"
 	"strings"
 
+	"github.com/adamcolton/geom/calc/cmpr"
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
+	"github.com/adamcolton/geom/geomerr"
 )
 
 // Triangle is a 2D triangle
@@ -140,4 +142,29 @@ func (t *Triangle) CircumCenter() d2.Pt {
 		return line.New(t[0], t[2]).Pt1(0.5)
 	}
 	return line.New(t[0], t[1]).Pt1(0.5)
+}
+
+// ConvexHull fulfills shape.ConvexHuller. It returns the triangle as a slice.
+func (t *Triangle) ConvexHull() []d2.Pt {
+	return t[:]
+}
+
+func (t *Triangle) T(transform *d2.T) *Triangle {
+	return &Triangle{
+		transform.Pt(t[0]),
+		transform.Pt(t[1]),
+		transform.Pt(t[2]),
+	}
+}
+
+// AssertEqual fulfils geomtest.AssertEqualizer
+func (t *Triangle) AssertEqual(actual interface{}, tol cmpr.Tolerance) error {
+	t2, ok := actual.(*Triangle)
+	if !ok {
+		return geomerr.TypeMismatch(t, actual)
+	}
+
+	return geomerr.NewSliceErrs(3, 3, func(i int) error {
+		return t[i].AssertEqual(t2[i], tol)
+	})
 }

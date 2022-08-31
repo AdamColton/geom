@@ -51,7 +51,7 @@ func TestContains(t *testing.T) {
 				d2.Pt{1, 0},
 				d2.Pt{2, -2},
 			},
-			does:   []d2.Pt{{0.5, 0}, {1, 1}},
+			does:   []d2.Pt{{0.5, 0}, {1, 1}, {0, 0}, {2, 2}},
 			doesnt: []d2.Pt{{0.5, 1}, {2, 0}, {1.5, 0}},
 		},
 	}
@@ -67,6 +67,9 @@ func TestContains(t *testing.T) {
 				assert.False(t, tc.Contains(p))
 				assert.False(t, ll.Contains(p))
 			}
+			a := AssertConvexHuller(append(tc.Polygon, tc.does...))
+			geomtest.Equal(t, a, tc.Polygon)
+			geomtest.Equal(t, a, ll)
 		})
 	}
 }

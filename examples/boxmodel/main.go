@@ -7,6 +7,7 @@ import (
 	"runtime/pprof"
 
 	"github.com/adamcolton/geom/d2"
+	"github.com/adamcolton/geom/d2/curve/line"
 	"github.com/adamcolton/geom/d2/draw"
 	"github.com/adamcolton/geom/d2/grid"
 	"github.com/adamcolton/geom/d2/shape"
@@ -39,10 +40,6 @@ var (
 			{100, 100}, {100, 150}, {150, 100},
 		},
 	}
-	bez = bezier.New(
-		[]d2.Pt{{0, 250}, {0, 0}, {500, 0}},
-		[]d2.Pt{{500, 250}, {500, 500}, {0, 500}},
-	)
 	ell       = ellipse.New(d2.Pt{100, 350}, d2.Pt{400, 110}, 170)
 	intersect = shape.Subtract{
 		shape.Intersection{
@@ -80,7 +77,6 @@ func main() {
 
 	draw.Call(gen.Generate,
 		Triangles,
-		Bez,
 		Ellipse,
 		Intersection,
 		Compressed0,
@@ -125,6 +121,12 @@ func drawModel(ctx *draw.Context, bm boxmodel.BoxModel) {
 		ctx.DrawRectangle(b[0].X, b[0].Y, d.X, d.Y)
 	}
 	ctx.Stroke()
+
+	size := ctx.Image().Bounds().Max
+	ctx.SetRGB(0, 0, 0)
+	l := line.New(d2.Pt{0.4 * float64(size.X), 0}, d2.Pt{0.6 * float64(size.X), float64(size.Y)})
+	ctx.CurvePts(l, bm.LineIntersections(l, nil))
+	ctx.Pt1(l)
 }
 
 func solid(bm boxmodel.BoxModel, name string) {
@@ -146,10 +148,6 @@ func solid(bm boxmodel.BoxModel, name string) {
 
 func Triangles(ctx *draw.Context) {
 	drawModel(ctx, boxmodel.New(triangles, 8))
-}
-
-func Bez(ctx *draw.Context) {
-	drawModel(ctx, boxmodel.New(bez, 8))
 }
 
 func Ellipse(ctx *draw.Context) {

@@ -11,6 +11,12 @@ import (
 // Polygon represents a Convex Polygon
 type Polygon []d2.Pt
 
+// New creates a polygon and orders the points to proceed counter clockwise.
+func New(pts []d2.Pt) Polygon {
+	p, c := NewPolar(pts)
+	return p.Polygon(c)
+}
+
 // Pt2c1 returns line.Segments as d2.Pt1 that adheres to the Shape rules
 func (p Polygon) Pt2c1(t0 float64) d2.Pt1 {
 	n := (len(p) - 1)
@@ -79,23 +85,28 @@ func (p Polygon) Centroid() d2.Pt {
 	return d2.Pt{x * a, y * a}
 }
 
-// Contains returns true of the point f is inside of the polygon
+// Contains returns true of the point f is inside of the polygon. This is done
+// with the winding number algorithm and runs in O(n).
 func (p Polygon) Contains(pt d2.Pt) bool {
-	// http://geomalgorithms.com/a03-_inclusion.html
-	wn := 0
+	// https://en.wikipedia.org/wiki/Point_in_polygon#Winding_number_algorithm
+	windings := 0
 	prev := p[len(p)-1]
 	for _, cur := range p {
 		c := line.New(prev, cur).Cross(pt)
-		if prev.Y <= pt.Y {
+		if c == 0 &&
+			((pt.X >= prev.X && pt.X <= cur.X) || (pt.X <= prev.X && pt.X >= cur.X)) &&
+			((pt.Y >= prev.Y && pt.Y <= cur.Y) || (pt.Y <= prev.Y && pt.Y >= cur.Y)) {
+			return true
+		} else if prev.Y <= pt.Y {
 			if c > 0 && cur.Y > pt.Y {
-				wn++
+				windings++
 			}
 		} else if c < 0 && cur.Y <= pt.Y {
-			wn--
+			windings--
 		}
 		prev = cur
 	}
-	return wn != 0
+	return windings != 0
 }
 
 // Perimeter returngs the total length of the perimeter
@@ -231,6 +242,25 @@ func (p Polygon) LineIntersections(ln line.Line, buf []float64) []float64 {
 	return buf
 }
 
+// PolygonIntersections finds the intersection points between two polygons.
+func (p Polygon) PolygonIntersections(p2 Polygon) []d2.Pt {
+	if len(p) < 2 || len(p2) < 2 {
+		return nil
+	}
+	var out []d2.Pt
+	buf := make([]float64, 0, 2)
+	prev := p[0]
+	for _, pt := range p[1:] {
+		l := line.New(prev, pt)
+		for _, t := range p2.LineIntersections(l, buf[:0]) {
+			if t >= 0 && t <= 1 {
+				out = append(out, l.Pt1(t))
+			}
+		}
+	}
+	return out
+}
+
 // Sides converts the perimeter of the polygon to a slice of lines.
 func (p Polygon) Sides() []line.Line {
 	side := make([]line.Line, len(p))
@@ -275,4 +305,10 @@ func (p Polygon) Reverse() Polygon {
 // BoundingBox fulfills BoundingBoxer returning a box that contains the polygon.
 func (p Polygon) BoundingBox() (min, max d2.Pt) {
 	return d2.MinMax(p...)
+}
+
+// ConvexHull fulfills shape.ConvexHuller. Returns the convex hull of the
+// polygon using the ConvexHull function.
+func (p Polygon) ConvexHull() []d2.Pt {
+	return ConvexHull(p...)
 }

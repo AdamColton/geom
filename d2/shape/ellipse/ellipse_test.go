@@ -8,6 +8,7 @@ import (
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
 	"github.com/adamcolton/geom/d2/grid"
+	"github.com/adamcolton/geom/d2/shape/polygon"
 	"github.com/adamcolton/geom/d2/shape/triangle"
 	"github.com/adamcolton/geom/geomtest"
 	"github.com/stretchr/testify/assert"
@@ -106,4 +107,20 @@ func TestContains(t *testing.T) {
 			assert.True(t, p.X > m.X && p.Y > m.Y && p.X < M.X && p.Y < M.Y)
 		}
 	})
+}
+
+func TestConvexHullPoints(t *testing.T) {
+	f1 := d2.Pt{2, 2}
+	f2 := d2.Pt{4, 2}
+	r := 1.0
+	e := New(f1, f2, r)
+
+	a := make(polygon.AssertConvexHuller, 10, 13)
+	for i := range a {
+		a[i] = e.Pt1(float64(i) / 10)
+	}
+	a = append(a, e.Centroid())
+	a = append(a, f1, f2)
+
+	geomtest.Equal(t, a, e)
 }
