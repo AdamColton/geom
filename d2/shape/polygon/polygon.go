@@ -362,3 +362,8 @@ func (p Polygon) BoundingBox() (min, max d2.Pt) {
 func (p Polygon) ConvexHull() []d2.Pt {
 	return ConvexHull(p...)
 }
+
+// T applies the transform to the Polygon returning a new Polygon.
+func (p Polygon) T(transform *d2.T) Polygon {
+	return transform.Slice(p)
+}
