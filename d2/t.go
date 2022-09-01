@@ -31,13 +31,22 @@ index. I've chosen the index. Therefor
 // T represets a transform matrix
 type T [3][3]float64
 
-// IndentityTransform returns an Identity matrix
-func IndentityTransform() *T {
-	return &T{
-		{1, 0, 0},
-		{0, 1, 0},
-		{0, 0, 1},
-	}
+var indentityTransform = T{
+	{1, 0, 0},
+	{0, 1, 0},
+	{0, 0, 1},
+}
+
+type IndentityTransform struct{}
+
+func (IndentityTransform) GetT() *T {
+	return &indentityTransform
+}
+func (IndentityTransform) TInv() *T {
+	return &indentityTransform
+}
+func (IndentityTransform) Pair() Pair {
+	return Pair{&indentityTransform, &indentityTransform}
 }
 
 // PtF applies the transform to a Pt, returning the resulting Pt and scale.
@@ -84,7 +93,7 @@ func (t *T) VF(v V) (V, float64) {
 // TProd returns the product of multiple transforms.
 func TProd(ts ...*T) *T {
 	if len(ts) == 0 {
-		return IndentityTransform()
+		return &indentityTransform
 	}
 	t := ts[0]
 	for _, t2 := range ts[1:] {
@@ -299,7 +308,7 @@ type Chain []TGen
 // T does a forward multiplication through the chain returning the transform
 func (c Chain) GetT() *T {
 	if len(c) == 0 {
-		return IndentityTransform()
+		return &indentityTransform
 	}
 	if len(c) == 1 {
 		return c[0].GetT()
@@ -316,7 +325,7 @@ func (c Chain) GetT() *T {
 func (c Chain) TInv() *T {
 	ln := len(c)
 	if ln == 0 {
-		return IndentityTransform()
+		return &indentityTransform
 	}
 	if ln == 1 {
 		return c[0].TInv()
@@ -333,7 +342,7 @@ func (c Chain) TInv() *T {
 func (c Chain) Pair() Pair {
 	ln := len(c)
 	if ln == 0 {
-		return Pair{IndentityTransform(), IndentityTransform()}
+		return IndentityTransform{}.Pair()
 	}
 	if ln == 1 {
 		return c[0].Pair()

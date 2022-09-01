@@ -63,7 +63,7 @@ func TestTGen(t *testing.T) {
 			p := gen.Pair()
 			geomtest.Equal(t, tr, p[0])
 			geomtest.Equal(t, ti, p[1])
-			geomtest.Equal(t, IndentityTransform(), tr.T(ti))
+			geomtest.Equal(t, &indentityTransform, tr.T(ti))
 		})
 	}
 }
@@ -177,7 +177,7 @@ func TestInversion(t *testing.T) {
 		Scale(V{31, 41}),
 	}
 
-	i := IndentityTransform()
+	i := IndentityTransform{}.GetT()
 	for _, tc := range tt {
 		t0 := tc.GetT()
 		t.Run(t0.String(), func(t *testing.T) {
