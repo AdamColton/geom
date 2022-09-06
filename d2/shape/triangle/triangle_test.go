@@ -102,15 +102,15 @@ func TestCircumCenter(t *testing.T) {
 			tc.center.Add(d2.Polar{tc.m, tc.angles[2]}.V()),
 		}
 
-		assert.InDelta(t, 0, tc.center.Distance(tr.CircumCenter()), 1e-10)
+		geomtest.Equal(t, tc.center, tr.CircumCenter())
 	}
 
 	tr := triangle.Triangle{}
 
-	assert.InDelta(t, 0, d2.Pt{0, 0}.Distance(tr.CircumCenter()), 1e-10)
+	geomtest.Equal(t, d2.Pt{0, 0}, tr.CircumCenter())
 
 	tr[2] = d2.Pt{2, 2}
-	assert.InDelta(t, 0, d2.Pt{1, 1}.Distance(tr.CircumCenter()), 1e-10)
+	geomtest.Equal(t, d2.Pt{1, 1}, tr.CircumCenter())
 }
 
 func TestContains(t *testing.T) {

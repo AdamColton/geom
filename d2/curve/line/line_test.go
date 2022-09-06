@@ -36,7 +36,7 @@ func TestBisect(t *testing.T) {
 		line := Bisect(tc[0], tc[1])
 		for i := -1.0; i < 2.0; i += 0.05 {
 			pt := line.Pt1(i)
-			assert.InDelta(t, tc[0].Distance(pt), tc[1].Distance(pt), 1e-10)
+			geomtest.Equal(t, tc[0].Distance(pt), tc[1].Distance(pt))
 		}
 	}
 }
