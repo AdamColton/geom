@@ -42,7 +42,7 @@ func TestBasicShapes(t *testing.T) {
 			// the difference in the relative area should be less than 0.001
 			a1, a2 := tc.Area(), b.Area()
 			p := (a1 - a2) / a1
-			geomtest.EqualInDelta(t, 0, p, 1e-3)
+			geomtest.EqualInDelta(t, 0.0, p, 1e-3)
 			geomtest.Equal(t, b.Area(), b.SignedArea())
 
 			assert.Equal(t, countIterator(b.OutsideCursor), b.Outside())

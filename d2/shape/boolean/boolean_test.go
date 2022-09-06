@@ -1,18 +1,18 @@
-package shape_test
+package boolean_test
 
 import (
 	"testing"
 
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
-	"github.com/adamcolton/geom/d2/shape"
+	"github.com/adamcolton/geom/d2/shape/boolean"
 	"github.com/adamcolton/geom/d2/shape/triangle"
 	"github.com/adamcolton/geom/geomtest"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestIntersection(t *testing.T) {
-	s := shape.Intersection{
+	s := boolean.Intersection{
 		&triangle.Triangle{{0, 1}, {2, 1}, {1, 3}},
 		&triangle.Triangle{{0, 2}, {2, 2}, {1, 0}},
 	}
@@ -31,7 +31,7 @@ func TestIntersection(t *testing.T) {
 }
 
 func TestUnion(t *testing.T) {
-	s := shape.Union{
+	s := boolean.Union{
 		&triangle.Triangle{{0, 1}, {2, 1}, {1, 3}},
 		&triangle.Triangle{{0, 2}, {2, 2}, {1, 0}},
 	}
@@ -49,7 +49,7 @@ func TestUnion(t *testing.T) {
 }
 
 func TestSubtract(t *testing.T) {
-	s := shape.Subtract{
+	s := boolean.Subtract{
 		&triangle.Triangle{{0, 1}, {2, 1}, {1, 3}},
 		&triangle.Triangle{{0, 2}, {2, 2}, {1, 0}},
 	}
