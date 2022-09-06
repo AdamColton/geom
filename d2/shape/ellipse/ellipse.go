@@ -56,7 +56,7 @@ func (e Ellipse) fillT(t0 float64) *d2.T {
 		b.Pt1(t0 * 4),
 	}
 	tfrm, _ := triangle.Transform(tFrom, tTo)
-	return &tfrm
+	return tfrm
 }
 
 // Pt2c1 returns a curve that lies inside of the ellipse. All curves in the

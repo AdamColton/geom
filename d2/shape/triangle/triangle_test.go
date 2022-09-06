@@ -49,10 +49,7 @@ func TestTransform(t *testing.T) {
 		t.Run(tc.T1.String()+tc.T2.String(), func(t *testing.T) {
 			tfrm, err := triangle.Transform(tc.T1, tc.T2)
 			assert.NoError(t, err)
-			for i, pt := range tc.T1 {
-				pt = tfrm.Pt(pt)
-				assert.Equal(t, tc.T2[i], pt)
-			}
+			geomtest.Equal(t, tc.T2, tc.T1.T(tfrm))
 		})
 	}
 }
