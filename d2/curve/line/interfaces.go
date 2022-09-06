@@ -1,5 +1,9 @@
 package line
 
+import (
+	"github.com/adamcolton/geom/d2"
+)
+
 // Intersector finds the points where the interface intersects a line.
 // The returned values should be relative to the line passed in. The buffer both
 // provides reuse to avoid generating garbage and allows for fine tuning. If
@@ -9,4 +13,16 @@ package line
 // is no guarenteed order.
 type Intersector interface {
 	LineIntersections(l Line, buf []float64) []float64
+}
+
+// TransformIntersectorWrapper applies a transform to an Intersector.
+type TransformIntersectorWrapper struct {
+	P d2.Pair
+	Intersector
+}
+
+// LineIntersections fulfills Intersector. It applies the transform to the
+// underlying Intersector.
+func (tiw TransformIntersectorWrapper) LineIntersections(l Line, buf []float64) []float64 {
+	return tiw.Intersector.LineIntersections(l.T(tiw.P[1]), buf)
 }
