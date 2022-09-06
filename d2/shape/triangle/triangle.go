@@ -7,6 +7,7 @@ import (
 	"github.com/adamcolton/geom/calc/cmpr"
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
+	"github.com/adamcolton/geom/d2/shape"
 	"github.com/adamcolton/geom/geomerr"
 )
 
@@ -156,6 +157,11 @@ func (t *Triangle) T(transform *d2.T) *Triangle {
 		transform.Pt(t[1]),
 		transform.Pt(t[2]),
 	}
+}
+
+// TransformShape fulfills shape.TransformShaper
+func (t *Triangle) TransformShape(transform *d2.T) shape.Shape {
+	return t.T(transform)
 }
 
 // AssertEqual fulfils geomtest.AssertEqualizer

@@ -6,6 +6,7 @@ import (
 
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
+	"github.com/adamcolton/geom/d2/shape"
 )
 
 // Polygon represents a Convex Polygon
@@ -366,4 +367,9 @@ func (p Polygon) ConvexHull() []d2.Pt {
 // T applies the transform to the Polygon returning a new Polygon.
 func (p Polygon) T(transform *d2.T) Polygon {
 	return transform.Slice(p)
+}
+
+// TransformShape fulfills shape.TransformShaper
+func (p Polygon) TransformShape(transform *d2.T) shape.Shape {
+	return p.T(transform)
 }
