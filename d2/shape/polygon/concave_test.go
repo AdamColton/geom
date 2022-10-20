@@ -29,9 +29,9 @@ func TestConcave(t *testing.T) {
 	geomtest.Equal(t, d2.Pt{3, 0}, ccp.Pt2(0, 0))
 	geomtest.Equal(t, d2.Pt{3, 0}, ccp.Pt1(0))
 	geomtest.Equal(t, d2.Pt{0, 0}, ccp.Centroid())
-	assert.InDelta(t, 8.48528, ccp.Area(), 1e-4)
-	assert.InDelta(t, 8.48528, ccp.SignedArea(), 1e-4)
-	assert.InDelta(t, 19.195598, ccp.Perimeter(), 1e-4)
+	geomtest.EqualInDelta(t, 8.48528, ccp.Area(), 1e-4)
+	geomtest.EqualInDelta(t, 8.48528, ccp.SignedArea(), 1e-4)
+	geomtest.EqualInDelta(t, 19.195598, ccp.Perimeter(), 1e-4)
 	assert.True(t, ccp.Contains(d2.Pt{0, 0}))
 	assert.False(t, ccp.Contains(d2.Pt{1, 1}))
 

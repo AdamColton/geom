@@ -62,12 +62,8 @@ func TestVBaseFuncs(t *testing.T) {
 
 func TestPolar(t *testing.T) {
 	p := Polar{math.Sqrt2 * 2, angle.Deg(45)}
-	v := p.V()
-	assert.InDelta(t, 2.0, v.X, 1e-10)
-	assert.InDelta(t, 2.0, v.Y, 1e-10)
-	pt := p.Pt()
-	assert.InDelta(t, 2.0, pt.X, 1e-10)
-	assert.InDelta(t, 2.0, pt.Y, 1e-10)
+	geomtest.Equal(t, V{2, 2}, p.V())
+	geomtest.Equal(t, Pt{2, 2}, p.Pt())
 }
 
 func TestSubtract(t *testing.T) {

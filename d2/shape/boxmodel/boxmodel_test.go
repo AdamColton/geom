@@ -38,13 +38,12 @@ func TestBasicShapes(t *testing.T) {
 	for n, tc := range tt {
 		t.Run(n, func(t *testing.T) {
 			b := New(tc, 12)
-			d := tc.Centroid().Distance(b.Centroid())
-			assert.InDelta(t, 0, d, 0.02)
+			geomtest.EqualInDelta(t, tc.Centroid(), b.Centroid(), 0.02)
 			// the difference in the relative area should be less than 0.001
 			a1, a2 := tc.Area(), b.Area()
 			p := (a1 - a2) / a1
-			assert.InDelta(t, 0, p, 1e-3)
-			assert.Equal(t, b.Area(), b.SignedArea())
+			geomtest.EqualInDelta(t, 0.0, p, 1e-3)
+			geomtest.Equal(t, b.Area(), b.SignedArea())
 
 			assert.Equal(t, countIterator(b.OutsideCursor), b.Outside())
 			assert.Equal(t, countIterator(b.InsideCursor), b.Inside())
@@ -64,7 +63,7 @@ func TestBasicShapes(t *testing.T) {
 			scale := 1.001
 			h := (&d2.TransformSet{}).
 				AddBoth(d2.Translate(b.Centroid().Multiply(-1))).
-				Add(d2.Scale(d2.V{scale, scale}).T()).
+				Add(d2.Scale(d2.V{scale, scale}).GetT()).
 				GetT().
 				Slice(b.ConvexHull())
 

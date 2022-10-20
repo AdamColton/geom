@@ -49,10 +49,7 @@ func TestTransform(t *testing.T) {
 		t.Run(tc.T1.String()+tc.T2.String(), func(t *testing.T) {
 			tfrm, err := triangle.Transform(tc.T1, tc.T2)
 			assert.NoError(t, err)
-			for i, pt := range tc.T1 {
-				pt = tfrm.Pt(pt)
-				assert.Equal(t, tc.T2[i], pt)
-			}
+			geomtest.Equal(t, tc.T2, tc.T1.T(tfrm))
 		})
 	}
 }
@@ -105,15 +102,15 @@ func TestCircumCenter(t *testing.T) {
 			tc.center.Add(d2.Polar{tc.m, tc.angles[2]}.V()),
 		}
 
-		assert.InDelta(t, 0, tc.center.Distance(tr.CircumCenter()), 1e-10)
+		geomtest.Equal(t, tc.center, tr.CircumCenter())
 	}
 
 	tr := triangle.Triangle{}
 
-	assert.InDelta(t, 0, d2.Pt{0, 0}.Distance(tr.CircumCenter()), 1e-10)
+	geomtest.Equal(t, d2.Pt{0, 0}, tr.CircumCenter())
 
 	tr[2] = d2.Pt{2, 2}
-	assert.InDelta(t, 0, d2.Pt{1, 1}.Distance(tr.CircumCenter()), 1e-10)
+	geomtest.Equal(t, d2.Pt{1, 1}, tr.CircumCenter())
 }
 
 func TestContains(t *testing.T) {

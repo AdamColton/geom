@@ -62,3 +62,8 @@ func PointsInContainer(pts []d2.Pt, c Container, filter bool, buf []d2.Pt) []d2.
 	}
 	return buf
 }
+
+// TransformShaper produces a Shape from a transform.
+type TransformShaper interface {
+	TransformShape(*d2.T) Shape
+}

@@ -36,7 +36,7 @@ func TestBisect(t *testing.T) {
 		line := Bisect(tc[0], tc[1])
 		for i := -1.0; i < 2.0; i += 0.05 {
 			pt := line.Pt1(i)
-			assert.InDelta(t, tc[0].Distance(pt), tc[1].Distance(pt), 1e-10)
+			geomtest.Equal(t, tc[0].Distance(pt), tc[1].Distance(pt))
 		}
 	}
 }
@@ -146,7 +146,7 @@ func TestLimits(t *testing.T) {
 }
 
 func TestTransform(t *testing.T) {
-	l := New(d2.Pt{0, 0}, d2.Pt{1, 0}).T(d2.Rotate(angle.Deg(90)).T())
+	l := New(d2.Pt{0, 0}, d2.Pt{1, 0}).T(d2.Rotate{angle.Deg(90)}.GetT())
 	geomtest.Equal(t, d2.Pt{0, 0}, l.Pt1(0))
 	geomtest.Equal(t, d2.Pt{0, 1}, l.Pt1(1))
 }

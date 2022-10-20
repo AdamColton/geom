@@ -56,3 +56,8 @@ func (r Rad) Cos() float64 {
 func (r Rad) Sincos() (float64, float64) {
 	return math.Sincos(float64(r))
 }
+
+// Sincoser allows objects with rotations to be used by their sine and cosine.
+type Sincoser interface {
+	Sincos() (float64, float64)
+}

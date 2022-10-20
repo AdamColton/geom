@@ -33,10 +33,10 @@ func TestLineSegments(t *testing.T) {
 
 	is := ls.LineIntersections(New(d2.Pt{-1, 0.5}, d2.Pt{5, 0.5}), nil)
 	if assert.Len(t, is, 4) {
-		assert.InDelta(t, 0.25, is[0], 1e-4)
-		assert.InDelta(t, 0.4166, is[1], 1e-4)
-		assert.InDelta(t, 0.5833, is[2], 1e-4)
-		assert.InDelta(t, 0.75, is[3], 1e-4)
+		geomtest.EqualInDelta(t, 0.25, is[0], 1e-4)
+		geomtest.EqualInDelta(t, 0.4166, is[1], 1e-4)
+		geomtest.EqualInDelta(t, 0.5833, is[2], 1e-4)
+		geomtest.EqualInDelta(t, 0.75, is[3], 1e-4)
 	}
 
 	ls = Segments{

@@ -1,12 +1,13 @@
-package shape
+package boolean
 
 import (
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
+	"github.com/adamcolton/geom/d2/shape"
 )
 
 // Subtract defines a shape by subtracting the second shape from the first.
-type Subtract [2]Shape
+type Subtract [2]shape.Shape
 
 // Contains returns true if the point is inside the first shape but not the
 // second.

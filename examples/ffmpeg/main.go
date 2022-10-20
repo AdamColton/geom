@@ -48,7 +48,7 @@ func main() {
 		},
 		FrameCount: frames,
 		Path: bezier.Bezier(
-			d2.Scale(s.Size.D2()).T().Slice(curve),
+			d2.Scale(s.Size.D2()).GetT().Slice(curve),
 		),
 		ArrowScale: 0.1,
 	}

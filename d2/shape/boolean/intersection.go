@@ -1,14 +1,15 @@
-package shape
+package boolean
 
 import (
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
+	"github.com/adamcolton/geom/d2/shape"
 	"github.com/adamcolton/geom/d2/shape/polygon"
 )
 
 // Intersection takes two Shapes and creates a new Shape that is their
 // intersection.
-type Intersection [2]Shape
+type Intersection [2]shape.Shape
 
 // Contains returns true if the point is inside both shapes.
 func (a Intersection) Contains(pt d2.Pt) bool {
@@ -54,7 +55,7 @@ func (a Intersection) LineIntersections(l line.Line, buf []float64) []float64 {
 func (a Intersection) ConvexHull() []d2.Pt {
 	s0h, s1h := polygon.Polygon(a[0].ConvexHull()), polygon.Polygon(a[1].ConvexHull())
 	out := s0h.PolygonCollisions(s1h).P(s0h)
-	out = PointsInContainer(s0h, a[1], true, out)
-	out = PointsInContainer(s1h, a[0], true, out)
+	out = shape.PointsInContainer(s0h, a[1], true, out)
+	out = shape.PointsInContainer(s1h, a[0], true, out)
 	return polygon.ConvexHull(out...)
 }

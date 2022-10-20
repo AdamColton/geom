@@ -31,13 +31,22 @@ index. I've chosen the index. Therefor
 // T represets a transform matrix
 type T [3][3]float64
 
-// IndentityTransform returns an Identity matrix
-func IndentityTransform() *T {
-	return &T{
-		{1, 0, 0},
-		{0, 1, 0},
-		{0, 0, 1},
-	}
+var indentityTransform = T{
+	{1, 0, 0},
+	{0, 1, 0},
+	{0, 0, 1},
+}
+
+type IndentityTransform struct{}
+
+func (IndentityTransform) GetT() *T {
+	return &indentityTransform
+}
+func (IndentityTransform) TInv() *T {
+	return &indentityTransform
+}
+func (IndentityTransform) Pair() Pair {
+	return Pair{&indentityTransform, &indentityTransform}
 }
 
 // PtF applies the transform to a Pt, returning the resulting Pt and scale.
@@ -84,7 +93,7 @@ func (t *T) VF(v V) (V, float64) {
 // TProd returns the product of multiple transforms.
 func TProd(ts ...*T) *T {
 	if len(ts) == 0 {
-		return IndentityTransform()
+		return &indentityTransform
 	}
 	t := ts[0]
 	for _, t2 := range ts[1:] {
@@ -129,11 +138,64 @@ func (t *T) AssertEqual(actual interface{}, tol cmpr.Tolerance) error {
 	})
 }
 
+// GetT fulfills TGen.
+func (t *T) GetT() *T {
+	return t
+}
+
+// Pair fulfills TGen. It returns a Pair with t and it's inverse.
+func (t *T) Pair() Pair {
+	return Pair{
+		t,
+		t.TInv(),
+	}
+}
+
+// TInv finds the inverse of T assuming the inverse is computable.
+func (t *T) TInv() *T {
+	inv, _ := t.Inversion()
+	return inv
+}
+
+// Inversion computes the inverse of t and a bool indicating of the inverse is
+// computable. The inverse is not computable if the determinate is 0. If the
+// determinate is zero, the returned *T will be the inversion before scaling by
+// 1/determinate.
+func (t *T) Inversion() (*T, bool) {
+	//https://stackoverflow.com/questions/983999/simple-3x3-matrix-inverse-code-c
+	out := &T{}
+	a := t[1][0] * t[2][2]
+	b := t[1][2] * t[2][0]
+	out[0][0] = (t[1][1]*t[2][2] - t[2][1]*t[1][2])
+	out[0][1] = (t[0][2]*t[2][1] - t[0][1]*t[2][2])
+	out[0][2] = (t[0][1]*t[1][2] - t[0][2]*t[1][1])
+	out[1][0] = (b - a)
+	out[1][1] = (t[0][0]*t[2][2] - t[0][2]*t[2][0])
+	out[1][2] = (t[1][0]*t[0][2] - t[0][0]*t[1][2])
+	out[2][0] = (t[1][0]*t[2][1] - t[1][1]*t[2][0])
+	out[2][1] = (t[2][0]*t[0][1] - t[0][0]*t[2][1])
+	out[2][2] = (t[0][0]*t[1][1] - t[1][0]*t[0][1])
+
+	det := t[0][0]*(out[0][0]) - t[0][1]*(a-b) + t[0][2]*(out[2][0])
+	if det == 0 {
+		return out, false
+	}
+
+	det = 1.0 / det
+
+	for y := 0; y < 3; y++ {
+		for x := 0; x < 3; x++ {
+			out[y][x] *= det
+		}
+	}
+	return out, true
+}
+
 // Scale generates a scale transform
 type Scale V
 
 // T returns the scale transform
-func (s Scale) T() *T {
+func (s Scale) GetT() *T {
 	return &T{
 		{s.X, 0, 0},
 		{0, s.Y, 0},
@@ -151,14 +213,13 @@ func (s Scale) TInv() *T {
 }
 
 // Pair returns the Scale transform and it's inverse
-func (s Scale) Pair() [2]*T {
-	return [2]*T{
-		&T{
+func (s Scale) Pair() Pair {
+	return Pair{
+		{
 			{s.X, 0, 0},
 			{0, s.Y, 0},
 			{0, 0, 1},
-		},
-		&T{
+		}, {
 			{1.0 / s.X, 0, 0},
 			{0, 1.0 / s.Y, 0},
 			{0, 0, 1},
@@ -167,11 +228,11 @@ func (s Scale) Pair() [2]*T {
 }
 
 // Rotate generates a rotation transform
-type Rotate angle.Rad
+type Rotate struct{ angle.Sincoser }
 
 // T returns the rotation transform
-func (r Rotate) T() *T {
-	s, c := angle.Rad(r).Sincos()
+func (r Rotate) GetT() *T {
+	s, c := r.Sincos()
 	return &T{
 		{c, -s, 0},
 		{s, c, 0},
@@ -181,7 +242,7 @@ func (r Rotate) T() *T {
 
 // TInv returns the inverse of the rotation transform
 func (r Rotate) TInv() *T {
-	s, c := angle.Rad(r).Sincos()
+	s, c := r.Sincos()
 	return &T{
 		{c, s, 0},
 		{-s, c, 0},
@@ -190,9 +251,9 @@ func (r Rotate) TInv() *T {
 }
 
 // Pair returns the rotation transform and it's inverse
-func (r Rotate) Pair() [2]*T {
-	s, c := angle.Rad(r).Sincos()
-	return [2]*T{
+func (r Rotate) Pair() Pair {
+	s, c := r.Sincos()
+	return Pair{
 		{
 			{c, -s, 0},
 			{s, c, 0},
@@ -209,7 +270,7 @@ func (r Rotate) Pair() [2]*T {
 type Translate V
 
 // T returns the translation transform
-func (t Translate) T() *T {
+func (t Translate) GetT() *T {
 	return &T{
 		{1, 0, t.X},
 		{0, 1, t.Y},
@@ -227,8 +288,8 @@ func (t Translate) TInv() *T {
 }
 
 // Pair returns the translation transform and it's inverse.
-func (t Translate) Pair() [2]*T {
-	return [2]*T{
+func (t Translate) Pair() Pair {
+	return Pair{
 		{
 			{1, 0, t.X},
 			{0, 1, t.Y},
@@ -245,16 +306,16 @@ func (t Translate) Pair() [2]*T {
 type Chain []TGen
 
 // T does a forward multiplication through the chain returning the transform
-func (c Chain) T() *T {
+func (c Chain) GetT() *T {
 	if len(c) == 0 {
-		return IndentityTransform()
+		return &indentityTransform
 	}
 	if len(c) == 1 {
-		return c[0].T()
+		return c[0].GetT()
 	}
-	t := c[0].T().T(c[1].T())
+	t := c[0].GetT().T(c[1].GetT())
 	for _, nxt := range c[2:] {
-		t = t.T(nxt.T())
+		t = t.T(nxt.GetT())
 	}
 	return t
 }
@@ -264,7 +325,7 @@ func (c Chain) T() *T {
 func (c Chain) TInv() *T {
 	ln := len(c)
 	if ln == 0 {
-		return IndentityTransform()
+		return &indentityTransform
 	}
 	if ln == 1 {
 		return c[0].TInv()
@@ -278,10 +339,10 @@ func (c Chain) TInv() *T {
 
 // Pair calls pair on all the TGen in the chain and computes both the transform
 // and it's inverse.
-func (c Chain) Pair() [2]*T {
+func (c Chain) Pair() Pair {
 	ln := len(c)
 	if ln == 0 {
-		return [2]*T{IndentityTransform(), IndentityTransform()}
+		return IndentityTransform{}.Pair()
 	}
 	if ln == 1 {
 		return c[0].Pair()
@@ -363,4 +424,22 @@ func (ts *TransformSet) GetT() *T {
 		}
 	}
 	return TProd(h, m, t)
+}
+
+// Pair represents a Transform and it's Inverse. It fullfills TGen.
+type Pair [2]*T
+
+// GetT fulfills TGen.
+func (p Pair) GetT() *T {
+	return p[0]
+}
+
+// TInv fulfills TGen.
+func (p Pair) TInv() *T {
+	return p[1]
+}
+
+// Pair fulfills TGen.
+func (p Pair) Pair() Pair {
+	return p
 }

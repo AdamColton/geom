@@ -32,15 +32,14 @@ func TestEllipse(t *testing.T) {
 	d0 := f1.Distance(p0) + f2.Distance(p0)
 	for i := 0.0; i <= 1.0; i += 0.2 {
 		p := e.Pt1(i)
-		d := f1.Distance(p) + f2.Distance(p)
-		assert.InDelta(t, d0, d, 1e-10)
+		geomtest.Equal(t, d0, f1.Distance(p)+f2.Distance(p))
 	}
 
 	geomtest.Equal(t, d2.Pt{1, 0}, e.Centroid())
 
-	expectedIntersections := []float64{0.58333, 0.25}
+	expectedIntersections := []float64{0.5833333333333334, 0.25}
 	gotIntersections := e.LineIntersections(line.New(d2.Pt{0, -2}, d2.Pt{4, 2}), nil)
-	assert.InDeltaSlice(t, expectedIntersections, gotIntersections, 1e-5)
+	geomtest.Equal(t, expectedIntersections, gotIntersections, 1e-5)
 
 	assert.Equal(t, e.perimeter, e.Arc())
 
@@ -68,10 +67,10 @@ func TestCircumscribeCircle(t *testing.T) {
 	r := c.Radius()
 	center := c.Centroid()
 	geomtest.Equal(t, d2.Pt{0.5, 0.5}, center)
-	assert.InDelta(t, math.Sqrt(0.5), r, 1e-5)
+	geomtest.EqualInDelta(t, math.Sqrt(0.5), r, 1e-5)
 
 	for _, pt := range tri {
-		assert.InDelta(t, r, pt.Distance(center), 1e-5)
+		geomtest.EqualInDelta(t, r, pt.Distance(center), 1e-5)
 	}
 }
 
@@ -82,7 +81,7 @@ func TestPerimeter(t *testing.T) {
 			p := e.Perimeter()
 			ps := e.PerimeterSeries(10)
 			err := (ps - p) / ps
-			assert.InDelta(t, 0, err, 1e-3, fmt.Sprint(x, r))
+			geomtest.EqualInDelta(t, 0.0, err, 1e-3, fmt.Sprint(x, r))
 		}
 	}
 }

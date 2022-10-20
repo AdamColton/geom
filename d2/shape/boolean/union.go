@@ -1,12 +1,13 @@
-package shape
+package boolean
 
 import (
 	"github.com/adamcolton/geom/d2"
 	"github.com/adamcolton/geom/d2/curve/line"
+	"github.com/adamcolton/geom/d2/shape"
 	"github.com/adamcolton/geom/d2/shape/polygon"
 )
 
-type Union [2]Shape
+type Union [2]shape.Shape
 
 func (a Union) Contains(pt d2.Pt) bool {
 	return a[0].Contains(pt) || a[1].Contains(pt)

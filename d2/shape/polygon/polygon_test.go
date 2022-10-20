@@ -19,7 +19,7 @@ func TestPolygonSignedArea(t *testing.T) {
 		{0, 1},
 	}
 	p := Polygon(tri[:])
-	assert.InDelta(t, tri.SignedArea(), p.SignedArea(), 1e-10)
+	geomtest.Equal(t, tri.SignedArea(), p.SignedArea())
 
 	square := Polygon{
 		d2.Pt{0, 0},
@@ -27,7 +27,7 @@ func TestPolygonSignedArea(t *testing.T) {
 		d2.Pt{1, 1},
 		d2.Pt{0, 1},
 	}
-	assert.InDelta(t, 1.0, square.SignedArea(), 1e-10)
+	geomtest.Equal(t, 1.0, square.SignedArea())
 }
 
 func TestPolygonCentroid(t *testing.T) {

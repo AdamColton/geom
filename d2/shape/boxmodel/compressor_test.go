@@ -3,15 +3,15 @@ package boxmodel
 import (
 	"testing"
 
-	"github.com/adamcolton/geom/d2/shape"
+	"github.com/adamcolton/geom/d2/shape/boolean"
 	"github.com/adamcolton/geom/d2/shape/triangle"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCompress(t *testing.T) {
-	s := shape.Subtract{
-		shape.Union{
-			shape.Subtract{
+	s := boolean.Subtract{
+		boolean.Union{
+			boolean.Subtract{
 				&triangle.Triangle{
 					{20, 20}, {480, 40}, {250, 470},
 				},

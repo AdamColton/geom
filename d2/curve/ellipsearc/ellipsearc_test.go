@@ -112,12 +112,12 @@ func TestLineIntersections(t *testing.T) {
 		"basic": {
 			Line:       line.New(d2.Pt{0, 0}, d2.Pt{5, 0}),
 			EllipseArc: New(d2.Pt{2, 0}, d2.Pt{3, 0}, 1),
-			expected:   []float64{0.7236067, 0.276393},
+			expected:   []float64{0.7236067977499789, 0.276393202250021},
 		},
 		"vertical": {
 			Line:       line.New(d2.Pt{2, -3}, d2.Pt{2, 3}),
 			EllipseArc: New(d2.Pt{2, 0}, d2.Pt{3, 0}, 1),
-			expected:   []float64{0.649071, 0.350928},
+			expected:   []float64{0.649071198499986, 0.35092880150001404},
 		},
 		"no-intersect": {
 			Line:       line.New(d2.Pt{-10, 0}, d2.Pt{-11, 100}),
@@ -137,7 +137,7 @@ func TestLineIntersections(t *testing.T) {
 		"slopeline": {
 			Line:       line.New(d2.Pt{0, 0}, d2.Pt{5, 5}),
 			EllipseArc: New(d2.Pt{2, 2}, d2.Pt{3, 2}, 1),
-			expected:   []float64{0.584990, 0.303898},
+			expected:   []float64{0.5849901182297057, 0.3038987706591831},
 		},
 		"onePoint": {
 			Line:       line.New(d2.Pt{0, 1}, d2.Pt{1, 1}),
@@ -150,15 +150,12 @@ func TestLineIntersections(t *testing.T) {
 		t.Run(n, func(t *testing.T) {
 			li := line.Intersector(tc.EllipseArc)
 			is := li.LineIntersections(tc.Line, nil)
+			geomtest.Equal(t, tc.expected, is)
 			assert.Equal(t, len(tc.expected), len(is))
-			for idx, ti := range tc.expected {
-				assert.InDelta(t, ti, is[idx], 1e-5)
-			}
 
 			if len(tc.expected) > 0 {
-				one := li.LineIntersections(tc.Line, []float64{0})
-				assert.Len(t, one, 1)
-				assert.InDelta(t, tc.expected[0], one[0], 1e-5)
+				is = li.LineIntersections(tc.Line, []float64{0})
+				assert.Equal(t, tc.expected[:1], is)
 			}
 		})
 	}
