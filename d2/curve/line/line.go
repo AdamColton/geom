@@ -114,8 +114,8 @@ func (l Line) ClosestT(pt d2.Pt) float64 {
 		T0: pt,
 		D:  d2.V{-l.D.Y, l.D.X},
 	}
-	_, t0, _ := l2.Intersection(l)
-	return t0
+	t, _, _ := l2.PartialIntersection(l)
+	return t
 }
 
 // Closest returns the point on the line closest to pt
